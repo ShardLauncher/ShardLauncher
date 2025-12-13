@@ -2,11 +2,8 @@ package com.lanrhyme.shardlauncher.ui.version
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -26,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -36,24 +32,33 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.lanrhyme.shardlauncher.R
+import com.lanrhyme.shardlauncher.game.version.installed.Version
+import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.SearchTextField
 import com.lanrhyme.shardlauncher.ui.components.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.components.selectableCard
 
-data class GameVersion(val name: String, val icon: Int)
-
 enum class VersionDetailPane(val title: String, val icon: ImageVector) {
-    Config("版本配置", Icons.Default.Settings),
-    Mods("模组管理", Icons.Default.Extension),
-    Saves("存档管理", Icons.Default.Save),
-    ResourcePacks("资源包管理", Icons.Default.Style),
-    ShaderPacks("光影包管理", Icons.Default.WbSunny)
+    Config("版本配置", Icons.Default.Settings), // TODO: i18n
+    Mods("模组管理", Icons.Default.Extension), // TODO: i18n
+    Saves("存档管理", Icons.Default.Save), // TODO: i18n
+    ResourcePacks("资源包管理", Icons.Default.Style), // TODO: i18n
+    ShaderPacks("光影包管理", Icons.Default.WbSunny) // TODO: i18n
 }
 
 @Composable
 fun VersionScreen(navController: NavController, animationSpeed: Float) {
-    var selectedVersion by remember { mutableStateOf<GameVersion?>(null) }
+    // Refresh versions on load
+    LaunchedEffect(Unit) {
+        VersionsManager.refresh("VersionScreen_Init")
+    }
+
+    // Use versions from manager
+    // Note: In a real architecture, this should come from a ViewModel observing the Manager
+    val versions = VersionsManager.versions
+    var selectedVersion by remember { mutableStateOf<Version?>(null) }
     var selectedPane by remember { mutableStateOf<VersionDetailPane?>(null) }
 
     fun resetToVersionList() {
@@ -87,6 +92,7 @@ fun VersionScreen(navController: NavController, animationSpeed: Float) {
                 pane ->
                 if (pane == null) {
                     GameVersionListContent(
+                        versions = versions,
                         selectedVersion = selectedVersion,
                         onVersionClick = { version ->
                             selectedVersion = version
@@ -103,7 +109,7 @@ fun VersionScreen(navController: NavController, animationSpeed: Float) {
 
 @Composable
 fun LeftNavigationPane(
-    selectedVersion: GameVersion?,
+    selectedVersion: Version?,
     selectedPane: VersionDetailPane?,
     onPaneSelected: (VersionDetailPane) -> Unit
 ) {
@@ -116,28 +122,31 @@ fun LeftNavigationPane(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = selectedVersion!!.icon),
-                        contentDescription = selectedVersion.name,
+                    val iconFile = selectedVersion?.let { VersionsManager.getVersionIconFile(it) }
+                    AsyncImage(
+                        model = iconFile,
+                        contentDescription = selectedVersion?.getVersionName(),
+                        placeholder = painterResource(id = R.drawable.img_minecraft), // Fallback
+                        error = painterResource(id = R.drawable.img_minecraft),
                         modifier = Modifier
                             .size(100.dp)
                             .padding(8.dp)
                     )
                     Text(
-                        text = selectedVersion.name,
+                        text = selectedVersion?.getVersionName() ?: "",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    Divider()
+                    HorizontalDivider()
                     Spacer(modifier = Modifier.height(16.dp))
                 }
         }
 
         if (selectedVersion == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("请从右侧选择一个版本", textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+                Text("请从右侧选择一个版本", textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp)) // TODO: i18n
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -168,18 +177,19 @@ fun LeftNavigationPane(
 }
 
 @Composable
-fun GameVersionListContent(selectedVersion: GameVersion?, onVersionClick: (GameVersion) -> Unit, animationSpeed: Float) {
-    val versions = remember {
-        listOf(
-            GameVersion("1.8.9pvp", R.drawable.img_minecraft),
-            GameVersion("1.12.2", R.drawable.img_minecraft),
-            GameVersion("1.21.10fabric", R.drawable.img_minecraft),
-            GameVersion("1.14.4", R.drawable.img_minecraft),
-            GameVersion("1.13.2", R.drawable.img_minecraft),
-            GameVersion("1.9.4forgeaaa", R.drawable.img_minecraft),
-        )
-    }
+fun GameVersionListContent(
+    versions: List<Version>,
+    selectedVersion: Version?,
+    onVersionClick: (Version) -> Unit,
+    animationSpeed: Float
+) {
     var searchText by remember { mutableStateOf("") }
+    
+    // Filter versions based on search text
+    val filteredVersions = remember(versions, searchText) {
+        if (searchText.isBlank()) versions
+        else versions.filter { it.getVersionName().contains(searchText, ignoreCase = true) }
+    }
 
     Column(
         modifier = Modifier
@@ -194,38 +204,48 @@ fun GameVersionListContent(selectedVersion: GameVersion?, onVersionClick: (GameV
             SearchTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
-                hint = "搜索版本",
+                hint = "搜索版本", // TODO: i18n
                 modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = { /* TODO: Refresh */ }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+            IconButton(onClick = { VersionsManager.refresh("Manual") }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh") // TODO: i18n
             }
             IconButton(onClick = { /* TODO: Sort */ }) {
-                Icon(Icons.Default.Sort, contentDescription = "Sort")
+                Icon(Icons.Default.Sort, contentDescription = "Sort") // TODO: i18n
             }
             IconButton(onClick = { /* TODO: Filter */ }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Filter")
+                Icon(Icons.Default.MoreVert, contentDescription = "Filter") // TODO: i18n
             }
             IconButton(onClick = { /* TODO: Directory switch */ }) {
-                Icon(Icons.Default.Folder, contentDescription = "Directory")
+                Icon(Icons.Default.Folder, contentDescription = "Directory") // TODO: i18n
             }
         }
 
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 150.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(versions) { index, version ->
-                GameVersionCard(
-                    version = version,
-                    isSelected = version == selectedVersion,
-                    onClick = { onVersionClick(version) },
-                    index = index,
-                    animationSpeed = animationSpeed
-                )
+        if (VersionsManager.isRefreshing) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (filteredVersions.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("暂无版本", fontSize = 18.sp) // TODO: i18n
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 150.dp),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                itemsIndexed(filteredVersions) { index, version ->
+                    GameVersionCard(
+                        version = version,
+                        isSelected = version == selectedVersion,
+                        onClick = { onVersionClick(version) },
+                        index = index,
+                        animationSpeed = animationSpeed
+                    )
+                }
             }
         }
     }
@@ -233,30 +253,49 @@ fun GameVersionListContent(selectedVersion: GameVersion?, onVersionClick: (GameV
 
 
 @Composable
-fun RightDetailContent(pane: VersionDetailPane, version: GameVersion?, onBack: () -> Unit) {
+fun RightDetailContent(pane: VersionDetailPane, version: Version?, onBack: () -> Unit) {
+    if (version == null) return
+
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to version list")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to version list") // TODO: i18n
             }
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "${pane.title} - ${version?.name ?: ""}",
+                text = "${pane.title} - ${version.getVersionName()}",
                 style = MaterialTheme.typography.titleLarge
             )
         }
         Spacer(Modifier.height(16.dp))
-        // Placeholder for the actual content of each pane
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("这是 ${pane.title} 页面", fontSize = 20.sp)
+
+        when (pane) {
+            VersionDetailPane.Config -> {
+                VersionConfigScreen(
+                    version = version,
+                    config = version.getVersionConfig(),
+                    onConfigChange = { /* Config updates are handled internally in VersionConfigScreen state for now */ },
+                    onSave = {
+                        // In a real app, we might want to propagate changes back to a ViewModel
+                        // For now, VersionConfig is mutable and reference is shared, so we just call save()
+                        version.getVersionConfig().save()
+                    }
+                )
+            }
+            else -> {
+                // Placeholder for other panes
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("这是 ${pane.title} 页面", fontSize = 20.sp) // TODO: i18n
+                }
+            }
         }
     }
 }
 
 @Composable
-fun GameVersionCard(version: GameVersion, isSelected: Boolean, onClick: () -> Unit, index: Int, animationSpeed: Float) {
+fun GameVersionCard(version: Version, isSelected: Boolean, onClick: () -> Unit, index: Int, animationSpeed: Float) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -281,15 +320,17 @@ fun GameVersionCard(version: GameVersion, isSelected: Boolean, onClick: () -> Un
                     .align(Alignment.Center)
                     .fillMaxSize(0.5f)
             ) {
-                Image(
-                    painter = painterResource(id = version.icon),
-                    contentDescription = "${version.name} icon",
+                AsyncImage(
+                    model = VersionsManager.getVersionIconFile(version),
+                    contentDescription = "${version.getVersionName()} icon",
+                    placeholder = painterResource(id = R.drawable.img_minecraft),
+                    error = painterResource(id = R.drawable.img_minecraft),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
             }
             Text(
-                text = version.name,
+                text = version.getVersionName(),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,

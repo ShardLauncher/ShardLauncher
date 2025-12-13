@@ -23,4 +23,7 @@
     <string name="generic_cancel">Cancel</string>
     <string name="settings_launcher_mirror_official_first">Official Source First</string>
     <string name="settings_launcher_mirror_mirror_first">Mirror Source First</string>
+    <string name="generic_follow_global">Follow Global Settings</string>
+    <string name="generic_enable">Enabled</string>
+    <string name="generic_disable">Disabled</string>
 </resources>
