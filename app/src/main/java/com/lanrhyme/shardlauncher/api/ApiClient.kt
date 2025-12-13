@@ -61,7 +61,7 @@ object ApiClient {
     }
 
     val minecraftAuthService: MinecraftAuthService by lazy {
-        createService("https://api.minecraftservices.com/", MinecraftAuthService::class.java)
+        createService(MOJANG_API_BASE_URL, MinecraftAuthService::class.java) // Base URL matters less for @Url or absolute URLs mainly used in interface
     }
 
     val mojangApiService: MojangApiService by lazy {

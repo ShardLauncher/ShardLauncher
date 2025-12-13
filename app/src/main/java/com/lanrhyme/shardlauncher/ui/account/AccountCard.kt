@@ -45,9 +45,15 @@ import androidx.navigation.NavController
 import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.model.Account
-import com.lanrhyme.shardlauncher.model.AccountType
+import com.lanrhyme.shardlauncher.game.account.Account
+import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_LOCAL
+import com.lanrhyme.shardlauncher.game.account.getDisplayName
 import com.lanrhyme.shardlauncher.ui.components.selectableCard
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -98,7 +104,7 @@ fun AccountCard(
             ) {
                 // Avatar
                 val imageRequest = ImageRequest.Builder(LocalContext.current)
-                    .data(account.skinUrl)
+                    .data("https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=avatar&overlay=true")
                     .error(R.drawable.img_steve)
                     .crossfade(true)
                     .diskCachePolicy(CachePolicy.ENABLED)
@@ -118,6 +124,22 @@ fun AccountCard(
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                            if (account.accountType == ACCOUNT_TYPE_LOCAL) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceContainerHighest,
+                                            RoundedCornerShape(4.dp)
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "离线",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 )
@@ -139,7 +161,7 @@ fun AccountCard(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = account.accountType.displayName,
+                        text = account.getDisplayName(),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray,
                         maxLines = 1,
@@ -168,12 +190,21 @@ fun AccountCard(
                     showMenu = false
                 }
             )
-            if (account.accountType == AccountType.OFFLINE) {
+            if (account.accountType == ACCOUNT_TYPE_LOCAL) {
                 DropdownMenuItem(
                     text = { Text("修改用户名") },
                     onClick = {
                         onEdit(account)
                         showMenu = false
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { onEdit(account) }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Account",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 )
             }

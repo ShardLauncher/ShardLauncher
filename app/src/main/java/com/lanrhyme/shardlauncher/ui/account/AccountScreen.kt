@@ -59,13 +59,14 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.BuildConfig
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.model.Account
+import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.ui.components.FluidFab
 import com.lanrhyme.shardlauncher.ui.components.FluidFabDirection
 import com.lanrhyme.shardlauncher.ui.components.FluidFabItem
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Cloud
 import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
+import androidx.compose.foundation.clickable
 
 @Composable
 fun AccountScreen(
@@ -81,11 +82,13 @@ fun AccountScreen(
     val context = LocalContext.current
     val toolbarColor = MaterialTheme.colorScheme.primary.toArgb()
 
+    /*
     LaunchedEffect(microsoftAuthCode) {
         if (!microsoftAuthCode.isNullOrBlank()) {
             accountViewModel.loginWithMicrosoft(microsoftAuthCode)
         }
     }
+    */
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -183,14 +186,7 @@ fun AccountScreen(
                     label = "微软账户",
                     icon = Icons.Default.Cloud,
                     onClick = {
-                        val url = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=${BuildConfig.CLIENT_ID}&response_type=code&redirect_uri=shardlauncher://auth/microsoft&scope=XboxLive.signin%20offline_access%20openid%20profile%20email"
-                        val defaultColors = CustomTabColorSchemeParams.Builder()
-                            .setToolbarColor(toolbarColor)
-                            .build()
-                        val customTabsIntent = CustomTabsIntent.Builder()
-                            .setDefaultColorSchemeParams(defaultColors)
-                            .build()
-                        customTabsIntent.launchUrl(context, Uri.parse(url))
+                        accountViewModel.startMicrosoftLogin()
                     }
                 )
             ),
@@ -210,20 +206,47 @@ fun AccountScreen(
 
     when (val state = microsoftLoginState) {
         is MicrosoftLoginState.InProgress -> {
-            AlertDialog(
-                onDismissRequest = { /* Prevent dismissing */ },
-                title = { Text("登录中") },
-                text = { 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator() 
+            val deviceCodeResponse by accountViewModel.deviceCodeData.collectAsState()
+            
+            if (deviceCodeResponse != null) {
+                AlertDialog(
+                    onDismissRequest = { accountViewModel.cancelMicrosoftLogin() },
+                    title = { Text("Microsoft 登录") },
+                    text = {
+                        Column {
+                             Text("请访问以下链接并输入代码：")
+                             Spacer(modifier = Modifier.height(8.dp))
+                             Text(deviceCodeResponse!!.verificationUri, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable {
+                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deviceCodeResponse!!.verificationUri))
+                                 context.startActivity(intent)
+                             })
+                             Spacer(modifier = Modifier.height(16.dp))
+                             Text("代码：", style = MaterialTheme.typography.titleMedium)
+                             Text(deviceCodeResponse!!.userCode, style = MaterialTheme.typography.displayMedium)
+                             Spacer(modifier = Modifier.height(16.dp))
+                             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { accountViewModel.cancelMicrosoftLogin() }) { Text("取消") }
                     }
-                },
-                confirmButton = {}
-            )
+                )
+            } else {
+                 AlertDialog(
+                    onDismissRequest = { /* Prevent dismissing */ },
+                    title = { Text("登录中") },
+                    text = { 
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator() 
+                        }
+                    },
+                    confirmButton = {}
+                )
+            }
         }
         is MicrosoftLoginState.Error -> {
             AlertDialog(
@@ -235,6 +258,7 @@ fun AccountScreen(
         }
         is MicrosoftLoginState.Success -> {
             LaunchedEffect(state) {
+                // Should automatically show in list
                 accountViewModel.resetMicrosoftLoginState()
             }
         }

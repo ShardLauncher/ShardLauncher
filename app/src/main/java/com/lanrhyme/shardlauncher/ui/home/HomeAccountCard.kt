@@ -23,7 +23,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.lanrhyme.shardlauncher.model.Account
+import com.lanrhyme.shardlauncher.game.account.Account
+import com.lanrhyme.shardlauncher.game.account.getDisplayName
 
 @Composable
 fun HomeAccountCard(account: Account) {
@@ -43,7 +44,7 @@ fun HomeAccountCard(account: Account) {
             // Avatar
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(account.skinUrl)
+                    .data("https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=avatar&overlay=true")
                     .crossfade(true)
                     .build(),
                 contentDescription = "Account Avatar",
@@ -70,7 +71,7 @@ fun HomeAccountCard(account: Account) {
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = account.accountType.displayName,
+                    text = account.getDisplayName(),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     maxLines = 1,

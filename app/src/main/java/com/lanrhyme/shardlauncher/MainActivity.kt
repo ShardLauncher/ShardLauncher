@@ -83,14 +83,13 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import coil.compose.rememberAsyncImagePainter
 import com.lanrhyme.shardlauncher.common.SidebarPosition
-import com.lanrhyme.shardlauncher.data.AccountRepository
+import com.lanrhyme.shardlauncher.game.account.AccountsManager
 import com.lanrhyme.shardlauncher.data.SettingsRepository
 import com.lanrhyme.shardlauncher.service.MusicPlayerService
 import com.lanrhyme.shardlauncher.ui.LocalSettingsProvider
 import com.lanrhyme.shardlauncher.ui.SplashScreen
 import com.lanrhyme.shardlauncher.ui.account.AccountScreen
 import com.lanrhyme.shardlauncher.ui.account.AccountViewModel
-import com.lanrhyme.shardlauncher.ui.account.AccountViewModelFactory
 import com.lanrhyme.shardlauncher.ui.components.BackgroundLightEffect
 import com.lanrhyme.shardlauncher.ui.components.glow
 import com.lanrhyme.shardlauncher.ui.developeroptions.ComponentDemoScreen
@@ -122,15 +121,14 @@ import com.lanrhyme.shardlauncher.ui.music.MusicPlayerViewModel
 class MainActivity : ComponentActivity() {
     private val tag = "MainActivity"
     private lateinit var settingsRepository: SettingsRepository
-    private lateinit var accountRepository: AccountRepository
-    private val accountViewModel: AccountViewModel by viewModels { AccountViewModelFactory(accountRepository) }
+    private val accountViewModel: AccountViewModel by viewModels()
     private val musicPlayerViewModel: MusicPlayerViewModel by viewModels { MusicPlayerViewModel.Factory(application, settingsRepository) }
     private val newIntentState = mutableStateOf<Intent?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settingsRepository = SettingsRepository(applicationContext)
-        accountRepository = AccountRepository(applicationContext)
+        AccountsManager.initialize(applicationContext)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 

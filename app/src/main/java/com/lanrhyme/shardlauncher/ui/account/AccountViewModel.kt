@@ -2,15 +2,12 @@ package com.lanrhyme.shardlauncher.ui.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lanrhyme.shardlauncher.api.ApiClient
-import com.lanrhyme.shardlauncher.data.AccountRepository
-import com.lanrhyme.shardlauncher.data.AuthRepository
-import com.lanrhyme.shardlauncher.model.Account
-import com.lanrhyme.shardlauncher.model.AccountType
-import kotlinx.coroutines.flow.MutableStateFlow
+// import com.lanrhyme.shardlauncher.data.AuthRepository // Keep generic auth logic if needed, but for now ignoring
+import com.lanrhyme.shardlauncher.game.account.Account
+import com.lanrhyme.shardlauncher.game.account.AccountsManager
+import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_LOCAL
+import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_MICROSOFT
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -21,121 +18,67 @@ sealed class MicrosoftLoginState {
     data class Error(val message: String) : MicrosoftLoginState()
 }
 
-class AccountViewModel(private val repository: AccountRepository) : ViewModel() {
+class AccountViewModel : ViewModel() {
 
-    private val authRepository = AuthRepository(ApiClient.microsoftAuthService, ApiClient.minecraftAuthService, ApiClient.mojangApiService, ApiClient.rmsApiService)
+    // Expose flows directly from AccountsManager
+    val accounts: StateFlow<List<Account>> = AccountsManager.accountsFlow
+    val selectedAccount: StateFlow<Account?> = AccountsManager.currentAccountFlow
 
-    private val _accounts = MutableStateFlow<List<Account>>(emptyList())
-    val accounts: StateFlow<List<Account>> = _accounts
+    // Login state logic
+    val microsoftLoginState = kotlinx.coroutines.flow.MutableStateFlow<MicrosoftLoginState>(MicrosoftLoginState.Idle)
 
-    private val _selectedAccount = MutableStateFlow<Account?>(null)
-    val selectedAccount: StateFlow<Account?> = _selectedAccount
+    // Holds the device code response for UI to display
+    val deviceCodeData = kotlinx.coroutines.flow.MutableStateFlow<com.lanrhyme.shardlauncher.game.account.microsoft.models.DeviceCodeResponse?>(null)
 
-    private val _microsoftLoginState = MutableStateFlow<MicrosoftLoginState>(MicrosoftLoginState.Idle)
-    val microsoftLoginState = _microsoftLoginState.asStateFlow()
-
-    init {
-        loadAccounts()
-    }
-
-    private fun loadAccounts() {
-        viewModelScope.launch {
-            val savedAccounts = repository.getAccounts()
-            _accounts.value = savedAccounts
-            _selectedAccount.value = repository.getSelectedAccount() ?: savedAccounts.firstOrNull()
-        }
-    }
-
-    fun loginWithMicrosoft(code: String) {
+    fun startMicrosoftLogin() {
         viewModelScope.launch {
             try {
-                _microsoftLoginState.value = MicrosoftLoginState.InProgress
-
-                val authTokenResponse = authRepository.getAccessToken(code)
-                val minecraftAuthResponse = authRepository.getMinecraftAuth(authTokenResponse.accessToken)
-                val minecraftProfile = authRepository.getMinecraftProfile(minecraftAuthResponse.accessToken)
-
-                val newAccount = Account(
-                    id = minecraftProfile.id,
-                    username = minecraftProfile.name,
-                    accountType = AccountType.ONLINE,
-                    lastPlayed = "",
-                    skinUrl = minecraftProfile.skins.first().url
-                )
-
-                addAccount(newAccount)
-                selectAccount(newAccount)
-
-                _microsoftLoginState.value = MicrosoftLoginState.Success
+                microsoftLoginState.value = MicrosoftLoginState.InProgress
+                val response = com.lanrhyme.shardlauncher.game.account.microsoft.MicrosoftAuthenticator.getDeviceCode()
+                deviceCodeData.value = response
+                
+                // Start polling automatically or wait for user confirmation?
+                // Usually we display code and start polling immediately
+                com.lanrhyme.shardlauncher.game.account.microsoft.MicrosoftAuthenticator.loginWithMicrosoft(response)
+                    .collect { status ->
+                         // Update status message? We could add a Status state to MicrosoftLoginState
+                         // For now just log or keep InProgress
+                    }
+                microsoftLoginState.value = MicrosoftLoginState.Success
             } catch (e: Exception) {
-                _microsoftLoginState.value = MicrosoftLoginState.Error(e.message ?: "Unknown error")
+                microsoftLoginState.value = MicrosoftLoginState.Error(e.message ?: "Login failed")
             }
         }
+    }
+
+    fun cancelMicrosoftLogin() {
+         resetMicrosoftLoginState()
     }
 
     fun resetMicrosoftLoginState() {
-        _microsoftLoginState.value = MicrosoftLoginState.Idle
+        microsoftLoginState.value = MicrosoftLoginState.Idle
     }
 
     fun selectAccount(account: Account) {
-        _selectedAccount.value = account
-        repository.saveSelectedAccount(account)
-    }
-
-    private fun addAccount(account: Account) {
-        _accounts.update { currentAccounts ->
-            val newAccounts = currentAccounts + account
-            repository.saveAccounts(newAccounts)
-            newAccounts
-        }
+        AccountsManager.setCurrentAccount(account)
     }
 
     fun addOfflineAccount(username: String) {
-        viewModelScope.launch {
-            val skinUrl = authRepository.getOfflineSkinUrl(username)
-            val newAccount = Account(
-                id = UUID.randomUUID().toString(),
-                username = username,
-                accountType = AccountType.OFFLINE,
-                lastPlayed = "",
-                skinUrl = skinUrl
-            )
-            addAccount(newAccount)
-        }
+        val newAccount = Account(
+            username = username,
+            accountType = ACCOUNT_TYPE_LOCAL,
+            profileId = com.lanrhyme.shardlauncher.game.account.wardrobe.getLocalUUIDWithSkinModel(username, com.lanrhyme.shardlauncher.game.account.wardrobe.SkinModelType.NONE)
+            // ID is auto-generated
+        )
+        AccountsManager.saveAccount(newAccount)
     }
 
     fun deleteAccount(account: Account) {
-        _accounts.update { currentAccounts ->
-            val newAccounts = currentAccounts.filter { it.id != account.id }
-            repository.saveAccounts(newAccounts)
-            if (_selectedAccount.value == account) {
-                val newSelectedAccount = newAccounts.firstOrNull()
-                _selectedAccount.value = newSelectedAccount
-                repository.saveSelectedAccount(newSelectedAccount)
-            }
-            newAccounts
-        }
+        AccountsManager.deleteAccount(account)
     }
 
     fun updateOfflineAccount(account: Account, newUsername: String) {
-        viewModelScope.launch {
-            val skinUrl = authRepository.getOfflineSkinUrl(newUsername)
-            val updatedAccount = account.copy(username = newUsername, skinUrl = skinUrl)
-            updateAccount(updatedAccount)
-        }
-    }
-
-    private fun updateAccount(account: Account) {
-        _accounts.update { currentAccounts ->
-            val newAccounts = currentAccounts.map {
-                if (it.id == account.id) account else it
-            }
-            repository.saveAccounts(newAccounts)
-            if (_selectedAccount.value?.id == account.id) {
-                _selectedAccount.value = account
-                repository.saveSelectedAccount(account)
-            }
-            newAccounts
-        }
+        account.username = newUsername
+        AccountsManager.saveAccount(account)
     }
 }

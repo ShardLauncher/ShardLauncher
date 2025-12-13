@@ -1,24 +1,29 @@
 package com.lanrhyme.shardlauncher.utils
 
 import android.content.Context
-import java.io.File
-import java.io.FileWriter
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import android.util.Log
 
 object Logger {
-    private const val LOG_FILE_NAME = "leastlog.txt"
+    private const val TAG = "ShardLauncherLogger"
 
-    fun log(context: Context, tag: String, message: String) {
-        try {
-            val logFile = File(context.getExternalFilesDir(null), LOG_FILE_NAME)
-            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date())
-            FileWriter(logFile, true).use {
-                it.append("$timestamp [$tag]: $message\n")
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+    fun log(context: Context?, tag: String, message: String) {
+        Log.d(tag, message)
+    }
+    
+    // For compatibility with ported code
+    fun lDebug(message: String) {
+        Log.d(TAG, message)
+    }
+
+    fun lInfo(message: String) {
+        Log.i(TAG, message)
+    }
+
+    fun lError(message: String, e: Throwable? = null) {
+        if (e != null) {
+            Log.e(TAG, message, e)
+        } else {
+            Log.e(TAG, message)
         }
     }
 }
