@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -59,6 +60,11 @@ import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.BuildConfig
 import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.model.Account
+import com.lanrhyme.shardlauncher.ui.components.FluidFab
+import com.lanrhyme.shardlauncher.ui.components.FluidFabDirection
+import com.lanrhyme.shardlauncher.ui.components.FluidFabItem
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Cloud
 import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
 
 @Composable
@@ -69,7 +75,7 @@ fun AccountScreen(
 ) {
     val accounts by accountViewModel.accounts.collectAsState()
     val selectedAccount by accountViewModel.selectedAccount.collectAsState()
-    var showAddAccountDialog by remember { mutableStateOf(false) }
+    var showOfflineAccountDialog by remember { mutableStateOf(false) }
     var editingAccount by remember { mutableStateOf<Account?>(null) }
     val microsoftLoginState by accountViewModel.microsoftLoginState.collectAsState()
     val context = LocalContext.current
@@ -81,28 +87,26 @@ fun AccountScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { navController.navigateUp() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-            Text("账户档案", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { showAddAccountDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Account")
-            }
-        }
-
-        Row(modifier = Modifier.fillMaxSize()) {
-            // Left side: Large card for the 3D model placeholder
-            Card(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
                 modifier = Modifier
-                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { navController.navigateUp() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Text("账户档案", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            Row(modifier = Modifier.fillMaxSize()) {
+                // Left side: Large card for the 3D model placeholder
+                Card(
+                    modifier = Modifier
+                        .fillMaxHeight()
                     .weight(0.3f)
                     .padding(16.dp),
                 shape = RoundedCornerShape(22.dp),
@@ -162,25 +166,44 @@ fun AccountScreen(
                 }
             }
         }
+        }
+
+        FluidFab(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 170.dp, y = 170.dp),
+            direction = FluidFabDirection.TOP_LEFT,
+            items = listOf(
+                FluidFabItem(
+                    label = "离线账户",
+                    icon = Icons.Default.Person,
+                    onClick = { showOfflineAccountDialog = true }
+                ),
+                FluidFabItem(
+                    label = "微软账户",
+                    icon = Icons.Default.Cloud,
+                    onClick = {
+                        val url = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=${BuildConfig.CLIENT_ID}&response_type=code&redirect_uri=shardlauncher://auth/microsoft&scope=XboxLive.signin%20offline_access%20openid%20profile%20email"
+                        val defaultColors = CustomTabColorSchemeParams.Builder()
+                            .setToolbarColor(toolbarColor)
+                            .build()
+                        val customTabsIntent = CustomTabsIntent.Builder()
+                            .setDefaultColorSchemeParams(defaultColors)
+                            .build()
+                        customTabsIntent.launchUrl(context, Uri.parse(url))
+                    }
+                )
+            ),
+            sectorSize = 70f
+        )
     }
 
-    if (showAddAccountDialog) {
-        AddAccountDialog(
-            onDismiss = { showAddAccountDialog = false },
+    if (showOfflineAccountDialog) {
+        OfflineAccountInputDialog(
+            onDismiss = { showOfflineAccountDialog = false },
             onAddOfflineAccount = {
                 accountViewModel.addOfflineAccount(it)
-                showAddAccountDialog = false
-            },
-            onLoginWithMicrosoft = {
-                showAddAccountDialog = false
-                val url = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=${BuildConfig.CLIENT_ID}&response_type=code&redirect_uri=shardlauncher://auth/microsoft&scope=XboxLive.signin%20offline_access%20openid%20profile%20email"
-                val defaultColors = CustomTabColorSchemeParams.Builder()
-                    .setToolbarColor(toolbarColor)
-                    .build()
-                val customTabsIntent = CustomTabsIntent.Builder()
-                    .setDefaultColorSchemeParams(defaultColors)
-                    .build()
-                customTabsIntent.launchUrl(context, Uri.parse(url))
+                showOfflineAccountDialog = false
             }
         )
     }
@@ -231,64 +254,34 @@ fun AccountScreen(
 }
 
 @Composable
-fun AddAccountDialog(
+fun OfflineAccountInputDialog(
     onDismiss: () -> Unit,
-    onAddOfflineAccount: (String) -> Unit,
-    onLoginWithMicrosoft: () -> Unit
+    onAddOfflineAccount: (String) -> Unit
 ) {
-    var showOfflineDialog by remember { mutableStateOf(false) }
-
-    if (showOfflineDialog) {
-        var username by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("添加离线账户") },
-            text = {
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text("用户名") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { 
-                        onAddOfflineAccount(username)
-                        onDismiss()
-                    }
-                ) {
-                    Text("添加")
+    var username by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("添加离线账户") },
+        text = {
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("用户名") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onAddOfflineAccount(username)
+                    onDismiss()
                 }
-            },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
-        )
-    } else {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("选择账户类型") },
-            text = { Text("请选择要添加的账户类型。") },
-            confirmButton = {
-                OutlinedButton(
-                    onClick = { 
-                        showOfflineDialog = true
-                    }
-                ) {
-                    Text("离线账户")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        onLoginWithMicrosoft()
-                        onDismiss()
-                    }
-                ) {
-                    Text("正版账户")
-                }
+            ) {
+                Text("添加")
             }
-        )
-    }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
 }
 
 @Composable

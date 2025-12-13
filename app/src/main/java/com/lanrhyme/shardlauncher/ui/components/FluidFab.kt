@@ -67,6 +67,25 @@ data class FluidFabItem(
     val onClick: () -> Unit
 )
 
+/**
+ * 一个带有流体“粘稠”动画的浮动操作按钮 (FAB)，可展开以显示一组项目
+ *
+ * 这个可组合组件创建了一个视觉上引人入胜的 FAB，点击后会将其子项目以指定的方向和扇区动画化地展示出来
+ * 该动画通过分层两个组件实现：
+ * 1. 一个模糊的“流体”层，其中的斑点会合并和分离，从而产生粘稠效果
+ * 2. 一个清晰的内容层，用于图标和交互，呈现在流体层之上
+ *
+ * 展开和项目动画是交错的，以获得更动态的感觉。脉动的圆环效果可提供点击反馈
+ *
+ * @param items 展开 FAB 时要显示的 [FluidFabItem] 列表。每个项目都定义了其图标、标签和点击操作
+ * @param modifier 要应用于组件的 [Modifier]
+ * @param direction 项目应展开的 [FluidFabDirection]。默认为 [FluidFabDirection.TOP]
+ * @param icon 主 FAB 折叠时要显示的图标，默认为 `Icons.Default.Add`
+ * @param containerColor FAB 和展开的项目斑点的背景颜色。默认为 `MaterialTheme.colorScheme.primary`
+ * @param contentColor 主 FAB 和展开的项目上图标的颜色。默认为 `MaterialTheme.colorScheme.onPrimary`
+ * @param radius 从 FAB 中心到展开的项目中心的距离，默认为 `90.dp`
+ * @param sectorSize 项目分布的总角度（以度为单位），例如，对于 3 个项目和 90f 的 `sectorSize`，项目将分布在一个 90 度的圆弧上。默认为 `133f`
+ */
 @Composable
 fun FluidFab(
     items: List<FluidFabItem>,
@@ -75,7 +94,8 @@ fun FluidFab(
     icon: ImageVector = Icons.Default.Add,
     containerColor: Color = MaterialTheme.colorScheme.primary,
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    radius: Dp = 90.dp
+    radius: Dp = 90.dp,
+    sectorSize: Float = 133f
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -150,7 +170,7 @@ fun FluidFab(
                 val density = LocalDensity.current
                 val currentRadiusPx = with(density) { currentRadiusDp.toPx() }
                 
-                val offset = calculateOffset(direction, index, items.size, currentRadiusPx)
+                val offset = calculateOffset(direction, index, items.size, currentRadiusPx,sectorSize)
                 
                 // Blob
                 Box(
@@ -184,7 +204,7 @@ fun FluidFab(
                          val density = LocalDensity.current
                          val currentRadiusPx = with(density) { currentRadiusDp.toPx() }
                          
-                         val offset = calculateOffset(direction, index, items.size, currentRadiusPx)
+                         val offset = calculateOffset(direction, index, items.size, currentRadiusPx,sectorSize)
                          
                          // Interactive Button (No Ripple)
                          Box(
@@ -217,7 +237,7 @@ fun FluidFab(
                             
                              val labelRadiusDp = radius + 48.dp 
                              val labelRadiusPx = with(density) { labelRadiusDp.toPx() }
-                             val labelOffset = calculateOffset(direction, index, items.size, labelRadiusPx)
+                             val labelOffset = calculateOffset(direction, index, items.size, labelRadiusPx,sectorSize)
     
                             Text(
                                 text = item.label,
@@ -314,12 +334,12 @@ private fun calculateOffset(
     direction: FluidFabDirection,
     index: Int,
     totalCount: Int,
-    radiusPx: Float
+    radiusPx: Float,
+    sectorSize: Float
 ): Pair<Float, Float> {
     if (totalCount == 0) return 0f to 0f
     
     val centerAngle = direction.angle
-    val sectorSize = 133f // Increased field of view angle
     
     val startAngle = centerAngle - (sectorSize / 2)
     val step = if (totalCount > 1) sectorSize / (totalCount - 1) else 0f
