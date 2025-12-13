@@ -1,10 +1,12 @@
 package com.lanrhyme.shardlauncher.ui.developeroptions
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,11 +14,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import com.lanrhyme.shardlauncher.ui.components.FluidFab
+import com.lanrhyme.shardlauncher.ui.components.FluidFabDirection
+import com.lanrhyme.shardlauncher.ui.components.FluidFabItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.common.SidebarPosition
@@ -145,6 +154,38 @@ fun ComponentDemoScreen(
                 hazeState = hazeState
             ) {
                 Text("This is the content of the combined card", modifier = Modifier.padding(16.dp))
+            }
+        }
+
+        item {
+            // Fluid FAB Demo
+            // Make sure there is enough space for expansion
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Text(
+                    "Fluid FAB (Top Direction)",
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(bottom = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+                FluidFab(
+                    items = listOf(
+                        FluidFabItem("Camera", Icons.Default.PhotoCamera, {}),
+                        FluidFabItem("Settings", Icons.Default.Settings, {}),
+                        FluidFabItem("Share", Icons.Default.Share, {})
+                    ),
+                    direction = FluidFabDirection.TOP,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
             }
         }
     }
