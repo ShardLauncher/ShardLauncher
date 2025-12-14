@@ -54,7 +54,7 @@
             android:exported="false"
             android:label="App Crashed"
             android:theme="@style/Theme.ShardLauncher"
-            android.screenOrientation="landscape" />
+            android:screenOrientation="landscape" />
         <service
             android:name=".service.MusicPlayerService"
             android:exported="true"
