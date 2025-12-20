@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -33,14 +35,44 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
+    - name: Extract Version Name
+      id: extract_version
+      run: |
+        VERSION_NAME=$(grep 'val vName =' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+        echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+        echo "Detected version: $VERSION_NAME"
+
+    - name: Configure Git User
+      run: |
+        git config user.name "LanRhyme"
+        git config user.email "xiao_ren233@foxmail.com"
+
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        # Find the last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        if [ -z "$LAST_TAG" ]; then
+          echo "No previous tags found. Generating changelog from first commit."
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+        else
+          echo "Last tag: $LAST_TAG"
+          CHANGELOG=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+        fi
+        
+        # Escape newlines for GitHub Actions output
+        CHANGELOG="${CHANGELOG//'%'/'%25'}"
+        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+        
+        echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
     - name: Build Release APKs for all ABIs
       env:
         MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
         CLIENT_ID: ${{ secrets.CLIENT_ID }}
       run: ./gradlew assembleRelease
-
-    - name: List files in APK output directory
-      run: ls -R app/build/outputs/apk/release
 
     - name: Create Release
       id: create_release
@@ -48,8 +80,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
+        tag_name: ${{ env.VERSION_NAME }}
+        release_name: ${{ env.VERSION_NAME }}
+        body: |
+          ## Update Log
+          ${{ steps.changelog.outputs.changelog }}
         draft: false
         prerelease: false
 

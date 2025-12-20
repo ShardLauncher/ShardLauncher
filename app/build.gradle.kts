@@ -65,8 +65,8 @@ android {
         applicationId = "com.lanrhyme.shardlauncher"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        val vName = "1.0"
+        versionCode = 1220
+        val vName = "a0.25.1220"
         versionName = vName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -97,6 +97,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            applicationIdSuffix = ".debug"
         }
     }
     compileOptions {
