@@ -9,6 +9,7 @@ lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 foundationLayout = "1.9.2"
+uiText = "1.10.0"
 
 
 [plugins]
@@ -36,4 +37,5 @@ androidx-compose-foundation-layout = { group = "androidx.compose.foundation", na
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version = "2.6.1" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version = "2.6.1" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version = "2.6.1" }
+androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 

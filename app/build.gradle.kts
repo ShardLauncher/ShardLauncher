@@ -162,6 +162,7 @@ dependencies {
     implementation("com.github.oshi:oshi-core:6.3.0")
     implementation("androidx.browser:browser:1.8.0")
     implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.5.4")
+    implementation(libs.androidx.compose.ui.text)
 
 
     testImplementation(libs.junit)

@@ -3,6 +3,7 @@ package com.lanrhyme.shardlauncher.ui.components
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,6 +13,8 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -20,6 +23,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -70,6 +74,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
 
@@ -85,58 +91,73 @@ fun CollapsibleCard(
         hazeState: HazeState? = null,
         content: @Composable () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val animationDuration = (300 / animationSpeed).toInt()
-    val cardShape = RoundedCornerShape(16.dp)
+        var isExpanded by remember { mutableStateOf(false) }
+        val animationDuration = (300 / animationSpeed).toInt()
+        val cardShape = RoundedCornerShape(16.dp)
 
-    val cardModifier =
-            if (isCardBlurEnabled &&
-                            hazeState != null &&
-                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            ) {
-                modifier.fillMaxWidth().hazeChild(state = hazeState, shape = cardShape)
-            } else {
-                modifier.fillMaxWidth()
-            }
-
-    Card(
-            modifier = cardModifier,
-            shape = cardShape,
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor =
-                                    MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-                    ),
-    ) {
-        Column {
-            Row(
-                    modifier =
-                            Modifier.clickable { isExpanded = !isExpanded }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TitleAndSummary(modifier = Modifier.weight(1f), title = title, summary = summary)
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
-            }
-            AnimatedVisibility(
-                    visible = isExpanded,
-                    enter =
-                            expandVertically(
-                                    animationSpec =
-                                            tween(animationDuration, easing = FastOutSlowInEasing)
-                            ) + fadeIn(animationSpec = tween(animationDuration)),
-                    exit =
-                            shrinkVertically(
-                                    animationSpec =
-                                            tween(animationDuration, easing = FastOutSlowInEasing)
-                            ) + fadeOut(animationSpec = tween(animationDuration))
-            ) {
-                Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
-                    content()
+        val cardModifier =
+                if (isCardBlurEnabled &&
+                                hazeState != null &&
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                ) {
+                        modifier.fillMaxWidth().hazeChild(state = hazeState, shape = cardShape)
+                } else {
+                        modifier.fillMaxWidth()
                 }
-            }
+
+        Card(
+                modifier = cardModifier,
+                shape = cardShape,
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor =
+                                        MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
+                        ),
+        ) {
+                Column {
+                        Row(
+                                modifier =
+                                        Modifier.clickable { isExpanded = !isExpanded }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                                TitleAndSummary(
+                                        modifier = Modifier.weight(1f),
+                                        title = title,
+                                        summary = summary
+                                )
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
+                        }
+                        AnimatedVisibility(
+                                visible = isExpanded,
+                                enter =
+                                        expandVertically(
+                                                animationSpec =
+                                                        tween(
+                                                                animationDuration,
+                                                                easing = FastOutSlowInEasing
+                                                        )
+                                        ) + fadeIn(animationSpec = tween(animationDuration)),
+                                exit =
+                                        shrinkVertically(
+                                                animationSpec =
+                                                        tween(
+                                                                animationDuration,
+                                                                easing = FastOutSlowInEasing
+                                                        )
+                                        ) + fadeOut(animationSpec = tween(animationDuration))
+                        ) {
+                                Column(
+                                        modifier =
+                                                Modifier.padding(
+                                                        start = 16.dp,
+                                                        end = 16.dp,
+                                                        bottom = 12.dp
+                                                )
+                                ) { content() }
+                        }
+                }
         }
-    }
 }
 
 @Composable
@@ -149,31 +170,31 @@ fun CombinedCard(
         hazeState: HazeState? = null,
         content: @Composable () -> Unit
 ) {
-    val cardShape = RoundedCornerShape(16.dp)
-    val cardModifier =
-            if (isCardBlurEnabled &&
-                            hazeState != null &&
-                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            ) {
-                modifier.fillMaxWidth().hazeChild(state = hazeState, shape = cardShape)
-            } else {
-                modifier.fillMaxWidth()
-            }
-    Card(
-            modifier = cardModifier,
-            shape = cardShape,
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor =
-                                    MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-                    ),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            TitleAndSummary(title = title, summary = summary)
-            Spacer(modifier = Modifier.height(12.dp))
-            content()
+        val cardShape = RoundedCornerShape(16.dp)
+        val cardModifier =
+                if (isCardBlurEnabled &&
+                                hazeState != null &&
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                ) {
+                        modifier.fillMaxWidth().hazeChild(state = hazeState, shape = cardShape)
+                } else {
+                        modifier.fillMaxWidth()
+                }
+        Card(
+                modifier = cardModifier,
+                shape = cardShape,
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor =
+                                        MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
+                        ),
+        ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                        TitleAndSummary(title = title, summary = summary)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        content()
+                }
         }
-    }
 }
 
 /**
@@ -196,60 +217,60 @@ fun ScalingActionButton(
         animationSpeed: Float = 1.0f,
         contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 4.dp)
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val animationDuration = (150 / animationSpeed).toInt()
-    val scale by
-            animateFloatAsState(
-                    targetValue = if (isPressed) 0.95f else 1f,
-                    label = "buttonScale",
-                    animationSpec = tween(durationMillis = animationDuration)
-            )
-
-    val backgroundBrush =
-            Brush.horizontalGradient(
-                    colors =
-                            listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.tertiary,
-                            )
-            )
-    val buttonShape = RoundedCornerShape(100.dp)
-
-    val buttonModifier = modifier.scale(scale).background(backgroundBrush, shape = buttonShape)
-
-    Button(
-            onClick = onClick,
-            modifier = buttonModifier,
-            enabled = enabled,
-            interactionSource = interactionSource,
-            contentPadding = contentPadding,
-            colors =
-                    ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-            elevation =
-                    ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp
-                    ),
-            shape = buttonShape
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            icon?.let {
-                Icon(
-                        imageVector = it,
-                        contentDescription = null, // Decorative icon
-                        modifier = Modifier.size(24.dp)
+        val interactionSource = remember { MutableInteractionSource() }
+        val isPressed by interactionSource.collectIsPressedAsState()
+        val animationDuration = (150 / animationSpeed).toInt()
+        val scale by
+                animateFloatAsState(
+                        targetValue = if (isPressed) 0.95f else 1f,
+                        label = "buttonScale",
+                        animationSpec = tween(durationMillis = animationDuration)
                 )
-                if (text != null) {
-                    Spacer(Modifier.size(8.dp))
+
+        val backgroundBrush =
+                Brush.horizontalGradient(
+                        colors =
+                                listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary,
+                                )
+                )
+        val buttonShape = RoundedCornerShape(100.dp)
+
+        val buttonModifier = modifier.scale(scale).background(backgroundBrush, shape = buttonShape)
+
+        Button(
+                onClick = onClick,
+                modifier = buttonModifier,
+                enabled = enabled,
+                interactionSource = interactionSource,
+                contentPadding = contentPadding,
+                colors =
+                        ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                elevation =
+                        ButtonDefaults.buttonElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 0.dp
+                        ),
+                shape = buttonShape
+        ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                        icon?.let {
+                                Icon(
+                                        imageVector = it,
+                                        contentDescription = null, // Decorative icon
+                                        modifier = Modifier.size(24.dp)
+                                )
+                                if (text != null) {
+                                        Spacer(Modifier.size(8.dp))
+                                }
+                        }
+                        text?.let { Text(it) }
                 }
-            }
-            text?.let { Text(it) }
         }
-    }
 }
 
 /**
@@ -261,17 +282,17 @@ fun ScalingActionButton(
  */
 @Composable
 fun TitleAndSummary(title: String, summary: String?, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(text = title, style = MaterialTheme.typography.titleSmall)
-        summary?.let {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Column(modifier = modifier.fillMaxWidth()) {
+                Text(text = title, style = MaterialTheme.typography.titleSmall)
+                summary?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                                text = it,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                }
         }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -284,48 +305,50 @@ fun <T> SegmentedNavigationBar(
         pages: List<T>,
         getTitle: (T) -> String
 ) {
-    Row(
-            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier =
-                        Modifier.glow(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        cornerRadius = 16.dp
-                                )
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                        Brush.horizontalGradient(
-                                                colors =
-                                                        listOf(
-                                                                MaterialTheme.colorScheme.primary,
-                                                                MaterialTheme.colorScheme.tertiary,
-                                                        )
-                                        )
-                                )
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        PrimaryTabRow(
-                selectedTabIndex = pages.indexOf(selectedPage),
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)),
-                divider = {},
+        Row(
+                modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
         ) {
-            pages.forEach { page ->
-                Tab(
-                        modifier = Modifier.height(40.dp),
-                        selected = selectedPage == page,
-                        onClick = { onPageSelected(page) },
-                        text = { Text(text = getTitle(page)) }
+                Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier =
+                                Modifier.glow(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                cornerRadius = 16.dp
+                                        )
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                                Brush.horizontalGradient(
+                                                        colors =
+                                                                listOf(
+                                                                        MaterialTheme.colorScheme
+                                                                                .primary,
+                                                                        MaterialTheme.colorScheme
+                                                                                .tertiary,
+                                                                )
+                                                )
+                                        )
+                                        .padding(horizontal = 16.dp, vertical = 4.dp)
                 )
-            }
+                Spacer(modifier = Modifier.width(16.dp))
+                PrimaryTabRow(
+                        selectedTabIndex = pages.indexOf(selectedPage),
+                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)),
+                        divider = {},
+                ) {
+                        pages.forEach { page ->
+                                Tab(
+                                        modifier = Modifier.height(40.dp),
+                                        selected = selectedPage == page,
+                                        onClick = { onPageSelected(page) },
+                                        text = { Text(text = getTitle(page)) }
+                                )
+                        }
+                }
         }
-    }
 }
 
 @Composable
@@ -335,16 +358,19 @@ fun SubPageNavigationBar(
         onBack: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
-        IconButton(onClick = onBack) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
+                IconButton(onClick = onBack) {
+                        Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                        )
+                }
+                Text(text = title, style = MaterialTheme.typography.titleLarge)
+                if (description != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = description, style = MaterialTheme.typography.bodyMedium)
+                }
         }
-        Text(text = title, style = MaterialTheme.typography.titleLarge)
-        if (description != null) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = description, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -355,18 +381,18 @@ fun StyledFilterChip(
         label: @Composable () -> Unit,
         modifier: Modifier = Modifier
 ) {
-    FilterChip(
-            selected = selected,
-            onClick = onClick,
-            label = label,
-            modifier = modifier,
-            shape = RoundedCornerShape(16.dp),
-            colors =
-                    FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                    )
-    )
+        FilterChip(
+                selected = selected,
+                onClick = onClick,
+                label = label,
+                modifier = modifier,
+                shape = RoundedCornerShape(16.dp),
+                colors =
+                        FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
+        )
 }
 
 /**
@@ -383,28 +409,28 @@ fun Modifier.glow(
         blurRadius: Dp = 12.dp,
         enabled: Boolean = true
 ): Modifier = composed {
-    if (!enabled) return@composed this
+        if (!enabled) return@composed this
 
-    val shadowColor = color.copy(alpha = 0.7f).toArgb()
-    val transparent = color.copy(alpha = 0f).toArgb()
+        val shadowColor = color.copy(alpha = 0.7f).toArgb()
+        val transparent = color.copy(alpha = 0f).toArgb()
 
-    this.drawBehind {
-        this.drawIntoCanvas {
-            val paint = Paint()
-            val frameworkPaint = paint.asFrameworkPaint()
-            frameworkPaint.color = transparent
-            frameworkPaint.setShadowLayer(blurRadius.toPx(), 0f, 0f, shadowColor)
-            it.drawRoundRect(
-                    0f,
-                    0f,
-                    this.size.width,
-                    this.size.height,
-                    cornerRadius.toPx(),
-                    cornerRadius.toPx(),
-                    paint
-            )
+        this.drawBehind {
+                this.drawIntoCanvas {
+                        val paint = Paint()
+                        val frameworkPaint = paint.asFrameworkPaint()
+                        frameworkPaint.color = transparent
+                        frameworkPaint.setShadowLayer(blurRadius.toPx(), 0f, 0f, shadowColor)
+                        it.drawRoundRect(
+                                0f,
+                                0f,
+                                this.size.width,
+                                this.size.height,
+                                cornerRadius.toPx(),
+                                cornerRadius.toPx(),
+                                paint
+                        )
+                }
         }
-    }
 }
 
 /**
@@ -421,26 +447,28 @@ fun Modifier.glow(
  */
 @OptIn(ExperimentalFoundationApi::class)
 fun Modifier.animatedAppearance(index: Int, animationSpeed: Float): Modifier = composed {
-    var animated by remember { mutableStateOf(false) }
-    val animationDuration = (300 / animationSpeed).toInt()
-    val delay = (60 * index / animationSpeed).toInt()
+        var animated by remember { mutableStateOf(false) }
+        val animationDuration = (300 / animationSpeed).toInt()
+        val delay = (60 * index / animationSpeed).toInt()
 
-    val alpha by
-            animateFloatAsState(
-                    targetValue = if (animated) 1f else 0f,
-                    animationSpec = tween(durationMillis = animationDuration, delayMillis = delay),
-                    label = "alpha"
-            )
-    val scale by
-            animateFloatAsState(
-                    targetValue = if (animated) 1f else 0.95f,
-                    animationSpec = tween(durationMillis = animationDuration, delayMillis = delay),
-                    label = "scale"
-            )
+        val alpha by
+                animateFloatAsState(
+                        targetValue = if (animated) 1f else 0f,
+                        animationSpec =
+                                tween(durationMillis = animationDuration, delayMillis = delay),
+                        label = "alpha"
+                )
+        val scale by
+                animateFloatAsState(
+                        targetValue = if (animated) 1f else 0.95f,
+                        animationSpec =
+                                tween(durationMillis = animationDuration, delayMillis = delay),
+                        label = "scale"
+                )
 
-    LaunchedEffect(Unit) { animated = true }
+        LaunchedEffect(Unit) { animated = true }
 
-    this.graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale)
+        this.graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale)
 }
 
 /**
@@ -454,55 +482,58 @@ fun Modifier.animatedAppearance(index: Int, animationSpeed: Float): Modifier = c
  * @param isPressed 卡片是否被按下
  */
 private enum class SelectableState {
-    Pressed,
-    Selected,
-    Idle
+        Pressed,
+        Selected,
+        Idle
 }
 
 fun Modifier.selectableCard(
         isSelected: Boolean,
         isPressed: Boolean,
 ): Modifier = composed {
-    val transition =
-            updateTransition(
-                    targetState =
-                            when {
-                                isPressed -> SelectableState.Pressed
-                                isSelected -> SelectableState.Selected
-                                else -> SelectableState.Idle
-                            },
-                    label = "selectableCard-transition"
-            )
+        val transition =
+                updateTransition(
+                        targetState =
+                                when {
+                                        isPressed -> SelectableState.Pressed
+                                        isSelected -> SelectableState.Selected
+                                        else -> SelectableState.Idle
+                                },
+                        label = "selectableCard-transition"
+                )
 
-    val scale by
-            transition.animateFloat(
-                    transitionSpec = {
-                        when {
-                            // 按下
-                            SelectableState.Idle isTransitioningTo SelectableState.Pressed ||
-                                    SelectableState.Selected isTransitioningTo
-                                            SelectableState.Pressed -> tween(durationMillis = 100)
-                            // 弹回
-                            else ->
-                                    spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessLow
-                                    )
+        val scale by
+                transition.animateFloat(
+                        transitionSpec = {
+                                when {
+                                        // 按下
+                                        SelectableState.Idle isTransitioningTo
+                                                SelectableState.Pressed ||
+                                                SelectableState.Selected isTransitioningTo
+                                                        SelectableState.Pressed ->
+                                                tween(durationMillis = 100)
+                                        // 弹回
+                                        else ->
+                                                spring(
+                                                        dampingRatio =
+                                                                Spring.DampingRatioMediumBouncy,
+                                                        stiffness = Spring.StiffnessLow
+                                                )
+                                }
+                        },
+                        label = "selectableCard-scale"
+                ) { state ->
+                        when (state) {
+                                SelectableState.Pressed -> 0.97f
+                                SelectableState.Selected -> 1.03f
+                                SelectableState.Idle -> 1f
                         }
-                    },
-                    label = "selectableCard-scale"
-            ) { state ->
-                when (state) {
-                    SelectableState.Pressed -> 0.97f
-                    SelectableState.Selected -> 1.03f
-                    SelectableState.Idle -> 1f
                 }
-            }
 
-    this.graphicsLayer {
-        scaleX = scale
-        scaleY = scale
-    }
+        this.graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+        }
 }
 
 @Composable
@@ -512,47 +543,200 @@ fun SearchTextField(
         hint: String,
         modifier: Modifier = Modifier,
 ) {
-    BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = modifier.fillMaxSize(),
-            textStyle =
-                    MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface
-                    ),
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                Row(
-                        modifier =
-                                Modifier.background(
-                                                MaterialTheme.colorScheme.surfaceVariant.copy(
-                                                        alpha = 0.6f
-                                                ),
-                                                RoundedCornerShape(22.dp)
-                                        )
-                                        .padding(horizontal = 8.dp)
-                                        .fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                            Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Box(
-                            modifier = Modifier.padding(start = 4.dp).weight(1f),
-                            contentAlignment = Alignment.CenterStart
-                    ) {
-                        if (value.isEmpty()) {
-                            Text(
-                                    hint,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+        BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = modifier.fillMaxSize(),
+                textStyle =
+                        MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface
+                        ),
+                singleLine = true,
+                decorationBox = { innerTextField ->
+                        Row(
+                                modifier =
+                                        Modifier.background(
+                                                        MaterialTheme.colorScheme.surfaceVariant
+                                                                .copy(alpha = 0.6f),
+                                                        RoundedCornerShape(22.dp)
+                                                )
+                                                .padding(horizontal = 8.dp)
+                                                .fillMaxSize(),
+                                verticalAlignment = Alignment.CenterVertically
+                        ) {
+                                Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = "Search",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Box(
+                                        modifier = Modifier.padding(start = 4.dp).weight(1f),
+                                        contentAlignment = Alignment.CenterStart
+                                ) {
+                                        if (value.isEmpty()) {
+                                                Text(
+                                                        hint,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .onSurfaceVariant
+                                                )
+                                        }
+                                        innerTextField()
+                                }
                         }
-                        innerTextField()
-                    }
                 }
-            }
-    )
+        )
+}
+
+/**
+ * 一个带背景的文字标签
+ *
+ * @param title 标签文本
+ * @param icon 标签图标，默认为空
+ * @param backgroundColor 背景颜色，默认为主题色
+ * @param modifier 修饰符
+ */
+@Composable
+fun BackgroundTextTag(
+        title: String,
+        icon: ImageVector? = null,
+        backgroundColor: Color = MaterialTheme.colorScheme.primary,
+        modifier: Modifier = Modifier
+) {
+        Row(
+                modifier =
+                        modifier.clip(RoundedCornerShape(16.dp))
+                                .background(backgroundColor)
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+        ) {
+                if (icon != null) {
+                        Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint =
+                                        if (backgroundColor == MaterialTheme.colorScheme.primary)
+                                                MaterialTheme.colorScheme.onPrimary
+                                        else MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelMedium,
+                        color =
+                                if (backgroundColor == MaterialTheme.colorScheme.primary)
+                                        MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                )
+        }
+}
+
+/**
+ * 一个带标题的分割线
+ *
+ * @param title 标题文本
+ * @param modifier 修饰符
+ */
+@Composable
+fun TitledDivider(title: String, modifier: Modifier = Modifier) {
+        Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(
+                        modifier =
+                                Modifier.weight(1f)
+                                        .height(2.dp)
+                                        .clip(RoundedCornerShape(1.dp))
+                                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+        }
+}
+
+/**
+ * 一个弹出式的容器卡片
+ *
+ * @param visible 是否可见
+ * @param onDismissRequest 关闭请求回调
+ * @param modifier 修饰符
+ * @param alignment 对齐方式
+ * @param content 卡片内容
+ */
+@Composable
+fun PopupContainer(
+        visible: Boolean,
+        onDismissRequest: () -> Unit,
+        modifier: Modifier = Modifier,
+        alignment: Alignment = Alignment.Center,
+        content: @Composable () -> Unit
+) {
+        val visibleState = remember { MutableTransitionState(false) }
+
+        LaunchedEffect(visible) { visibleState.targetState = visible }
+
+        if (visibleState.currentState || visibleState.targetState) {
+                Popup(
+                        onDismissRequest = onDismissRequest,
+                        properties = PopupProperties(focusable = true),
+                        alignment = alignment
+                ) {
+                        AnimatedVisibility(
+                                visibleState = visibleState,
+                                enter =
+                                        fadeIn(
+                                                animationSpec =
+                                                        spring(
+                                                                stiffness =
+                                                                        Spring.StiffnessMediumLow
+                                                        )
+                                        ) +
+                                                scaleIn(
+                                                        animationSpec =
+                                                                spring(
+                                                                        dampingRatio =
+                                                                                Spring.DampingRatioMediumBouncy,
+                                                                        stiffness =
+                                                                                Spring.StiffnessLow
+                                                                ),
+                                                        initialScale = 0.8f
+                                                ),
+                                exit =
+                                        fadeOut(
+                                                animationSpec =
+                                                        spring(
+                                                                stiffness =
+                                                                        Spring.StiffnessMediumLow
+                                                        )
+                                        ) +
+                                                scaleOut(
+                                                        animationSpec =
+                                                                spring(
+                                                                        stiffness =
+                                                                                Spring.StiffnessMediumLow
+                                                                ),
+                                                        targetScale = 0.8f
+                                                )
+                        ) {
+                                Card(
+                                        modifier = modifier.padding(16.dp).width(IntrinsicSize.Max),
+                                        shape = RoundedCornerShape(16.dp),
+                                        elevation =
+                                                CardDefaults.cardElevation(defaultElevation = 8.dp),
+                                        colors =
+                                                CardDefaults.cardColors(
+                                                        containerColor =
+                                                                MaterialTheme.colorScheme.surface
+                                                )
+                                ) { content() }
+                        }
+                }
+        }
 }

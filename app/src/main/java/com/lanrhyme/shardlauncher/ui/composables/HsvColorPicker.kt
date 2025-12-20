@@ -165,7 +165,7 @@ fun HsvColorPicker(
                             isError = false,
                             interactionSource = interactionSource,
                             colors = OutlinedTextFieldDefaults.colors(),
-                            shape = OutlinedTextFieldDefaults.shape,
+                            shape = RoundedCornerShape(16.dp),
                         )
                     }
                 )
