@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,7 +46,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.model.BmclapiManifest
-import com.lanrhyme.shardlauncher.ui.LocalSettingsProvider
 import com.lanrhyme.shardlauncher.ui.components.CombinedCard
 import com.lanrhyme.shardlauncher.ui.components.SearchTextField
 import com.lanrhyme.shardlauncher.ui.components.StyledFilterChip
@@ -55,7 +53,13 @@ import dev.chrisbanes.haze.HazeState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun GameDownloadContent(navController: NavController, useBmclapi: Boolean, isCardBlurEnabled: Boolean, cardAlpha: Float, hazeState: HazeState) {
+fun GameDownloadContent(
+        navController: NavController,
+        useBmclapi: Boolean,
+        isCardBlurEnabled: Boolean,
+        cardAlpha: Float,
+        hazeState: HazeState
+) {
     val viewModel: GameDownloadViewModel = viewModel()
 
     val versions by viewModel.filteredVersions.collectAsState()
@@ -63,60 +67,49 @@ fun GameDownloadContent(navController: NavController, useBmclapi: Boolean, isCar
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadVersions(useBmclapi)
-    }
+    LaunchedEffect(Unit) { viewModel.loadVersions(useBmclapi) }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (isLoading && versions.isEmpty()) {
             CircularProgressIndicator()
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item { ->
                     CombinedCard(
-                        title = "版本筛选", 
-                        summary = null, 
-                        isCardBlurEnabled = isCardBlurEnabled, 
-                        cardAlpha = cardAlpha,
-                        hazeState = hazeState
+                            title = "版本筛选",
+                            summary = null,
+                            isCardBlurEnabled = isCardBlurEnabled,
+                            cardAlpha = cardAlpha,
+                            hazeState = hazeState
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(36.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.fillMaxWidth().height(36.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             VersionType.entries.forEach { versionType ->
                                 StyledFilterChip(
-                                    selected = versionType in selectedVersionTypes,
-                                    onClick = { viewModel.toggleVersionType(versionType) },
-                                    label = { Text(versionType.title) },
-                                    modifier = Modifier.fillMaxHeight()
+                                        selected = versionType in selectedVersionTypes,
+                                        onClick = { viewModel.toggleVersionType(versionType) },
+                                        label = { Text(versionType.title) },
+                                        modifier = Modifier.fillMaxHeight()
                                 )
                             }
                             SearchTextField(
-                                value = searchQuery,
-                                onValueChange = { viewModel.setSearchQuery(it) },
-                                hint = "搜索",
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.setSearchQuery(it) },
+                                    hint = "搜索",
+                                    modifier = Modifier.weight(1f).fillMaxHeight()
                             )
                             IconButton(
-                                onClick = { viewModel.loadVersions(useBmclapi, forceRefresh = true) },
-                                modifier = Modifier.fillMaxHeight()
-                            ) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                            }
+                                    onClick = {
+                                        viewModel.loadVersions(useBmclapi, forceRefresh = true)
+                                    },
+                                    modifier = Modifier.fillMaxHeight()
+                            ) { Icon(Icons.Default.Refresh, contentDescription = "Refresh") }
                         }
                     }
                 }
@@ -135,49 +128,52 @@ fun GameDownloadContent(navController: NavController, useBmclapi: Boolean, isCar
 @Composable
 fun LazyItemScope.VersionItem(version: BmclapiManifest.Version, onClick: () -> Unit) {
     var appeared by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        appeared = true
-    }
+    LaunchedEffect(Unit) { appeared = true }
 
-    val scale by animateFloatAsState(
-        targetValue = if (appeared) 1f else 0.9f,
-        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-        label = "scale"
-    )
+    val scale by
+            animateFloatAsState(
+                    targetValue = if (appeared) 1f else 0.9f,
+                    animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+                    label = "scale"
+            )
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                this.scaleX = scale
-                this.scaleY = scale
-            }
-            .clickable { onClick() },
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+            modifier =
+                    Modifier.fillMaxWidth()
+                            .graphicsLayer {
+                                this.scaleX = scale
+                                this.scaleY = scale
+                            }
+                            .clickable { onClick() },
+            shape = RoundedCornerShape(22.dp),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                    ),
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.img_minecraft),
-                contentDescription = "Minecraft",
-                modifier = Modifier.size(32.dp)
+                    painter = painterResource(id = R.drawable.img_minecraft),
+                    contentDescription = "Minecraft",
+                    modifier = Modifier.size(32.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = "Minecraft ${version.id}", style = MaterialTheme.typography.bodyLarge)
-                val versionTypeString = when (version.type) {
-                    "release" -> VersionType.Release.title
-                    "snapshot" -> VersionType.Snapshot.title
-                    "old_alpha", "old_beta" -> VersionType.Ancient.title
-                    else -> version.type
-                }
+                val versionTypeString =
+                        when (version.type) {
+                            "release" -> VersionType.Release.title
+                            "snapshot" -> VersionType.Snapshot.title
+                            "old_alpha", "old_beta" -> VersionType.Ancient.title
+                            else -> version.type
+                        }
                 Text(
-                    text = "$versionTypeString - ${version.releaseTime.substringBefore('T')}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "$versionTypeString - ${version.releaseTime.substringBefore('T')}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

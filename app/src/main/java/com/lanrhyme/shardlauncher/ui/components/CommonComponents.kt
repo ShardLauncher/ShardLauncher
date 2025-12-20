@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -74,55 +73,63 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CollapsibleCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    summary: String? = null,
-    animationSpeed: Float = 1.0f,
-    isCardBlurEnabled: Boolean = false,
-    cardAlpha: Float = 0.6f,
-    hazeState: HazeState? = null,
-    content: @Composable () -> Unit
+        modifier: Modifier = Modifier,
+        title: String,
+        summary: String? = null,
+        animationSpeed: Float = 1.0f,
+        isCardBlurEnabled: Boolean = false,
+        cardAlpha: Float = 0.6f,
+        hazeState: HazeState? = null,
+        content: @Composable () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val animationDuration = (300 / animationSpeed).toInt()
     val cardShape = RoundedCornerShape(16.dp)
 
-    val cardModifier = if (isCardBlurEnabled && hazeState != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        modifier
-            .fillMaxWidth()
-            .hazeChild(state = hazeState, shape = cardShape)
-    } else {
-        modifier
-            .fillMaxWidth()
-    }
+    val cardModifier =
+            if (isCardBlurEnabled &&
+                            hazeState != null &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            ) {
+                modifier.fillMaxWidth().hazeChild(state = hazeState, shape = cardShape)
+            } else {
+                modifier.fillMaxWidth()
+            }
 
     Card(
-        modifier = cardModifier,
-        shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardAlpha)),
+            modifier = cardModifier,
+            shape = cardShape,
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor =
+                                    MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
+                    ),
     ) {
         Column {
             Row(
-                modifier = Modifier
-                    .clickable { isExpanded = !isExpanded }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                            Modifier.clickable { isExpanded = !isExpanded }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
             ) {
-                TitleAndSummary(
-                    modifier = Modifier.weight(1f),
-                    title = title,
-                    summary = summary
-                )
+                TitleAndSummary(modifier = Modifier.weight(1f), title = title, summary = summary)
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
             }
             AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing)) + fadeIn(animationSpec = tween(animationDuration)),
-                exit = shrinkVertically(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing)) + fadeOut(animationSpec = tween(animationDuration))
+                    visible = isExpanded,
+                    enter =
+                            expandVertically(
+                                    animationSpec =
+                                            tween(animationDuration, easing = FastOutSlowInEasing)
+                            ) + fadeIn(animationSpec = tween(animationDuration)),
+                    exit =
+                            shrinkVertically(
+                                    animationSpec =
+                                            tween(animationDuration, easing = FastOutSlowInEasing)
+                            ) + fadeOut(animationSpec = tween(animationDuration))
             ) {
                 Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) {
                     content()
@@ -134,27 +141,32 @@ fun CollapsibleCard(
 
 @Composable
 fun CombinedCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    summary: String? = null,
-    isCardBlurEnabled: Boolean = false,
-    cardAlpha: Float = 0.6f,
-    hazeState: HazeState? = null,
-    content: @Composable () -> Unit
+        modifier: Modifier = Modifier,
+        title: String,
+        summary: String? = null,
+        isCardBlurEnabled: Boolean = false,
+        cardAlpha: Float = 0.6f,
+        hazeState: HazeState? = null,
+        content: @Composable () -> Unit
 ) {
     val cardShape = RoundedCornerShape(16.dp)
-    val cardModifier = if (isCardBlurEnabled && hazeState != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        modifier
-            .fillMaxWidth()
-            .hazeChild(state = hazeState, shape = cardShape)
-    } else {
-        modifier
-            .fillMaxWidth()
-    }
+    val cardModifier =
+            if (isCardBlurEnabled &&
+                            hazeState != null &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            ) {
+                modifier.fillMaxWidth().hazeChild(state = hazeState, shape = cardShape)
+            } else {
+                modifier.fillMaxWidth()
+            }
     Card(
-        modifier = cardModifier,
-        shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardAlpha)),
+            modifier = cardModifier,
+            shape = cardShape,
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor =
+                                    MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
+                    ),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             TitleAndSummary(title = title, summary = summary)
@@ -171,67 +183,71 @@ fun CombinedCard(
  * @param modifier 应用于按钮的修饰符
  * @param icon 在按钮中显示的图标
  * @param text 在按钮中显示的文本
- * @param enabled 控制按钮的启用状态  当为 `false` 时，此按钮将不可点击，并向用户显示为禁用状态
+ * @param enabled 控制按钮的启用状态 当为 `false` 时，此按钮将不可点击，并向用户显示为禁用状态
  * @param animationSpeed 缩放动画的速度
  */
 @Composable
 fun ScalingActionButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
-    text: String? = null,
-    enabled: Boolean = true,
-    animationSpeed: Float = 1.0f,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 4.dp)
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier,
+        icon: ImageVector? = null,
+        text: String? = null,
+        enabled: Boolean = true,
+        animationSpeed: Float = 1.0f,
+        contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 4.dp)
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val animationDuration = (150 / animationSpeed).toInt()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        label = "buttonScale",
-        animationSpec = tween(durationMillis = animationDuration)
-    )
+    val scale by
+            animateFloatAsState(
+                    targetValue = if (isPressed) 0.95f else 1f,
+                    label = "buttonScale",
+                    animationSpec = tween(durationMillis = animationDuration)
+            )
 
-    val backgroundBrush = Brush.horizontalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.tertiary,
-        )
-    )
+    val backgroundBrush =
+            Brush.horizontalGradient(
+                    colors =
+                            listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary,
+                            )
+            )
     val buttonShape = RoundedCornerShape(100.dp)
 
-    val buttonModifier = modifier
-        .scale(scale)
-        .background(backgroundBrush, shape = buttonShape)
+    val buttonModifier = modifier.scale(scale).background(backgroundBrush, shape = buttonShape)
 
     Button(
-        onClick = onClick,
-        modifier = buttonModifier,
-        enabled = enabled,
-        interactionSource = interactionSource,
-        contentPadding = contentPadding,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
-        shape = buttonShape
+            onClick = onClick,
+            modifier = buttonModifier,
+            enabled = enabled,
+            interactionSource = interactionSource,
+            contentPadding = contentPadding,
+            colors =
+                    ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+            elevation =
+                    ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp
+                    ),
+            shape = buttonShape
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             icon?.let {
                 Icon(
-                    imageVector = it,
-                    contentDescription = null, // Decorative icon
-                    modifier = Modifier.size(24.dp)
+                        imageVector = it,
+                        contentDescription = null, // Decorative icon
+                        modifier = Modifier.size(24.dp)
                 )
                 if (text != null) {
                     Spacer(Modifier.size(8.dp))
                 }
             }
-            text?.let {
-                Text(it)
-            }
+            text?.let { Text(it) }
         }
     }
 }
@@ -244,22 +260,15 @@ fun ScalingActionButton(
  * @param modifier 应用于布局的修饰符
  */
 @Composable
-fun TitleAndSummary(
-    title: String,
-    summary: String?,
-    modifier: Modifier = Modifier
-) {
+fun TitleAndSummary(title: String, summary: String?, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall
-        )
+        Text(text = title, style = MaterialTheme.typography.titleSmall)
         summary?.let {
             Spacer(Modifier.height(4.dp))
             Text(
-                text = it,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -268,54 +277,51 @@ fun TitleAndSummary(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> SegmentedNavigationBar(
-    modifier: Modifier = Modifier,
-    title: String,
-    selectedPage: T,
-    onPageSelected: (T) -> Unit,
-    pages: List<T>,
-    getTitle: (T) -> String
+        modifier: Modifier = Modifier,
+        title: String,
+        selectedPage: T,
+        onPageSelected: (T) -> Unit,
+        pages: List<T>,
+        getTitle: (T) -> String
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier
-                .glow(
-                    color = MaterialTheme.colorScheme.primary,
-                    cornerRadius = 16.dp
-                )
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.tertiary,
-                        )
-                    )
-                )
-                .padding(horizontal = 16.dp, vertical = 4.dp)
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier =
+                        Modifier.glow(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        cornerRadius = 16.dp
+                                )
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                        Brush.horizontalGradient(
+                                                colors =
+                                                        listOf(
+                                                                MaterialTheme.colorScheme.primary,
+                                                                MaterialTheme.colorScheme.tertiary,
+                                                        )
+                                        )
+                                )
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         PrimaryTabRow(
-            selectedTabIndex = pages.indexOf(selectedPage),
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(16.dp)),
-            divider = { },
+                selectedTabIndex = pages.indexOf(selectedPage),
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)),
+                divider = {},
         ) {
             pages.forEach { page ->
                 Tab(
-                    modifier = Modifier.height(40.dp),
-                    selected = selectedPage == page,
-                    onClick = { onPageSelected(page) },
-                    text = { Text(text = getTitle(page)) }
+                        modifier = Modifier.height(40.dp),
+                        selected = selectedPage == page,
+                        onClick = { onPageSelected(page) },
+                        text = { Text(text = getTitle(page)) }
                 )
             }
         }
@@ -324,17 +330,14 @@ fun <T> SegmentedNavigationBar(
 
 @Composable
 fun SubPageNavigationBar(
-    title: String = "返回",
-    description: String? = null,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
+        title: String = "返回",
+        description: String? = null,
+        onBack: () -> Unit,
+        modifier: Modifier = Modifier
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
         IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
+            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
         }
         Text(text = title, style = MaterialTheme.typography.titleLarge)
         if (description != null) {
@@ -347,21 +350,22 @@ fun SubPageNavigationBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StyledFilterChip(
-    selected: Boolean,
-    onClick: () -> Unit,
-    label: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+        selected: Boolean,
+        onClick: () -> Unit,
+        label: @Composable () -> Unit,
+        modifier: Modifier = Modifier
 ) {
     FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = label,
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-        )
+            selected = selected,
+            onClick = onClick,
+            label = label,
+            modifier = modifier,
+            shape = RoundedCornerShape(16.dp),
+            colors =
+                    FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
     )
 }
 
@@ -374,10 +378,10 @@ fun StyledFilterChip(
  * @param enabled 切换发光效果的开或关
  */
 fun Modifier.glow(
-    color: Color,
-    cornerRadius: Dp = 0.dp,
-    blurRadius: Dp = 12.dp,
-    enabled: Boolean = true
+        color: Color,
+        cornerRadius: Dp = 0.dp,
+        blurRadius: Dp = 12.dp,
+        enabled: Boolean = true
 ): Modifier = composed {
     if (!enabled) return@composed this
 
@@ -389,20 +393,15 @@ fun Modifier.glow(
             val paint = Paint()
             val frameworkPaint = paint.asFrameworkPaint()
             frameworkPaint.color = transparent
-            frameworkPaint.setShadowLayer(
-                blurRadius.toPx(),
-                0f,
-                0f,
-                shadowColor
-            )
+            frameworkPaint.setShadowLayer(blurRadius.toPx(), 0f, 0f, shadowColor)
             it.drawRoundRect(
-                0f,
-                0f,
-                this.size.width,
-                this.size.height,
-                cornerRadius.toPx(),
-                cornerRadius.toPx(),
-                paint
+                    0f,
+                    0f,
+                    this.size.width,
+                    this.size.height,
+                    cornerRadius.toPx(),
+                    cornerRadius.toPx(),
+                    paint
             )
         }
     }
@@ -415,10 +414,9 @@ fun Modifier.glow(
  * 1. 透明度从 0 → 1（淡入）
  * 2. 缩放从 0.95 → 1（轻微放大）
  *
- * 当多条目（如 LazyColumn/LazyRow）使用时，通过 [index] 错开启动时刻，形成瀑布流效果
- * 单条目调用时 [index] 传 0 即可
+ * 当多条目（如 LazyColumn/LazyRow）使用时，通过 [index] 错开启动时刻，形成瀑布流效果 单条目调用时 [index] 传 0 即可
  *
- * @param index      条目在列表中的位置，用于计算延迟（越靠后越晚开始）,单条目场景直接传 0
+ * @param index 条目在列表中的位置，用于计算延迟（越靠后越晚开始）,单条目场景直接传 0
  * @param animationSpeed 整体速度系数
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -427,31 +425,26 @@ fun Modifier.animatedAppearance(index: Int, animationSpeed: Float): Modifier = c
     val animationDuration = (300 / animationSpeed).toInt()
     val delay = (60 * index / animationSpeed).toInt()
 
-    val alpha by animateFloatAsState(
-        targetValue = if (animated) 1f else 0f,
-        animationSpec = tween(durationMillis = animationDuration, delayMillis = delay),
-        label = "alpha"
-    )
-    val scale by animateFloatAsState(
-        targetValue = if (animated) 1f else 0.95f,
-        animationSpec = tween(durationMillis = animationDuration, delayMillis = delay),
-        label = "scale"
-    )
+    val alpha by
+            animateFloatAsState(
+                    targetValue = if (animated) 1f else 0f,
+                    animationSpec = tween(durationMillis = animationDuration, delayMillis = delay),
+                    label = "alpha"
+            )
+    val scale by
+            animateFloatAsState(
+                    targetValue = if (animated) 1f else 0.95f,
+                    animationSpec = tween(durationMillis = animationDuration, delayMillis = delay),
+                    label = "scale"
+            )
 
-    LaunchedEffect(Unit) {
-        animated = true
-    }
+    LaunchedEffect(Unit) { animated = true }
 
-    this.graphicsLayer(
-        alpha = alpha,
-        scaleX = scale,
-        scaleY = scale
-    )
+    this.graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale)
 }
 
 /**
- * 为可选择的卡片提供选择动画效果
- * 带有边框和弹动动画
+ * 为可选择的卡片提供选择动画效果 带有边框和弹动动画
  *
  * 使用时请在卡片调用处传入以下参数
  * ```
@@ -460,42 +453,51 @@ fun Modifier.animatedAppearance(index: Int, animationSpeed: Float): Modifier = c
  * @param isSelected 卡片是否被选中
  * @param isPressed 卡片是否被按下
  */
-private enum class SelectableState { Pressed, Selected, Idle }
-fun Modifier.selectableCard(
-    isSelected: Boolean,
-    isPressed: Boolean,
-) : Modifier = composed {
-    val transition = updateTransition(
-        targetState = when {
-            isPressed -> SelectableState.Pressed
-            isSelected -> SelectableState.Selected
-            else -> SelectableState.Idle
-        },
-        label = "selectableCard-transition"
-    )
+private enum class SelectableState {
+    Pressed,
+    Selected,
+    Idle
+}
 
-    val scale by transition.animateFloat(
-        transitionSpec = {
-            when {
-                // 按下
-                SelectableState.Idle isTransitioningTo SelectableState.Pressed || SelectableState.Selected isTransitioningTo SelectableState.Pressed ->
-                    tween(durationMillis = 100)
-                // 弹回
-                else ->
-                    spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
+fun Modifier.selectableCard(
+        isSelected: Boolean,
+        isPressed: Boolean,
+): Modifier = composed {
+    val transition =
+            updateTransition(
+                    targetState =
+                            when {
+                                isPressed -> SelectableState.Pressed
+                                isSelected -> SelectableState.Selected
+                                else -> SelectableState.Idle
+                            },
+                    label = "selectableCard-transition"
+            )
+
+    val scale by
+            transition.animateFloat(
+                    transitionSpec = {
+                        when {
+                            // 按下
+                            SelectableState.Idle isTransitioningTo SelectableState.Pressed ||
+                                    SelectableState.Selected isTransitioningTo
+                                            SelectableState.Pressed -> tween(durationMillis = 100)
+                            // 弹回
+                            else ->
+                                    spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessLow
+                                    )
+                        }
+                    },
+                    label = "selectableCard-scale"
+            ) { state ->
+                when (state) {
+                    SelectableState.Pressed -> 0.97f
+                    SelectableState.Selected -> 1.03f
+                    SelectableState.Idle -> 1f
+                }
             }
-        },
-        label = "selectableCard-scale"
-    ) { state ->
-        when (state) {
-            SelectableState.Pressed -> 0.97f
-            SelectableState.Selected -> 1.03f
-            SelectableState.Idle -> 1f
-        }
-    }
 
     this.graphicsLayer {
         scaleX = scale
@@ -505,52 +507,52 @@ fun Modifier.selectableCard(
 
 @Composable
 fun SearchTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    hint: String,
-    modifier: Modifier = Modifier,
+        value: String,
+        onValueChange: (String) -> Unit,
+        hint: String,
+        modifier: Modifier = Modifier,
 ) {
     BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier
-            .fillMaxSize(),
-        textStyle = MaterialTheme.typography.bodySmall.copy(
-            color = MaterialTheme.colorScheme.onSurface
-        ),
-        singleLine = true,
-        decorationBox = { innerTextField ->
-            Row(
-                modifier = Modifier
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        RoundedCornerShape(22.dp)
-                    )
-                    .padding(horizontal = 8.dp)
-                    .fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Box(
-                    modifier = Modifier
-                        .padding(start = 4.dp)
-                        .weight(1f),
-                    contentAlignment = Alignment.CenterStart
+            value = value,
+            onValueChange = onValueChange,
+            modifier = modifier.fillMaxSize(),
+            textStyle =
+                    MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                    ),
+            singleLine = true,
+            decorationBox = { innerTextField ->
+                Row(
+                        modifier =
+                                Modifier.background(
+                                                MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                        alpha = 0.6f
+                                                ),
+                                                RoundedCornerShape(22.dp)
+                                        )
+                                        .padding(horizontal = 8.dp)
+                                        .fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (value.isEmpty()) {
-                        Text(
-                            hint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Icon(
+                            Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Box(
+                            modifier = Modifier.padding(start = 4.dp).weight(1f),
+                            contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (value.isEmpty()) {
+                            Text(
+                                    hint,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        innerTextField()
                     }
-                    innerTextField()
                 }
             }
-        }
     )
 }

@@ -31,52 +31,54 @@ fun HomeAccountCard(account: Account) {
     val cardWidth = 120.dp
     val cardHeight = 160.dp
     Card(
-        modifier = Modifier
-            .width(cardWidth)
-            .height(cardHeight),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+            modifier = Modifier.width(cardWidth).height(cardHeight),
+            shape = RoundedCornerShape(22.dp),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                    ),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Avatar
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data("https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=avatar&overlay=true")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "Account Avatar",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(3f)
+                    model =
+                            ImageRequest.Builder(LocalContext.current)
+                                    .data(
+                                            "https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=avatar&overlay=true"
+                                    )
+                                    .crossfade(true)
+                                    .build(),
+                    contentDescription = "Account Avatar",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().weight(3f)
             )
 
             // Info Section
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 2.dp, vertical = 2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceEvenly // Distribute text evenly
+                    modifier =
+                            Modifier.fillMaxWidth()
+                                    .weight(1f)
+                                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly // Distribute text evenly
             ) {
                 Text(
-                    text = account.username,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                        text = account.username,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                 )
                 Text(
-                    text = account.getDisplayName(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                        text = account.getDisplayName(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                 )
             }
         }
