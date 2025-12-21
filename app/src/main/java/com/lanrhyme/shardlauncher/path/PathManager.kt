@@ -24,6 +24,8 @@ class PathManager {
         lateinit var DIR_LAUNCHER_LOGS: File
         lateinit var DIR_IMAGE_CACHE: File
         lateinit var DIR_CONTROL_LAYOUTS: File
+        var DIR_RUNTIME_MOD: File? = null
+        lateinit var DIR_NATIVE_LOGS: File
 
         lateinit var FILE_CRASH_REPORT: File
         lateinit var FILE_SETTINGS: File
@@ -58,6 +60,7 @@ class PathManager {
         }
 
         private fun createDirs() {
+            DIR_RUNTIME_MOD?.mkdirs()
             DIR_GAME.mkdirs()
             DIR_ACCOUNT_SKIN.mkdirs()
             DIR_MULTIRT.mkdirs()
@@ -69,6 +72,7 @@ class PathManager {
             DIR_CACHE_MOD_UPDATER.mkdirs()
             DIR_CACHE_APP_ICON.mkdirs()
             DIR_LAUNCHER_LOGS.mkdirs()
+            DIR_NATIVE_LOGS.mkdirs()
             DIR_IMAGE_CACHE.mkdirs()
             DIR_CONTROL_LAYOUTS.mkdirs()
         }

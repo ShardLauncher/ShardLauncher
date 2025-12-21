@@ -133,4 +133,11 @@ object GamePathManager {
             }
         }
     }
+
+    /**
+     * Get user home directory for Minecraft (used by Launcher)
+     */
+    fun getUserHome(): String {
+        return currentPath
+    }
 }
