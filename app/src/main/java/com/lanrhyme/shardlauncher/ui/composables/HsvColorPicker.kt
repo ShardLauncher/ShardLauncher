@@ -61,15 +61,6 @@ fun HsvColorPicker(
     // Remember the hue state. Initialize with the hue from the initial color.
     var hue by remember { mutableStateOf(h) }
 
-    // If the input color changes, update the internal hue,
-    // but only if the new color has saturation.
-    // This preserves the hue when the color becomes grayscale.
-    LaunchedEffect(h, saturation) {
-        if (saturation > 0) {
-            hue = h
-        }
-    }
-
     var hexInput by remember { mutableStateOf("") }
 
     LaunchedEffect(color) {
