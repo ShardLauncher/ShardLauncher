@@ -427,6 +427,34 @@ class SettingsRepository(context: Context) {
             saveProperties()
         }
 
+    // Generic get/set methods for settings units
+    fun getBoolean(key: String, default: Boolean): Boolean {
+        return properties.getProperty(key, default.toString()).toBoolean()
+    }
+
+    fun setBoolean(key: String, value: Boolean) {
+        properties.setProperty(key, value.toString())
+        saveProperties()
+    }
+
+    fun getInt(key: String, default: Int): Int {
+        return properties.getProperty(key, default.toString()).toIntOrNull() ?: default
+    }
+
+    fun setInt(key: String, value: Int) {
+        properties.setProperty(key, value.toString())
+        saveProperties()
+    }
+
+    fun getString(key: String, default: String): String {
+        return properties.getProperty(key, default)
+    }
+
+    fun setString(key: String, value: String) {
+        properties.setProperty(key, value)
+        saveProperties()
+    }
+
         companion object {
 
             private const val PREFS_NAME = "launcher_settings.properties"

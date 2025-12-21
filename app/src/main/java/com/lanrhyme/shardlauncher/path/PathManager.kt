@@ -49,6 +49,7 @@ class PathManager {
             DIR_CACHE_MOD_UPDATER = File(DIR_CACHE, "temp_mod_updater")
             DIR_CACHE_APP_ICON = File(DIR_CACHE, "app_icons")
             DIR_LAUNCHER_LOGS = File(DIR_FILES_EXTERNAL, "logs")
+            DIR_NATIVE_LOGS = File(DIR_FILES_EXTERNAL, "native_logs")
             DIR_IMAGE_CACHE = File(DIR_CACHE, "images")
             DIR_CONTROL_LAYOUTS = File(DIR_FILES_EXTERNAL, "control_layouts")
 

@@ -1,60 +1,104 @@
 /*
  * Shard Launcher
+ * Adapted from Zalith Launcher 2
  */
 
 package com.lanrhyme.shardlauncher.settings
 
-object AllSettings {
-    // RAM allocation in MB (default: 2048MB = 2GB)
-    private var ramAllocationValue = 2048
+/**
+ * Comprehensive game settings matching ZalithLauncher
+ * Includes renderer, game, and performance settings
+ */
+object AllSettings : SettingsRegistry() {
     
-    fun ramAllocation() = object {
-        fun getValue() = ramAllocationValue
-        fun setValue(value: Int) {
-            ramAllocationValue = value
-        }
-    }
-
-    // Resolution ratio (default: 100%)
-    private var resolutionRatioValue = 100
+    // === Renderer Settings ===
     
-    fun resolutionRatio() = object {
-        fun getValue() = resolutionRatioValue
-        fun setValue(value: Int) {
-            resolutionRatioValue = value
-        }
-    }
-
-    // Advanced settings with default false values
-    private var dumpShadersValue = false
-    fun dumpShaders() = object {
-        fun getValue() = dumpShadersValue
-        fun setValue(value: Boolean) {
-            dumpShadersValue = value
-        }
-    }
-
-    private var zinkPreferSystemDriverValue = false
-    fun zinkPreferSystemDriver() = object {
-        fun getValue() = zinkPreferSystemDriverValue
-        fun setValue(value: Boolean) {
-            zinkPreferSystemDriverValue = value
-        }
-    }
-
-    private var vsyncInZinkValue = false
-    fun vsyncInZink() = object {
-        fun getValue() = vsyncInZinkValue
-        fun setValue(value: Boolean) {
-            vsyncInZinkValue = value
-        }
-    }
-
-    private var bigCoreAffinityValue = false
-    fun bigCoreAffinity() = object {
-        fun getValue() = bigCoreAffinityValue
-        fun setValue(value: Boolean) {
-            bigCoreAffinityValue = value
-        }
-    }
+    /**
+     * Global renderer selection
+     */
+    val renderer = stringSetting("renderer", "")
+    
+    /**
+     * Vulkan driver selection
+     */
+    val vulkanDriver = stringSetting("vulkanDriver", "default")
+    
+    /**
+     * Resolution ratio (25-300%)
+     */
+    val resolutionRatio = intSetting("resolutionRatio", 100, 25..300)
+    
+    /**
+     * Use system Vulkan driver in Zink
+     */
+    val zinkPreferSystemDriver = boolSetting("zinkPreferSystemDriver", false)
+    
+    /**
+     * Enable VSync in Zink
+     */
+    val vsyncInZink = boolSetting("vsyncInZink", false)
+    
+    /**
+     * Force game to run on big cores
+     */
+    val bigCoreAffinity = boolSetting("bigCoreAffinity", false)
+    
+    /**
+     * Enable shader debugging/dump
+     */
+    val dumpShaders = boolSetting("dumpShaders", false)
+    
+    // === Game Settings ===
+    
+    /**
+     * Enable version isolation (.minecraft/versions/{version})
+     */
+    val versionIsolation = boolSetting("versionIsolation", true)
+    
+    /**
+     * Skip game integrity check
+     */
+    val skipGameIntegrityCheck = boolSetting("skipGameIntegrityCheck", false)
+    
+    /**
+     * Java runtime selection
+     */
+    val javaRuntime = stringSetting("javaRuntime", "")
+    
+    /**
+     * Auto-pick appropriate Java runtime
+     */
+    val autoPickJavaRuntime = boolSetting("autoPickJavaRuntime", true)
+    
+    /**
+     * RAM allocation in MB (-1 = use default)
+     */
+    val ramAllocation = intSetting("ramAllocation", 2048, min = 256)
+    
+    /**
+     * Custom JVM arguments
+     */
+    val jvmArgs = stringSetting("jvmArgs", "")
+    
+    // === Game Display Settings ===
+    
+    /**
+     * Game fullscreen mode
+     */
+    val gameFullScreen = boolSetting("gameFullScreen", true)
+    
+    /**
+     * Sustained performance mode (keeps CPU at high frequency)
+     */
+    val sustainedPerformance = boolSetting("sustainedPerformance", false)
+    
+    /**
+     * Automatically show log until game starts rendering
+     */
+    val showLogAutomatic = boolSetting("showLogAutomatic", false)
+    
+    /**
+     * Log text size (5-20sp)
+     */
+    val logTextSize = intSetting("logTextSize", 15, 5..20)
 }

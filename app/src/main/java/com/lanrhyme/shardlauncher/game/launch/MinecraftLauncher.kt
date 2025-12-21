@@ -13,11 +13,11 @@ import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.multirt.Runtime
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
 import com.lanrhyme.shardlauncher.game.path.GamePathManager
-import com.lanrhyme.shardlauncher.game.path.getGameHome
 import com.lanrhyme.shardlauncher.game.version.installed.VersionConfig
 import com.lanrhyme.shardlauncher.game.version.installed.VersionInfo
 import com.lanrhyme.shardlauncher.game.version.remote.MinecraftVersionJson
 import com.lanrhyme.shardlauncher.path.PathManager
+import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.GSON
 import java.io.File
 
@@ -39,7 +39,7 @@ class MinecraftLauncher(
 
     override suspend fun launch(): Int {
         // Setup runtime
-        runtime = getRuntime()
+        this.runtime = resolveRuntime()
         
         logName = "minecraft_${versionId}_${System.currentTimeMillis()}"
         val logFile = File(PathManager.DIR_NATIVE_LOGS, "$logName.log")
@@ -48,7 +48,7 @@ class MinecraftLauncher(
         LoggerBridge.appendTitle("Minecraft Launch")
         LoggerBridge.append("Version: $versionId")
         LoggerBridge.append("Account: ${account.username}")
-        LoggerBridge.append("Runtime: ${runtime.name}")
+        LoggerBridge.append("Runtime: ${this.runtime.name}")
 
         // Parse version.json
         versionJson = parseVersionJson()
@@ -75,7 +75,7 @@ class MinecraftLauncher(
         super.progressFinalUserArgs(args, customRam)
     }
 
-    private fun getRuntime(): Runtime {
+    private fun resolveRuntime(): Runtime {
         val runtimeName = versionConfig.javaRuntime.takeIf { it.isNotEmpty() }
             ?: detectDefaultRuntime()
         
@@ -120,7 +120,7 @@ class MinecraftLauncher(
     }
 
     private fun parseVersionJson(): MinecraftVersionJson {
-        val gameDir = File(getGameHome())
+        val gameDir = File(com.lanrhyme.shardlauncher.game.path.getGameHome())
         val versionJsonFile = File(gameDir, "versions/$versionId/$versionId.json")
         
         if (!versionJsonFile.exists()) {
@@ -142,7 +142,7 @@ class MinecraftLauncher(
     }
 
     private fun buildClassPath(): String {
-        val gameDir = File(getGameHome())
+        val gameDir = File(com.lanrhyme.shardlauncher.game.path.getGameHome())
         val librariesDir = File(gameDir, "libraries")
         val versionJar = File(gameDir, "versions/$versionId/$versionId.jar")
         
@@ -179,7 +179,7 @@ class MinecraftLauncher(
 
     private fun buildGameArguments(): List<String> {
         val args = mutableListOf<String>()
-        val gameDir = getGameHome()
+        val gameDir = com.lanrhyme.shardlauncher.game.path.getGameHome()
         
         // Legacy format
         versionJson.minecraftArguments?.let { minecraftArgs ->
@@ -213,7 +213,7 @@ class MinecraftLauncher(
             .replace("\${user_properties}", "{}")
     }
 
-    override fun chdir(): String = getGameHome()
+    override fun chdir(): String = com.lanrhyme.shardlauncher.game.path.getGameHome()
     override fun getLogName(): String = logName
     override fun exit() {
         LoggerBridge.append("Minecraft exiting...")

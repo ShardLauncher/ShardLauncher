@@ -37,7 +37,7 @@ import com.lanrhyme.shardlauncher.game.plugin.renderer.RendererPluginManager
 import com.lanrhyme.shardlauncher.info.InfoDistributor
 import com.lanrhyme.shardlauncher.path.LibPath
 import com.lanrhyme.shardlauncher.path.PathManager
-import com.lanrhyme.shardlauncher.setting.AllSettings
+import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.device.Architecture
 import com.lanrhyme.shardlauncher.utils.device.Architecture.ARCH_X86
 import com.lanrhyme.shardlauncher.utils.device.Architecture.is64BitsDevice
@@ -98,7 +98,7 @@ abstract class Launcher(
         )
     }
 
-    //�?suspend 函数，等�?JVM 的退出代�?
+    //伪 suspend 函数，等待 JVM 的退出代码
     private suspend fun launchJavaVM(
         context: Context,
         jvmArgs: List<String>,
