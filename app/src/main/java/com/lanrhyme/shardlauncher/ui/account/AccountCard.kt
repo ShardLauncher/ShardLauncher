@@ -119,8 +119,7 @@ fun AccountCard(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                                // Avatar
-                                // Avatar
+                                // 头像
                                 val context = LocalContext.current
                                 val localSkinFile =
                                         java.io.File(
@@ -131,7 +130,7 @@ fun AccountCard(
                                         if (localSkinFile.exists()) {
                                                 localSkinFile
                                         } else {
-                                                "https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=avatar&overlay=true"
+                                                "https://mineskin.eu/helm/${account.username}"
                                         }
 
                                 val imageRequest =
@@ -175,19 +174,7 @@ fun AccountCard(
                                                                                                 vertical =
                                                                                                         2.dp
                                                                                         )
-                                                                ) {
-                                                                        Text(
-                                                                                text = "离线",
-                                                                                style =
-                                                                                        MaterialTheme
-                                                                                                .typography
-                                                                                                .labelSmall,
-                                                                                color =
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .onSurfaceVariant
-                                                                        )
-                                                                }
+                                                                )
                                                         }
                                                 }
                                         }

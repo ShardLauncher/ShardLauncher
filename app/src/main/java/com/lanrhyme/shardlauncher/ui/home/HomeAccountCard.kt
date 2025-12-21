@@ -1,5 +1,6 @@
 package com.lanrhyme.shardlauncher.ui.home
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -22,21 +24,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.account.getDisplayName
+import com.lanrhyme.shardlauncher.ui.components.LocalCardLayoutConfig
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeEffect
 
 @Composable
 fun HomeAccountCard(account: Account) {
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
     val cardWidth = 120.dp
     val cardHeight = 160.dp
+    val cardModifier =
+        if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Modifier.width(cardWidth).height(cardHeight).hazeEffect(state = hazeState)
+        } else {
+            Modifier.width(cardWidth).height(cardHeight)
+        }
     Card(
-            modifier = Modifier.width(cardWidth).height(cardHeight),
-            shape = RoundedCornerShape(22.dp),
+            modifier = cardModifier,
+            shape = RoundedCornerShape(16.dp),
             colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-                    ),
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
+                ),
     ) {
         Column(
                 modifier = Modifier.fillMaxSize(),
@@ -47,9 +62,12 @@ fun HomeAccountCard(account: Account) {
                     model =
                             ImageRequest.Builder(LocalContext.current)
                                     .data(
-                                            "https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=avatar&overlay=true"
+                                            "https://mineskin.eu/helm/${account.username}"
                                     )
+                                    .error(R.drawable.img_steve)
                                     .crossfade(true)
+                                    .diskCachePolicy(CachePolicy.ENABLED)
+                                    .memoryCachePolicy(CachePolicy.ENABLED)
                                     .build(),
                     contentDescription = "Account Avatar",
                     contentScale = ContentScale.Crop,

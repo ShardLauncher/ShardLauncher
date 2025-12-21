@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -422,7 +423,8 @@ internal fun LauncherSettingsContent(
                                         expanded =
                                                 showDeleteBackgroundMenu &&
                                                         itemToDelete?.uri == item.uri,
-                                        onDismissRequest = { showDeleteBackgroundMenu = false }
+                                        onDismissRequest = { showDeleteBackgroundMenu = false },
+                                    modifier = Modifier.clip(RoundedCornerShape(16.dp))
                                 ) {
                                     DropdownMenuItem(
                                             text = { Text("删除") },
@@ -461,7 +463,7 @@ internal fun LauncherSettingsContent(
                     DropdownMenu(
                             expanded = showAddBackgroundMenu,
                             onDismissRequest = { showAddBackgroundMenu = false },
-                            modifier = Modifier.padding(all = 8.dp)
+                            modifier = Modifier.clip(RoundedCornerShape(16.dp))
                     ) {
                         DropdownMenuItem(
                                 text = { Text("添加图片") },
@@ -763,7 +765,7 @@ internal fun LauncherSettingsContent(
                     onIconClick = { showMusicPlayerDialog = true },
                     icon = {
                         Icon(
-                                imageVector = Icons.Default.Settings,
+                                imageVector = Icons.Default.MusicNote,
                                 contentDescription = "Music Player Settings",
                                 tint =
                                         if (isMusicPlayerEnabled) MaterialTheme.colorScheme.primary
@@ -787,7 +789,7 @@ internal fun LauncherSettingsContent(
             SwitchLayout(
                     modifier = Modifier.animatedAppearance(6, animationSpeed),
                     title = "卡片背景启用毛玻璃效果",
-                    summary = "[Beta](会出现渲染问题)对卡片背景启用毛玻璃效果(Android 12+)",
+                    summary = "对卡片背景启用毛玻璃效果(Android 12+)",
                     checked = isCardBlurEnabled,
                     onCheckedChange = { onIsCardBlurEnabledChange() },
                     enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -929,7 +931,7 @@ internal fun LauncherSettingsContent(
                     modifier = Modifier.animatedAppearance(10, animationSpeed),
                     value = uiScale,
                     onValueChange = onUiScaleChange,
-                    valueRange = 0.8f..1.5f,
+                    valueRange = 0.7f..1.1f,
                     steps = 13,
                     title = "UI 缩放",
                     summary = "调整启动器整体界面的大小",

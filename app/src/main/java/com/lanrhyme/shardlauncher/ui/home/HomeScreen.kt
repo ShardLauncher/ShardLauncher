@@ -54,6 +54,7 @@ import com.lanrhyme.shardlauncher.model.LatestVersionsResponse
 import com.lanrhyme.shardlauncher.model.VersionInfo
 import com.lanrhyme.shardlauncher.ui.account.AccountViewModel
 import com.lanrhyme.shardlauncher.ui.components.CombinedCard
+import com.lanrhyme.shardlauncher.ui.components.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.ScalingActionButton
 import com.lanrhyme.shardlauncher.ui.components.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.custom.XamlRenderer
@@ -83,6 +84,7 @@ fun HomeScreen(
     var latestVersions by remember { mutableStateOf<LatestVersionsResponse?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val selectedAccount by accountViewModel.selectedAccount.collectAsState()
+    val cardLayoutConfig = LocalCardLayoutConfig.current
 
     val animatedSpeed by
             animateFloatAsState(
@@ -202,8 +204,8 @@ fun HomeScreen(
                                             ?: Account(
                                                     uniqueUUID = "",
                                                     username = "选择账户档案",
-                                                    accountType = ACCOUNT_TYPE_LOCAL
-                                            )
+                                                    accountType = null
+                                            ),
                     )
                 }
 

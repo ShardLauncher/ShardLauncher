@@ -663,7 +663,7 @@ fun TitledDivider(title: String, modifier: Modifier = Modifier) {
 fun PopupContainer(
         visible: Boolean,
         onDismissRequest: () -> Unit,
-        modifier: Modifier = Modifier,
+        modifier: Modifier = Modifier.width(300.dp),
         alignment: Alignment = Alignment.Center,
         content: @Composable () -> Unit
 ) {
@@ -718,8 +718,7 @@ fun PopupContainer(
                                 val popupShape = RoundedCornerShape(16.dp)
                                 Card(
                                         modifier =
-                                                modifier.padding(16.dp)
-                                                        .then(
+                                                modifier.then(
                                                                 if (isCardBlurEnabled &&
                                                                                 Build.VERSION
                                                                                         .SDK_INT >=
@@ -734,8 +733,6 @@ fun PopupContainer(
                                                                 } else Modifier
                                                         ),
                                         shape = popupShape,
-                                        elevation =
-                                                CardDefaults.cardElevation(defaultElevation = 8.dp),
                                         colors =
                                                 CardDefaults.cardColors(
                                                         containerColor =
