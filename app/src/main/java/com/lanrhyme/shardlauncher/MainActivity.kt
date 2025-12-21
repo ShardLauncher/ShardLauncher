@@ -583,48 +583,39 @@ fun MainScreen(
                             }
                         }
                     } else {
-                        val brightnessValue = launcherBackgroundBrightness
-                        val colorMatrix =
-                                ColorMatrix(
-                                        floatArrayOf(
-                                                1f,
-                                                0f,
-                                                0f,
-                                                0f,
-                                                brightnessValue,
-                                                0f,
-                                                1f,
-                                                0f,
-                                                0f,
-                                                brightnessValue,
-                                                0f,
-                                                0f,
-                                                1f,
-                                                0f,
-                                                brightnessValue,
-                                                0f,
-                                                0f,
-                                                0f,
-                                                1f,
-                                                0f
-                                        )
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Image(
+                                    painter =
+                                            rememberAsyncImagePainter(Uri.parse(launcherBackgroundUri)),
+                                    contentDescription = "Launcher Background",
+                                    modifier =
+                                            Modifier.fillMaxSize()
+                                                    .blur(launcherBackgroundBlur.dp)
+                                                    .graphicsLayer {
+                                                        scaleX = parallaxScale
+                                                        scaleY = parallaxScale
+                                                        translationX = parallaxState.x
+                                                        translationY = parallaxState.y
+                                                    },
+                                    contentScale = ContentScale.Crop
+                            )
+                            val brightnessValue = launcherBackgroundBrightness
+                            if (brightnessValue != 0f) {
+                                val color = if (brightnessValue > 0) Color.White else Color.Black
+                                Box(
+                                        modifier =
+                                                Modifier.fillMaxSize()
+                                                        .background(
+                                                                color.copy(
+                                                                        alpha =
+                                                                                abs(
+                                                                                        brightnessValue
+                                                                                ) / 100f
+                                                                )
+                                                        )
                                 )
-                        Image(
-                                painter =
-                                        rememberAsyncImagePainter(Uri.parse(launcherBackgroundUri)),
-                                contentDescription = "Launcher Background",
-                                modifier =
-                                        Modifier.fillMaxSize()
-                                                .blur(launcherBackgroundBlur.dp)
-                                                .graphicsLayer {
-                                                    scaleX = parallaxScale
-                                                    scaleY = parallaxScale
-                                                    translationX = parallaxState.x
-                                                    translationY = parallaxState.y
-                                                },
-                                contentScale = ContentScale.Crop,
-                                colorFilter = ColorFilter.colorMatrix(colorMatrix)
-                        )
+                            }
+                        }
                     }
                 }
                 if (enableBackgroundLightEffect) {
