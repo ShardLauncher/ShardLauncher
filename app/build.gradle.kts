@@ -65,8 +65,8 @@ android {
         applicationId = "com.lanrhyme.shardlauncher"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1220
-        val vName = "a0.25.1220"
+        versionCode = 1221
+        val vName = "a0.25.1221 - NEBULA"
         versionName = vName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
