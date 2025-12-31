@@ -470,3 +470,54 @@ fun SliderLayout(
                 }
         }
 }
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun TextInputLayout(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    title: String,
+    summary: String? = null,
+    placeholder: String? = null,
+    enabled: Boolean = true,
+    shape: Shape = RoundedCornerShape(16.dp)
+) {
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
+    val cardModifier =
+        if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            modifier.fillMaxWidth()
+                .alpha(if (enabled) 1f else 0.5f)
+                .clip(shape)
+                .hazeEffect(state = hazeState)
+        } else {
+            modifier.fillMaxWidth().alpha(if (enabled) 1f else 0.5f)
+        }
+
+    Card(
+        modifier = cardModifier,
+        shape = shape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
+        ),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            TitleAndSummary(title = title, summary = summary)
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = placeholder?.let { { Text(it) } },
+                enabled = enabled,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+        }
+    }
+}

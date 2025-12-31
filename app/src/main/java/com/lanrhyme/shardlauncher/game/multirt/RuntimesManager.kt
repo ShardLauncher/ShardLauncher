@@ -79,11 +79,16 @@ object RuntimesManager {
     fun getRuntimes(): List<Runtime> {
         val runtimes = mutableListOf<Runtime>()
         val runtimesDir = PathManager.DIR_MULTIRT
+        
+        if (!runtimesDir.exists()) {
+            return emptyList()
+        }
+        
         runtimesDir.listFiles()?.forEach { file ->
             if (file.isDirectory) {
                 runtimes.add(getRuntime(file.name))
             }
         }
-        return runtimes
+        return runtimes.sortedBy { it.name }
     }
 }
