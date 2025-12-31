@@ -20,7 +20,8 @@ class DownloadTask(
     val isDownloadable: Boolean,
     private val onDownloadFailed: (DownloadTask) -> Unit = {},
     private val onFileDownloadedSize: (Long) -> Unit = {},
-    private val onFileDownloaded: () -> Unit = {}
+    private val onFileDownloaded: () -> Unit = {},
+    var fileDownloadedTask: (() -> Unit)? = null
 ) {
     suspend fun download() {
         //若目标文件存在，验证通过或关闭完整性验证时，跳过此次下载
@@ -60,6 +61,7 @@ class DownloadTask(
 
     private fun downloadedFile() {
         onFileDownloaded()
+        fileDownloadedTask?.invoke()
     }
 
     /**

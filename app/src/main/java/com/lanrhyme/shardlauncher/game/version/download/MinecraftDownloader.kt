@@ -7,6 +7,7 @@ import com.lanrhyme.shardlauncher.coroutine.Task
 import com.lanrhyme.shardlauncher.game.versioninfo.models.GameManifest
 import com.lanrhyme.shardlauncher.utils.file.formatFileSize
 import com.lanrhyme.shardlauncher.utils.logging.Logger.lError
+import com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo
 import com.lanrhyme.shardlauncher.utils.string.getMessageOrToString
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -149,6 +150,8 @@ class MinecraftDownloader(
     /**
      * 仅将 Jar、Json 文件安装到自定义版本目录中
      */
+    private val lastDownloadedSizes = mutableMapOf<File, Long>()
+
     private suspend fun progressNewDownloadTasks(
         clientName: String,
         clientVersionsDir: File
@@ -157,7 +160,7 @@ class MinecraftDownloader(
             downloader.createVersionJson(it, clientName, clientVersionsDir)
         } ?: throw IllegalArgumentException("Version not found: $version")
 
-        commonScheduleDownloads(gameManifest, clientName, clientVersionsDir)
+        commonScheduleDownloads(gameManifest, null, clientName, clientVersionsDir)
     }
 
     private suspend fun progressDownloadTasks(
@@ -165,28 +168,51 @@ class MinecraftDownloader(
         clientName: String,
         clientVersionsDir: File = downloader.versionsTarget
     ) {
-        if (gameManifest.inheritsFrom != null) { //优先尝试解析原版
-            val selectedVersion = downloader.findVersion(gameManifest.inheritsFrom)
-            selectedVersion?.let {
-                downloader.createVersionJson(it)
-            }?.let { gameManifest1 ->
-                progressDownloadTasks(gameManifest1, gameManifest.inheritsFrom)
-            }
+        val inheritsFrom = if (gameManifest.inheritsFrom != null) {
+            downloader.findVersion(gameManifest.inheritsFrom!!)
+        } else null
+
+        if (inheritsFrom != null) {
+            downloader.createVersionJson(inheritsFrom)
         }
 
-        commonScheduleDownloads(gameManifest, clientName, clientVersionsDir)
+        commonScheduleDownloads(gameManifest, inheritsFrom, clientName, clientVersionsDir)
     }
 
     private suspend fun commonScheduleDownloads(
         gameManifest: GameManifest,
+        inheritsFrom: com.lanrhyme.shardlauncher.game.versioninfo.models.VersionManifest.Version? = null,
         clientName: String,
         clientVersionsDir: File
     ) {
         val assetsIndex = downloader.createAssetIndex(downloader.assetIndexTarget, gameManifest)
 
-        downloader.loadClientJarDownload(gameManifest, clientName, clientVersionsDir) { urls, hash, targetFile, size ->
-            scheduleDownload(urls, hash, targetFile, size)
-        }
+        downloader.loadClientJarDownload(
+            gameManifest, 
+            clientName, 
+            clientVersionsDir,
+            scheduleDownload = { urls, hash, targetFile, size ->
+                scheduleDownload(urls, hash, targetFile, size)
+            },
+            scheduleCopy = { targetFile ->
+                inheritsFrom?.let { inherits ->
+                    val inheritsJar = downloader.getVersionJarPath(inherits.id)
+                    // Find the task that downloads/verifies the inheritsJar
+                    allDownloadTasks.find { it.targetFile.absolutePath == inheritsJar.absolutePath }?.let { task ->
+                        task.fileDownloadedTask = {
+                            if (!targetFile.exists() && inheritsJar.exists()) {
+                                try {
+                                    inheritsJar.copyTo(targetFile, overwrite = true)
+                                    com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Copied ${inheritsJar.absolutePath} to ${targetFile.absolutePath}")
+                                } catch (e: Exception) {
+                                    com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Failed to copy inherited jar", e)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
         downloader.loadAssetsDownload(assetsIndex) { urls, hash, targetFile, size ->
             scheduleDownload(urls, hash, targetFile, size)
         }
@@ -211,8 +237,11 @@ class MinecraftDownloader(
                 onDownloadFailed = { task ->
                     downloadFailedTasks.add(task)
                 },
-                onFileDownloadedSize = { downloadedSize ->
-                    downloadedFileSize.addAndGet(downloadedSize)
+                onFileDownloadedSize = { currentSize ->
+                    val lastSize = lastDownloadedSizes[targetFile] ?: 0L
+                    val delta = currentSize - lastSize
+                    downloadedFileSize.addAndGet(delta)
+                    lastDownloadedSizes[targetFile] = currentSize
                 },
                 onFileDownloaded = {
                     downloadedFileCount.incrementAndGet()

@@ -28,4 +28,11 @@ abstract class SettingsRegistry {
 
     protected fun stringSetting(key: String, def: String) =
         StringSettingUnit(key, def).also { settingsList.add(it) }
+
+    protected inline fun <reified E : Enum<E>> enumSetting(key: String, def: E) =
+        com.lanrhyme.shardlauncher.settings.unit.EnumSettingUnit(key, def, enumValues<E>()).also { settingsList.add(it) }
+
+    fun initialize(repo: com.lanrhyme.shardlauncher.data.SettingsRepository) {
+        settingsList.forEach { it.init(repo) }
+    }
 }

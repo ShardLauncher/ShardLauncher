@@ -9,6 +9,7 @@ import com.lanrhyme.shardlauncher.BuildConfig
 import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.account.isAuthServerAccount
 import com.lanrhyme.shardlauncher.game.account.isLocalAccount
+import com.lanrhyme.shardlauncher.game.account.isMicrosoftAccount
 import com.lanrhyme.shardlauncher.game.multirt.Runtime
 import com.lanrhyme.shardlauncher.game.path.getAssetsHome
 import com.lanrhyme.shardlauncher.game.path.getLibrariesHome
@@ -228,7 +229,7 @@ class LaunchArgs(
         varArgMap["game_assets"] = getAssetsHome()
         varArgMap["game_directory"] = gameDirPath.absolutePath
         varArgMap["user_properties"] = "{}"
-        varArgMap["user_type"] = "msa"
+        varArgMap["user_type"] = if (account.isMicrosoftAccount()) "msa" else "legacy"
         varArgMap["version_name"] = version.getVersionInfo()?.minecraftVersion ?: ""
 
         setLauncherInfo(varArgMap)

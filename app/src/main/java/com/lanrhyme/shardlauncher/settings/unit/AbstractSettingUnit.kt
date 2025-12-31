@@ -6,6 +6,8 @@
 package com.lanrhyme.shardlauncher.settings.unit
 
 import com.lanrhyme.shardlauncher.data.SettingsRepository
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * Abstract base class for all setting units
@@ -18,19 +20,21 @@ abstract class AbstractSettingUnit<T>(
     protected lateinit var repository: SettingsRepository
     private var initialized = false
 
+    var state by androidx.compose.runtime.mutableStateOf(defaultValue)
+        private set
+
     fun init(repo: SettingsRepository) {
         repository = repo
+        state = readValue()
         initialized = true
     }
 
-    fun getValue(): T {
-        checkInitialized()
-        return readValue()
-    }
+    fun getValue(): T = state
 
     fun setValue(value: T) {
         checkInitialized()
         writeValue(value)
+        state = value
     }
 
     protected abstract fun readValue(): T

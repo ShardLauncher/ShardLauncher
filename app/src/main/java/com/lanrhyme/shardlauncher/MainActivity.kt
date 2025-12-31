@@ -110,6 +110,7 @@ import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
 import com.lanrhyme.shardlauncher.ui.theme.ThemeColor
 import com.lanrhyme.shardlauncher.ui.version.VersionScreen
 import com.lanrhyme.shardlauncher.utils.rememberParallaxSensorHelper
+import com.lanrhyme.shardlauncher.components.ComponentUnpacker
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlin.math.abs
@@ -126,6 +127,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settingsRepository = SettingsRepository(applicationContext)
+        com.lanrhyme.shardlauncher.settings.AllSettings.initialize(settingsRepository)
         AccountsManager.initialize(applicationContext)
         com.lanrhyme.shardlauncher.game.path.GamePathManager.initialize(applicationContext)
         
@@ -197,12 +199,14 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(settingsRepository.getIsCardBlurEnabled())
             }
             var cardAlpha by remember { mutableStateOf(settingsRepository.getCardAlpha()) }
-            var useBmclapi by remember { mutableStateOf(settingsRepository.getUseBmclapi()) }
             var isMusicPlayerEnabled by remember {
                 mutableStateOf(settingsRepository.getIsMusicPlayerEnabled())
             }
 
             LaunchedEffect(Unit) {
+                // Unpack essential components in background
+                ComponentUnpacker.unpackAll(applicationContext)
+
                 val randomBackground = settingsRepository.getRandomBackground()
                 if (randomBackground) {
                     val backgroundItems = settingsRepository.getBackgroundItems()
@@ -398,16 +402,11 @@ class MainActivity : ComponentActivity() {
                                             settingsRepository.setIsCardBlurEnabled(newValue)
                                         },
                                         cardAlpha = cardAlpha,
-                                        onCardAlphaChange = {
-                                            cardAlpha = it
-                                            settingsRepository.setCardAlpha(it)
-                                        },
-                                        useBmclapi = useBmclapi,
-                                        onUseBmclapiChange = { newValue ->
-                                            useBmclapi = newValue
-                                            settingsRepository.setUseBmclapi(newValue)
-                                        },
-                                        isMusicPlayerEnabled = isMusicPlayerEnabled,
+                                         onCardAlphaChange = {
+                                             cardAlpha = it
+                                             settingsRepository.setCardAlpha(it)
+                                         },
+                                         isMusicPlayerEnabled = isMusicPlayerEnabled,
                                         onIsMusicPlayerEnabledChange = {
                                             val newValue = !isMusicPlayerEnabled
                                             isMusicPlayerEnabled = newValue
@@ -483,9 +482,7 @@ fun MainScreen(
         isCardBlurEnabled: Boolean,
         onIsCardBlurEnabledChange: () -> Unit,
         cardAlpha: Float,
-        onCardAlphaChange: (Float) -> Unit,
-        useBmclapi: Boolean,
-        onUseBmclapiChange: (Boolean) -> Unit,
+         onCardAlphaChange: (Float) -> Unit,
         isMusicPlayerEnabled: Boolean,
         onIsMusicPlayerEnabledChange: () -> Unit,
         accountViewModel: AccountViewModel,
@@ -686,10 +683,8 @@ fun MainScreen(
                         onUiScaleChange = onUiScaleChange,
                         isGlowEffectEnabled = isGlowEffectEnabled,
                         onIsGlowEffectEnabledChange = onIsGlowEffectEnabledChange,
-                        onIsCardBlurEnabledChange = onIsCardBlurEnabledChange,
+                         onIsCardBlurEnabledChange = onIsCardBlurEnabledChange,
                         onCardAlphaChange = onCardAlphaChange,
-                        useBmclapi = useBmclapi,
-                        onUseBmclapiChange = onUseBmclapiChange,
                         isMusicPlayerEnabled = isMusicPlayerEnabled,
                         onIsMusicPlayerEnabledChange = onIsMusicPlayerEnabledChange,
                         accountViewModel = accountViewModel,
@@ -767,8 +762,6 @@ fun MainContent(
         onIsGlowEffectEnabledChange: () -> Unit,
         onIsCardBlurEnabledChange: () -> Unit,
         onCardAlphaChange: (Float) -> Unit,
-        useBmclapi: Boolean,
-        onUseBmclapiChange: (Boolean) -> Unit,
         isMusicPlayerEnabled: Boolean,
         onIsMusicPlayerEnabledChange: () -> Unit,
         accountViewModel: AccountViewModel,
@@ -924,7 +917,7 @@ fun MainContent(
                 }
                 composable(Screen.Version.route) { VersionScreen(navController, animationSpeed) }
                 composable(Screen.Download.route) {
-                    DownloadScreen(navController = navController, useBmclapi = useBmclapi)
+                    DownloadScreen(navController = navController)
                 }
                 composable(
                         "version_detail/{versionId}",
@@ -970,7 +963,7 @@ fun MainContent(
                             onDarkColorSchemeChange = onDarkColorSchemeChange,
                             enableBackgroundLightEffect = enableBackgroundLightEffect,
                             onEnableBackgroundLightEffectChange =
-                                    onEnableBackgroundLightEffectChange,
+                                     onEnableBackgroundLightEffectChange,
                             enableBackgroundLightEffectCustomColor =
                                     enableBackgroundLightEffectCustomColor,
                             onEnableBackgroundLightEffectCustomColorChange =
@@ -1001,8 +994,6 @@ fun MainContent(
                             onIsGlowEffectEnabledChange = onIsGlowEffectEnabledChange,
                             onIsCardBlurEnabledChange = onIsCardBlurEnabledChange,
                             onCardAlphaChange = onCardAlphaChange,
-                            useBmclapi = useBmclapi,
-                            onUseBmclapiChange = onUseBmclapiChange,
                             isMusicPlayerEnabled = isMusicPlayerEnabled,
                             onIsMusicPlayerEnabledChange = onIsMusicPlayerEnabledChange,
                             musicPlayerViewModel = musicPlayerViewModel

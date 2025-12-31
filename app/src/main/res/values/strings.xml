@@ -26,4 +26,8 @@
     <string name="generic_follow_global">Follow Global Settings</string>
     <string name="generic_enable">Enabled</string>
     <string name="generic_disable">Disabled</string>
+
+    <string name="game_downloader_download_index">正在下载索引文件…</string>
+    <string name="game_downloader_prepare_download">正在准备下载…</string>
+    <string name="game_downloader_download_files">正在下载游戏文件 (%1$d/%2$d)</string>
 </resources>

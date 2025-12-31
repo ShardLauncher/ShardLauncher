@@ -43,14 +43,7 @@ class GameLauncher(
     private var runtime: Runtime? = null
     private var offlinePort: Int = 0
 
-    override fun launch() {
-        // Run in a background thread or coroutine if needed, but Launcher base handles it
-        activity.runOnUiThread {
-             // In a real app, this might show a loading screen
-        }
-    }
-
-    suspend fun prepareAndLaunch(): Int {
+    override suspend fun launch(): Int {
         // Initialize renderer if needed
         if (!Renderers.isCurrentRendererValid()) {
             Renderers.setCurrentRenderer(activity, version.getRenderer())
@@ -62,7 +55,7 @@ class GameLauncher(
         // Get current account
         val currentAccount = AccountsManager.currentAccountFlow.value!!
         val account = if (version.offlineAccountLogin) {
-            currentAccount.copy(accountType = "local")
+            currentAccount.copy(accountType = "离线登录")
         } else {
             currentAccount
         }
@@ -117,8 +110,7 @@ class GameLauncher(
 
         val finalArgs = progressFinalUserArgs(launchArgs + parseJavaArguments(customArgs))
 
-        launchJvm(finalArgs.toTypedArray(), ldLibraryPath, env)
-        return 0
+        return launchJvm(finalArgs.toTypedArray(), ldLibraryPath, env)
     }
 
     override fun chdir() {

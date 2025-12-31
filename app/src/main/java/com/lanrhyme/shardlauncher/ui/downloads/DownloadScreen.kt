@@ -12,7 +12,7 @@ import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.ui.components.SegmentedNavigationBar
 
 @Composable
-fun DownloadScreen(navController: NavController, useBmclapi: Boolean) {
+fun DownloadScreen(navController: NavController) {
     var selectedPage by remember { mutableStateOf(DownloadPage.Game) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -25,7 +25,7 @@ fun DownloadScreen(navController: NavController, useBmclapi: Boolean) {
         )
 
         when (selectedPage) {
-            DownloadPage.Game -> GameDownloadContent(navController, useBmclapi = useBmclapi)
+            DownloadPage.Game -> GameDownloadContent(navController)
             DownloadPage.Mod -> ModDownloadContent()
             DownloadPage.Modpack -> ModpackDownloadContent()
         }

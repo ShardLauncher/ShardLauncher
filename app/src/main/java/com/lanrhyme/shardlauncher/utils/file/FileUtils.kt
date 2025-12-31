@@ -55,3 +55,10 @@ fun formatFileSize(bytes: Long): String {
     val pre = "KMGTPE"[exp - 1]
     return String.format("%.1f %sB", bytes / 1024.0.pow(exp.toDouble()), pre)
 }
+
+/**
+ * Read the entire content of an InputStream as a UTF-8 string
+ */
+fun java.io.InputStream.readString(): String {
+    return this.bufferedReader(Charsets.UTF_8).use { it.readText() }
+}

@@ -83,8 +83,7 @@ object AccountsManager {
         _accounts.addAll(loadedAccounts)
 
         _accounts.sortWith(compareBy<Account>(
-            { it.accountTypePriority() },
-            { it.username },
+            { it.username }
         ))
         _accountsFlow.value = _accounts.toList()
 

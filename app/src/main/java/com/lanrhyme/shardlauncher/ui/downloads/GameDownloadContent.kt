@@ -56,7 +56,7 @@ import dev.chrisbanes.haze.hazeEffect
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun GameDownloadContent(navController: NavController, useBmclapi: Boolean) {
+fun GameDownloadContent(navController: NavController) {
     val cardLayoutConfig = LocalCardLayoutConfig.current
     val isCardBlurEnabled = cardLayoutConfig.isCardBlurEnabled
     val cardAlpha = cardLayoutConfig.cardAlpha
@@ -68,7 +68,7 @@ fun GameDownloadContent(navController: NavController, useBmclapi: Boolean) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.loadVersions(useBmclapi) }
+    LaunchedEffect(Unit) { viewModel.loadVersions() }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (isLoading && versions.isEmpty()) {
@@ -101,7 +101,7 @@ fun GameDownloadContent(navController: NavController, useBmclapi: Boolean) {
                             )
                             IconButton(
                                     onClick = {
-                                        viewModel.loadVersions(useBmclapi, forceRefresh = true)
+                                        viewModel.loadVersions(forceRefresh = true)
                                     },
                                     modifier = Modifier.fillMaxHeight()
                             ) { Icon(Icons.Default.Refresh, contentDescription = "Refresh") }

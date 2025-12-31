@@ -59,6 +59,11 @@ object AllSettings : SettingsRegistry() {
      * Skip game integrity check
      */
     val skipGameIntegrityCheck = boolSetting("skipGameIntegrityCheck", false)
+
+    /**
+     * Version custom info
+     */
+    val versionCustomInfo = stringSetting("versionCustomInfo", "ShardLauncher[zl_version]")
     
     /**
      * Java runtime selection
@@ -101,4 +106,19 @@ object AllSettings : SettingsRegistry() {
      * Log text size (5-20sp)
      */
     val logTextSize = intSetting("logTextSize", 15, 5..20)
+
+    /**
+     * Log buffer flush interval in ms
+     */
+    val logBufferFlushInterval = intSetting("logBufferFlushInterval", 200, 100..1000)
+
+    /**
+     * Mirror source for mod loaders
+     */
+    val fetchModLoaderSource = enumSetting("fetchModLoaderSource", com.lanrhyme.shardlauncher.settings.enums.MirrorSourceType.OFFICIAL_FIRST)
+
+    /**
+     * Mirror source for game files
+     */
+    val fileDownloadSource = enumSetting("fileDownloadSource", com.lanrhyme.shardlauncher.settings.enums.MirrorSourceType.OFFICIAL_FIRST)
 }

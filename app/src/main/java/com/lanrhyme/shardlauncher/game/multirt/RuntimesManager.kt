@@ -72,4 +72,18 @@ object RuntimesManager {
         }
         return null
     }
+
+    /**
+     * Get all detected runtimes
+     */
+    fun getRuntimes(): List<Runtime> {
+        val runtimes = mutableListOf<Runtime>()
+        val runtimesDir = PathManager.DIR_MULTIRT
+        runtimesDir.listFiles()?.forEach { file ->
+            if (file.isDirectory) {
+                runtimes.add(getRuntime(file.name))
+            }
+        }
+        return runtimes
+    }
 }

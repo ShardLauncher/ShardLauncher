@@ -62,7 +62,8 @@ class GameDownloadViewModel : ViewModel() {
         _selectedVersionTypes.value = currentTypes
     }
 
-    fun loadVersions(useBmclapi: Boolean, forceRefresh: Boolean = false) {
+    fun loadVersions(forceRefresh: Boolean = false) {
+        val useBmclapi = com.lanrhyme.shardlauncher.settings.AllSettings.fileDownloadSource.state == com.lanrhyme.shardlauncher.settings.enums.MirrorSourceType.MIRROR_FIRST
         if (!forceRefresh && cachedVersions != null && lastSourceWasBmclapi == useBmclapi) {
             _versions.value = cachedVersions!!
             return

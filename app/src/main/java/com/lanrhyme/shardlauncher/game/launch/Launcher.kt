@@ -15,7 +15,7 @@ abstract class Launcher {
     /**
      * Launch the game/JVM application
      */
-    abstract fun launch()
+    abstract suspend fun launch(): Int
 
     /**
      * Change working directory
@@ -39,7 +39,7 @@ abstract class Launcher {
         allArgs: Array<String>,
         ldLibraryPath: String,
         envMap: Map<String, String> = emptyMap()
-    ) {
+    ): Int {
         ZLNativeInvoker.staticLauncher = this
         
         // Ensure DNS configuration
@@ -58,6 +58,7 @@ abstract class Launcher {
         // Launch JVM
         val exitCode = VMLauncher.launchJVM(allArgs)
         exit(exitCode)
+        return exitCode
     }
 
     private fun ensureDNSConfig() {

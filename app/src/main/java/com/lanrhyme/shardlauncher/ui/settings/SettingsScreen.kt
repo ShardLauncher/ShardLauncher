@@ -75,8 +75,6 @@ fun SettingsScreen(
         onIsGlowEffectEnabledChange: () -> Unit,
         onIsCardBlurEnabledChange: () -> Unit,
         onCardAlphaChange: (Float) -> Unit,
-        useBmclapi: Boolean,
-        onUseBmclapiChange: (Boolean) -> Unit,
         isMusicPlayerEnabled: Boolean,
         onIsMusicPlayerEnabledChange: () -> Unit,
         musicPlayerViewModel: MusicPlayerViewModel
@@ -145,9 +143,8 @@ fun SettingsScreen(
                 }
                 SettingsPage.Game -> {
                     GameSettingsContent(
-                            useBmclapi = useBmclapi,
-                            onUseBmclapiChange = onUseBmclapiChange,
-                            animationSpeed = animationSpeed
+                            animationSpeed = animationSpeed,
+                            isGlowEffectEnabled = isGlowEffectEnabled
                     )
                 }
                 SettingsPage.About -> {

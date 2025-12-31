@@ -92,9 +92,11 @@ class BaseMinecraftDownloader(
         gameManifest: GameManifest,
         clientName: String,
         mcFolder: File = versionsTarget,
-        scheduleDownload: (urls: List<String>, hash: String?, targetFile: File, size: Long) -> Unit
+        scheduleDownload: (urls: List<String>, hash: String?, targetFile: File, size: Long) -> Unit,
+        scheduleCopy: ((targetFile: File) -> Unit)? = null
     ) {
         val clientFile = getVersionJarPath(clientName, mcFolder)
+        scheduleCopy?.invoke(clientFile)
         gameManifest.downloads?.client?.let { client ->
             scheduleDownload(client.url.mapMirrorableUrls(), client.sha1, clientFile, client.size)
         }
@@ -125,10 +127,21 @@ class BaseMinecraftDownloader(
         targetDir: File = librariesTarget,
         scheduleDownload: (urls: List<String>, hash: String?, targetFile: File, size: Long, isDownloadable: Boolean) -> Unit
     ) {
+        val versionParts = gameManifest.id.split(".")
         gameManifest.libraries?.let { libraries ->
             // processLibraries(libraries) // Commented out due to type mismatch
             libraries.forEach { library ->
                 if (library.name.startsWith("org.lwjgl")) return@forEach
+                
+                // Add library replacement logic
+                getLibraryReplacement(library.name, versionParts)?.let { replacement ->
+                    library.name = replacement.newName
+                    library.downloads?.artifact?.let { artifact ->
+                        artifact.path = replacement.newPath
+                        artifact.sha1 = replacement.newSha1
+                        artifact.url = replacement.newUrl
+                    }
+                }
 
                 val artifactPath: String = artifactToPath(library) ?: return@forEach
                 val (sha1, url, size, isDownloadable) = library.downloads?.let { downloads ->
