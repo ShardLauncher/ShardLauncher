@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -54,6 +55,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,7 +78,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpSize
 import dev.chrisbanes.haze.hazeEffect
+import kotlinx.coroutines.launch
+import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +109,10 @@ fun CollapsibleCard(
 
         val cardModifier =
                 if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        modifier.fillMaxWidth().clip(cardShape).hazeEffect(state = hazeState)
+                        modifier
+                            .fillMaxWidth()
+                            .clip(cardShape)
+                            .hazeEffect(state = hazeState)
                 } else {
                         modifier.fillMaxWidth()
                 }
@@ -111,8 +129,9 @@ fun CollapsibleCard(
                 Column {
                         Row(
                                 modifier =
-                                        Modifier.clickable { isExpanded = !isExpanded }
-                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                        Modifier
+                                            .clickable { isExpanded = !isExpanded }
+                                            .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                         ) {
                                 TitleAndSummary(
@@ -165,7 +184,10 @@ fun CombinedCard(
         val cardShape = RoundedCornerShape(16.dp)
         val cardModifier =
                 if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        modifier.fillMaxWidth().clip(cardShape).hazeEffect(state = hazeState)
+                        modifier
+                            .fillMaxWidth()
+                            .clip(cardShape)
+                            .hazeEffect(state = hazeState)
                 } else {
                         modifier.fillMaxWidth()
                 }
@@ -226,7 +248,9 @@ fun ScalingActionButton(
                 )
         val buttonShape = RoundedCornerShape(100.dp)
 
-        val buttonModifier = modifier.scale(scale).background(backgroundBrush, shape = buttonShape)
+        val buttonModifier = modifier
+            .scale(scale)
+            .background(backgroundBrush, shape = buttonShape)
 
         Button(
                 onClick = onClick,
@@ -295,7 +319,9 @@ fun <T> SegmentedNavigationBar(
         getTitle: (T) -> String
 ) {
         Row(
-                modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
         ) {
                 Text(
@@ -304,28 +330,31 @@ fun <T> SegmentedNavigationBar(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary,
                         modifier =
-                                Modifier.glow(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                cornerRadius = 16.dp
-                                        )
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                                Brush.horizontalGradient(
-                                                        colors =
-                                                                listOf(
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary,
-                                                                        MaterialTheme.colorScheme
-                                                                                .tertiary,
-                                                                )
+                                Modifier
+                                    .glow(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        cornerRadius = 16.dp
+                                    )
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors =
+                                                listOf(
+                                                    MaterialTheme.colorScheme
+                                                        .primary,
+                                                    MaterialTheme.colorScheme
+                                                        .tertiary,
                                                 )
                                         )
-                                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                                    )
+                                    .padding(horizontal = 16.dp, vertical = 4.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 PrimaryTabRow(
                         selectedTabIndex = pages.indexOf(selectedPage),
-                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp)),
                         divider = {},
                 ) {
                         pages.forEach { page ->
@@ -544,13 +573,14 @@ fun SearchTextField(
                 decorationBox = { innerTextField ->
                         Row(
                                 modifier =
-                                        Modifier.background(
-                                                        MaterialTheme.colorScheme.surfaceVariant
-                                                                .copy(alpha = 0.6f),
-                                                        RoundedCornerShape(22.dp)
-                                                )
-                                                .padding(horizontal = 8.dp)
-                                                .fillMaxSize(),
+                                        Modifier
+                                            .background(
+                                                MaterialTheme.colorScheme.surfaceVariant
+                                                    .copy(alpha = 0.6f),
+                                                RoundedCornerShape(22.dp)
+                                            )
+                                            .padding(horizontal = 8.dp)
+                                            .fillMaxSize(),
                                 verticalAlignment = Alignment.CenterVertically
                         ) {
                                 Icon(
@@ -559,7 +589,9 @@ fun SearchTextField(
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Box(
-                                        modifier = Modifier.padding(start = 4.dp).weight(1f),
+                                        modifier = Modifier
+                                            .padding(start = 4.dp)
+                                            .weight(1f),
                                         contentAlignment = Alignment.CenterStart
                                 ) {
                                         if (value.isEmpty()) {
@@ -595,9 +627,10 @@ fun BackgroundTextTag(
 ) {
         Row(
                 modifier =
-                        modifier.clip(RoundedCornerShape(16.dp))
-                                .background(backgroundColor)
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(backgroundColor)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
         ) {
                 if (icon != null) {
@@ -642,10 +675,11 @@ fun TitledDivider(title: String, modifier: Modifier = Modifier) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Box(
                         modifier =
-                                Modifier.weight(1f)
-                                        .height(2.dp)
-                                        .clip(RoundedCornerShape(1.dp))
-                                        .background(MaterialTheme.colorScheme.outlineVariant)
+                                Modifier
+                                    .weight(1f)
+                                    .height(2.dp)
+                                    .clip(RoundedCornerShape(1.dp))
+                                    .background(MaterialTheme.colorScheme.outlineVariant)
                 )
         }
 }
@@ -725,11 +759,12 @@ fun PopupContainer(
                                                                                         Build.VERSION_CODES
                                                                                                 .S
                                                                 ) {
-                                                                        Modifier.clip(popupShape)
-                                                                                .hazeEffect(
-                                                                                        state =
-                                                                                                hazeState
-                                                                                )
+                                                                        Modifier
+                                                                            .clip(popupShape)
+                                                                            .hazeEffect(
+                                                                                state =
+                                                                                    hazeState
+                                                                            )
                                                                 } else Modifier
                                                         ),
                                         shape = popupShape,
@@ -743,4 +778,233 @@ fun PopupContainer(
                         }
                 }
         }
+}
+
+/**
+ * 一个滚动条指示器，用于在可滑动列表中指示当前位置
+ *
+ * @param listState 列表的状态，用于获取滚动位置
+ * @param modifier 修饰符
+ * @param orientation 滚动方向，默认为竖向
+ * @param indicatorLength 指示器的固定长度，默认为屏幕的一半不到
+ */
+@Composable
+fun ScrollIndicator(
+    listState: LazyListState,
+    modifier: Modifier = Modifier,
+    orientation: Orientation = Orientation.Vertical,
+    indicatorLength: Dp? = null
+) {
+    val (isCardBlurEnabled, _, hazeState) = LocalCardLayoutConfig.current
+    val scope = rememberCoroutineScope()
+    val config = LocalConfiguration.current
+    val density = LocalDensity.current
+
+    // 计算指示器的总长度
+    val totalLength = indicatorLength ?: if (orientation == Orientation.Vertical) {
+        (config.screenHeightDp.dp / 2.5f)
+    } else {
+        (config.screenWidthDp.dp / 2.5f)
+    }
+
+    val totalLengthPx = with(density) { totalLength.toPx() }
+
+    // 滚动与交互状态管理
+    var isVisible by remember { mutableStateOf(false) }
+    var isInteracting by remember { mutableStateOf(false) }
+    // 拖动时的临时进度，用于解决拖动时滑块抖动的问题
+    var dragProgress by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(listState.isScrollInProgress, isInteracting) {
+        val canScroll = listState.canScrollForward || listState.canScrollBackward
+        if (canScroll && (listState.isScrollInProgress || isInteracting)) {
+            isVisible = true
+        } else {
+            // 当停止滚动且没有交互时，延迟 1 秒消失
+            kotlinx.coroutines.delay(1000)
+            isVisible = false
+        }
+    }
+
+    // 如果列表为空，则不显示滚动条
+    if (listState.layoutInfo.totalItemsCount == 0) return
+
+    // 计算实际列表位置的进度
+    val listProgress by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItemsCount = layoutInfo.totalItemsCount
+            if (totalItemsCount == 0) return@derivedStateOf 0f
+
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (visibleItems.isEmpty()) return@derivedStateOf 0f
+
+            val avgItemSize = visibleItems.sumOf { it.size } / visibleItems.size.toFloat()
+            val estimatedTotalHeight = avgItemSize * totalItemsCount
+            val viewportHeight = if (orientation == Orientation.Vertical) layoutInfo.viewportSize.height else layoutInfo.viewportSize.width
+            
+            val scrollableHeight = (estimatedTotalHeight - viewportHeight).coerceAtLeast(1f)
+            val currentOffset = listState.firstVisibleItemIndex * avgItemSize + listState.firstVisibleItemScrollOffset
+            
+            (currentOffset / scrollableHeight).coerceIn(0f, 1f)
+        }
+    }
+
+    // 确定当前应该显示的进度：交互时使用拖动进度（无抖动），否则使用列表进度
+    // 使用 animateFloatAsState 平滑切换，避免状态切换时跳变
+    val progress by animateFloatAsState(
+        targetValue = if (isInteracting) dragProgress else listProgress,
+        label = "ProgressAnimation",
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow) 
+    )
+
+    // 动画显示
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(500)),
+        exit = fadeOut(animationSpec = tween(500)),
+        modifier = modifier
+    ) {
+        // 弹动放大的动画状态
+        val scale by animateFloatAsState(
+            targetValue = if (isInteracting) 1.2f else 1f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy),
+            label = "ExpandAnimation"
+        )
+
+        // 尺寸定义
+        val trackWidth = 8.dp * scale
+        val thumbLength = 32.dp
+
+        Box(
+            modifier = Modifier
+                .padding(8.dp)
+                .then(
+                    if (orientation == Orientation.Vertical)
+                        Modifier.height(totalLength).width(48.dp) // 增大触控区域
+                    else
+                        Modifier.width(totalLength).height(48.dp)
+                )
+                .pointerInput(orientation, totalLengthPx) {
+                    detectDragGestures(
+                        onDragStart = { 
+                            isInteracting = true 
+                            // 开始拖动时，同步当前列表进度到拖动进度，避免跳变
+                            dragProgress = listProgress
+                        },
+                        onDragEnd = { isInteracting = false },
+                        onDragCancel = { isInteracting = false },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val dragPosition = if (orientation == Orientation.Vertical) change.position.y else change.position.x
+                            
+                            // 更新拖动进度
+                            val dragPercent = (dragPosition / totalLengthPx).coerceIn(0f, 1f)
+                            dragProgress = dragPercent
+
+                            val layoutInfo = listState.layoutInfo
+                            val totalItems = layoutInfo.totalItemsCount
+                            if (totalItems > 0) {
+                                val visibleItems = layoutInfo.visibleItemsInfo
+                                val avgSize = if (visibleItems.isEmpty()) 1f else visibleItems.sumOf { it.size } / visibleItems.size.toFloat()
+                                val viewportHeight = if (orientation == Orientation.Vertical) layoutInfo.viewportSize.height else layoutInfo.viewportSize.width
+                                val estimatedHeight = avgSize * totalItems
+                                val targetOffset = dragPercent * (estimatedHeight - viewportHeight)
+                                
+                                val targetIndex = (targetOffset / avgSize).toInt().coerceIn(0, totalItems - 1)
+                                val targetOffsetInItem = (targetOffset % avgSize).toInt()
+                                
+                                scope.launch {
+                                    listState.scrollToItem(targetIndex, targetOffsetInItem)
+                                }
+                            }
+                        }
+                    )
+                }
+                .pointerInput(orientation, totalLengthPx) {
+                    detectTapGestures { offset ->
+                        val tapPosition = if (orientation == Orientation.Vertical) offset.y else offset.x
+                        val tapPercent = (tapPosition / totalLengthPx).coerceIn(0f, 1f)
+                        
+                        val layoutInfo = listState.layoutInfo
+                        val totalItems = layoutInfo.totalItemsCount
+                        if (totalItems > 0) {
+                            val visibleItems = layoutInfo.visibleItemsInfo
+                            val avgSize = if (visibleItems.isEmpty()) 1f else visibleItems.sumOf { it.size } / visibleItems.size.toFloat()
+                            val viewportHeight = if (orientation == Orientation.Vertical) layoutInfo.viewportSize.height else layoutInfo.viewportSize.width
+                            val estimatedHeight = avgSize * totalItems
+                            val targetOffset = tapPercent * (estimatedHeight - viewportHeight)
+                            
+                            val targetIndex = (targetOffset / avgSize).toInt().coerceIn(0, totalItems - 1)
+                            val targetOffsetInItem = (targetOffset % avgSize).toInt()
+                            
+                            scope.launch {
+                                listState.animateScrollToItem(targetIndex, targetOffsetInItem)
+                            }
+                        }
+                    }
+                }
+        ) {
+            // 轨道背景
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .then(
+                        if (orientation == Orientation.Vertical)
+                            Modifier.height(totalLength).width(trackWidth)
+                        else
+                            Modifier.width(totalLength).height(trackWidth)
+                    )
+                    .clip(RoundedCornerShape(100))
+                    .then(
+                        if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            Modifier
+                                .hazeEffect(state = hazeState)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        } else {
+                            Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        }
+                    )
+            ) {
+                // 滑块 (Thumb)
+                val maxOffsetPx = with(density) { (totalLength - thumbLength).toPx() }
+                
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .graphicsLayer {
+                            val offset = maxOffsetPx * progress
+                            if (orientation == Orientation.Vertical) {
+                                translationY = offset
+                            } else {
+                                translationX = offset
+                            }
+                        }
+                        .size(
+                            width = if (orientation == Orientation.Vertical) trackWidth else thumbLength,
+                            height = if (orientation == Orientation.Vertical) thumbLength else trackWidth
+                        )
+                        .glow(
+                            color = MaterialTheme.colorScheme.primary,
+                            cornerRadius = 100.dp,
+                            blurRadius = if (isInteracting) 16.dp else 8.dp,
+                            enabled = true
+                        )
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(100)
+                        )
+                )
+            }
+        }
+    }
+}
+
+// 辅助Modifier，用于定义形状
+private fun Modifier.contentShape(orientation: Orientation, length: Dp, thickness: Dp): Modifier = composed {
+    if (orientation == Orientation.Vertical) {
+        this.size(thickness, length)
+    } else {
+        this.size(length, thickness)
+    }
 }

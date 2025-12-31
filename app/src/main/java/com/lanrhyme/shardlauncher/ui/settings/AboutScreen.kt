@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import com.lanrhyme.shardlauncher.ui.components.ScrollIndicator
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -76,10 +80,13 @@ fun AboutScreen(animationSpeed: Float) {
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-                LazyColumn(
-                        modifier = Modifier.weight(0.65f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                val listState = rememberLazyListState()
+                Box(modifier = Modifier.weight(0.65f)) {
+                        LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                         item {
                                 CombinedCard(
                                         modifier = Modifier.animatedAppearance(1, animationSpeed),
@@ -343,6 +350,11 @@ fun AboutScreen(animationSpeed: Float) {
                                 }
                         }
                         item { Spacer(modifier = Modifier.height(45.dp)) }
+                        }
+                        ScrollIndicator(
+                                listState = listState,
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                        )
                 }
 
                 Column(modifier = Modifier.weight(0.35f)) {

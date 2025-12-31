@@ -16,6 +16,10 @@ import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.ui.components.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.SimpleListLayout
 import com.lanrhyme.shardlauncher.ui.navigation.Screen
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.Alignment
+import com.lanrhyme.shardlauncher.ui.components.ScrollIndicator
 
 @Composable
 internal fun OtherSettingsContent(navController: NavController) {
@@ -23,11 +27,15 @@ internal fun OtherSettingsContent(navController: NavController) {
     val isCardBlurEnabled = cardLayoutConfig.isCardBlurEnabled
     val cardAlpha = cardLayoutConfig.cardAlpha
     val hazeState = cardLayoutConfig.hazeState
-    LazyColumn(
+    val listState = rememberLazyListState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+        ) {
         item {
             Text(
                     text = "高级",
@@ -46,5 +54,10 @@ internal fun OtherSettingsContent(navController: NavController) {
             )
         }
         item { Spacer(modifier = Modifier.height(45.dp)) }
+    }
+        ScrollIndicator(
+            listState = listState,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
 }

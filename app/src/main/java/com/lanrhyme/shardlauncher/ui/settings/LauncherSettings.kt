@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -79,6 +80,7 @@ import com.lanrhyme.shardlauncher.ui.components.IconSwitchLayout
 import com.lanrhyme.shardlauncher.ui.components.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.MusicPlayerDialog
 import com.lanrhyme.shardlauncher.ui.components.PopupContainer
+import com.lanrhyme.shardlauncher.ui.components.ScrollIndicator
 import com.lanrhyme.shardlauncher.ui.components.SimpleListLayout
 import com.lanrhyme.shardlauncher.ui.components.SliderLayout
 import com.lanrhyme.shardlauncher.ui.components.SwitchLayout
@@ -665,11 +667,15 @@ internal fun LauncherSettingsContent(
         )
     }
 
-    LazyColumn(
+    val listState = rememberLazyListState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+        ) {
         item {
             Text(
                     text = "显示设置",
@@ -940,5 +946,10 @@ internal fun LauncherSettingsContent(
             )
         }
         item { Spacer(modifier = Modifier.height(45.dp)) }
+    }
+        ScrollIndicator(
+            listState = listState,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
 }
