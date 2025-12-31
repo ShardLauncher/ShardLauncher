@@ -41,6 +41,11 @@ object Architecture {
     }
 
     /**
+     * Check if device is 32-bit
+     */
+    val is32BitsDevice: Boolean
+        get() = !is64Bit()
+    /**
      * Check if device is x86
      */
     fun isX86(): Boolean {

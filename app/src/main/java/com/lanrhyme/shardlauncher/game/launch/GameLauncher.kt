@@ -144,6 +144,17 @@ class GameLauncher(
             setRendererEnv(envMap)
         }
 
+        // Set window size with resolution scaling
+        val windowSize = getWindowSize()
+        val scaleFactor = AllSettings.resolutionRatio.state / 100f
+        val scaledWidth = getDisplayFriendlyRes(windowSize.width, scaleFactor)
+        val scaledHeight = getDisplayFriendlyRes(windowSize.height, scaleFactor)
+        
+        envMap["glfwstub.windowWidth"] = scaledWidth.toString()
+        envMap["glfwstub.windowHeight"] = scaledHeight.toString()
+        envMap["AWTSTUB_WIDTH"] = scaledWidth.toString()
+        envMap["AWTSTUB_HEIGHT"] = scaledHeight.toString()
+
         envMap["SHARD_VERSION_CODE"] = BuildConfig.VERSION_CODE.toString()
         
         super.initEnv(ldLibraryPath, envMap)
@@ -154,7 +165,7 @@ class GameLauncher(
         super.dlopenEngine()
         
         // Load renderer libraries
-        RendererPluginManager.selectedRendererPlugin?.let { rendererPlugin ->
+        RendererPluginManager.selectedRendererPlugin?.let { _ ->
              // Implementation for loading plugin libs
         }
 
@@ -174,6 +185,8 @@ class GameLauncher(
         LoggerBridge.append("Info: Architecture: ${Architecture.archAsString()}")
         LoggerBridge.append("Info: Renderer: ${renderer.getRendererName()}")
         LoggerBridge.append("Info: Selected Minecraft version: ${version.getVersionName()}")
+        LoggerBridge.append("Info: Game Path: ${version.getGameDir().absolutePath} (Isolation: ${version.isIsolation()})")
+        LoggerBridge.append("Info: Custom Java arguments: $javaArguments")
         LoggerBridge.append("Info: Java Runtime: $javaRuntime")
         LoggerBridge.append("Info: Account: ${account.username} (${account.accountType})")
     }
@@ -224,6 +237,27 @@ class GameLauncher(
             envMap["MESA_LOADER_DRIVER_OVERRIDE"] = "zink"
             envMap["MESA_GLSL_CACHE_DIR"] = PathManager.DIR_CACHE.absolutePath
         }
+
+        // Apply renderer-specific settings
+        if (AllSettings.dumpShaders.state) {
+            envMap["LIBGL_VGPU_DUMP"] = "1"
+        }
+        
+        if (AllSettings.zinkPreferSystemDriver.state) {
+            envMap["POJAV_ZINK_PREFER_SYSTEM_DRIVER"] = "1"
+        }
+        
+        if (AllSettings.vsyncInZink.state) {
+            envMap["POJAV_VSYNC_IN_ZINK"] = "1"
+        }
+        
+        if (AllSettings.bigCoreAffinity.state) {
+            envMap["POJAV_BIG_CORE_AFFINITY"] = "1"
+        }
+        
+        if (AllSettings.sustainedPerformance.state) {
+            envMap["POJAV_SUSTAINED_PERFORMANCE"] = "1"
+        }
     }
 
     private fun getDetectedVersion(): Int {
@@ -251,5 +285,12 @@ class GameLauncher(
         } else {
             Renderers.getCurrentRenderer().getRendererLibrary()
         }
+    }
+
+    /**
+     * Calculate display-friendly resolution
+     */
+    private fun getDisplayFriendlyRes(pixels: Int, scaleFactor: Float): Int {
+        return (pixels * scaleFactor).toInt().coerceAtLeast(1)
     }
 }

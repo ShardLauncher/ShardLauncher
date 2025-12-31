@@ -145,10 +145,10 @@ class Version(
     private fun String.getValueOrDefault(default: String): String = this.takeIf { it.isNotEmpty() } ?: default
 
     // TODO: Implement settings
-    fun getRenderer(): String = versionConfig.renderer.getValueOrDefault("") // AllSettings.renderer.getValue()
+    fun getRenderer(): String = versionConfig.renderer.getValueOrDefault(com.lanrhyme.shardlauncher.settings.AllSettings.renderer.state)
 
     // TODO: Implement settings
-    fun getDriver(): String = versionConfig.driver.getValueOrDefault("") // AllSettings.vulkanDriver.getValue()
+    fun getDriver(): String = versionConfig.driver.getValueOrDefault(com.lanrhyme.shardlauncher.settings.AllSettings.vulkanDriver.state)
 
     // TODO: Implement settings and PathManager
 //    fun getControlPath(): File? = versionConfig.control
@@ -160,15 +160,19 @@ class Version(
 
     fun getJvmArgs(): String = versionConfig.jvmArgs
 
-    fun getCustomInfo(): String = versionConfig.customInfo.getValueOrDefault("") // AllSettings.versionCustomInfo.getValue()
-        //.replace("[zl_version]", BuildConfig.VERSION_NAME) // TODO: Implement BuildConfig
+    fun getCustomInfo(): String = versionConfig.customInfo.getValueOrDefault(com.lanrhyme.shardlauncher.settings.AllSettings.versionCustomInfo.state)
+        .replace("[zl_version]", com.lanrhyme.shardlauncher.BuildConfig.VERSION_NAME)
 
     fun getServerIp(): String? = versionConfig.serverIp.takeIf { it.isNotEmptyOrBlank() }
 
     // TODO: Implement settings
     fun getRamAllocation(context: Context? = null): Int = versionConfig.ramAllocation.takeIf { it >= 256 }?.let {
-        min(it, 2048) // getMaxMemoryForSettings(context)
-    } ?: 1024 // AllSettings.ramAllocation.getValue()
+        if (context != null) {
+            min(it, com.lanrhyme.shardlauncher.utils.platform.getMaxMemoryForSettings(context))
+        } else {
+            it
+        }
+    } ?: com.lanrhyme.shardlauncher.settings.AllSettings.ramAllocation.state
 
     fun isTouchProxyEnabled(): Boolean = versionConfig.enableTouchProxy
 

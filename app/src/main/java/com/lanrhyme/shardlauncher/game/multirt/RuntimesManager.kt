@@ -86,9 +86,43 @@ object RuntimesManager {
         
         runtimesDir.listFiles()?.forEach { file ->
             if (file.isDirectory) {
-                runtimes.add(getRuntime(file.name))
+                runtimes.add(Runtime(
+                    name = file.name,
+                    versionString = null,
+                    arch = System.getProperty("os.arch"),
+                    javaVersion = if (isJDK8(file.absolutePath)) 8 else 17,
+                    isJDK8 = isJDK8(file.absolutePath)
+                ))
             }
         }
         return runtimes.sortedBy { it.name }
+    }
+
+    /**
+     * Get exact runtime by Java version
+     */
+    fun getExactJreName(majorVersion: Int): String? {
+        return getRuntimes().firstOrNull { it.javaVersion == majorVersion }?.name
+    }
+
+    /**
+     * Get nearest runtime by Java version (finds the closest higher version)
+     */
+    fun getNearestJreName(majorVersion: Int): String? {
+        val runtimes = getRuntimes()
+        return runtimes
+            .filter { it.javaVersion >= majorVersion }
+            .minByOrNull { it.javaVersion }?.name
+    }
+
+    /**
+     * Load runtime with caching support
+     */
+    fun loadRuntime(name: String): Runtime {
+        return if (name.isEmpty()) {
+            Runtime("", null, null, 0, false)
+        } else {
+            getRuntime(name)
+        }
     }
 }

@@ -175,10 +175,10 @@ class VersionConfig(
     }
 
     // TODO: Implement settings
-    fun isIsolation(): Boolean = false // isolationType.toBoolean(AllSettings.versionIsolation.getValue())
+    fun isIsolation(): Boolean = isolationType.toBoolean(com.lanrhyme.shardlauncher.settings.AllSettings.versionIsolation.state)
 
     // TODO: Implement settings
-    fun skipGameIntegrityCheck(): Boolean = false // skipGameIntegrityCheck.toBoolean(AllSettings.skipGameIntegrityCheck.getValue())
+    fun skipGameIntegrityCheck(): Boolean = skipGameIntegrityCheck.toBoolean(com.lanrhyme.shardlauncher.settings.AllSettings.skipGameIntegrityCheck.state)
 
     private fun SettingState.toBoolean(global: Boolean) = when(getSettingStateNotNull(this)) {
         SettingState.FOLLOW_GLOBAL -> global
