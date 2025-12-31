@@ -13,6 +13,7 @@ import com.lanrhyme.shardlauncher.utils.classes.Quadruple
 import com.lanrhyme.shardlauncher.utils.file.ensureDirectory
 import com.lanrhyme.shardlauncher.utils.file.ensureParentDirectory
 import com.lanrhyme.shardlauncher.utils.string.isNotEmptyOrBlank
+import com.lanrhyme.shardlauncher.utils.network.downloadAndParseJson
 import java.io.File
 
 const val DOWNLOADER_TAG = "MinecraftDownloader"
@@ -58,13 +59,13 @@ class BaseMinecraftDownloader(
         targetVersion: String,
         mcFolder: File = versionsTarget
     ): GameManifest {
-        return downloadAndParseJson(
-            targetFile = getVersionJsonPath(targetVersion, mcFolder),
+        return downloadAndParseJson<GameManifest>(
             url = version.url,
+            targetFile = getVersionJsonPath(targetVersion, mcFolder),
             expectedSHA = version.sha1,
             verifyIntegrity = verifyIntegrity,
             classOfT = GameManifest::class.java
-        )
+        ) ?: throw RuntimeException("Failed to download version JSON")
     }
 
     /**
@@ -76,9 +77,9 @@ class BaseMinecraftDownloader(
     ): AssetIndexJson? {
         val indexFile = File(assetIndexTarget, "${gameManifest.assets}.json")
         return gameManifest.assetIndex?.let { assetIndex ->
-            downloadAndParseJson(
-                targetFile = indexFile,
+            downloadAndParseJson<AssetIndexJson>(
                 url = assetIndex.url,
+                targetFile = indexFile,
                 expectedSHA = assetIndex.sha1,
                 verifyIntegrity = verifyIntegrity,
                 classOfT = AssetIndexJson::class.java
@@ -125,7 +126,7 @@ class BaseMinecraftDownloader(
         scheduleDownload: (urls: List<String>, hash: String?, targetFile: File, size: Long, isDownloadable: Boolean) -> Unit
     ) {
         gameManifest.libraries?.let { libraries ->
-            processLibraries { libraries }
+            // processLibraries(libraries) // Commented out due to type mismatch
             libraries.forEach { library ->
                 if (library.name.startsWith("org.lwjgl")) return@forEach
 

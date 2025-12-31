@@ -47,7 +47,7 @@ object VersionManager {
     }
 
     suspend fun getGameManifest(version: Version): GameManifest {
-        val rawJson = fetchStringFromUrls(listOf(version.url))
+        val rawJson = fetchStringFromUrls(listOf(version.url ?: throw IllegalArgumentException("Version URL is null")))
         return gson.fromJson(rawJson, GameManifest::class.java)
     }
 }

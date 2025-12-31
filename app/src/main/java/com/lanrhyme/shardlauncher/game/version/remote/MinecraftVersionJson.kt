@@ -18,7 +18,8 @@ data class MinecraftVersionJson(
     val minecraftArguments: String?, // Legacy format (pre-1.13)
     val arguments: Arguments?, // Modern format (1.13+)
     val libraries: List<Library>,
-    val assetIndex: AssetIndex
+    val assetIndex: AssetIndex,
+    val javaVersion: JavaVersion? = null
 ) {
     data class Arguments(
         val game: List<JsonElement>?,
@@ -57,5 +58,10 @@ data class MinecraftVersionJson(
         val sha1: String?,
         val size: Long?,
         val totalSize: Long?
+    )
+    
+    data class JavaVersion(
+        val component: String?,
+        val majorVersion: Int?
     )
 }

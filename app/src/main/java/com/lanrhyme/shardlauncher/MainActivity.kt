@@ -128,6 +128,8 @@ class MainActivity : ComponentActivity() {
         settingsRepository = SettingsRepository(applicationContext)
         AccountsManager.initialize(applicationContext)
         com.lanrhyme.shardlauncher.game.path.GamePathManager.initialize(applicationContext)
+        
+        com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.refresh("MainActivity.onCreate")
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 

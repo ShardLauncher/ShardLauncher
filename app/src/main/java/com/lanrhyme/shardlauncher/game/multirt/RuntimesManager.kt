@@ -32,4 +32,44 @@ object RuntimesManager {
         val jreDir = File(runtimePath, "jre")
         return jreDir.exists() && jreDir.isDirectory
     }
+
+    /**
+     * Get runtime by name
+     */
+    fun getRuntime(name: String): Runtime {
+        val runtimeHome = getRuntimeHome(name)
+        val isJDK8 = isJDK8(runtimeHome.absolutePath)
+        
+        return Runtime(
+            name = name,
+            versionString = null,
+            arch = System.getProperty("os.arch"),
+            javaVersion = if (isJDK8) 8 else 17,
+            isJDK8 = isJDK8
+        )
+    }
+
+    /**
+     * Get default runtime for Java version
+     */
+    fun getDefaultRuntime(javaVersion: Int): Runtime? {
+        val runtimesDir = PathManager.DIR_MULTIRT
+        runtimesDir.listFiles()?.let { runtimes ->
+            for (runtime in runtimes) {
+                val isJDK8 = isJDK8(runtime.absolutePath)
+                val runtimeJavaVersion = if (isJDK8) 8 else 17
+                
+                if (runtimeJavaVersion >= javaVersion) {
+                    return Runtime(
+                        name = runtime.name,
+                        versionString = null,
+                        arch = System.getProperty("os.arch"),
+                        javaVersion = runtimeJavaVersion,
+                        isJDK8 = isJDK8
+                    )
+                }
+            }
+        }
+        return null
+    }
 }

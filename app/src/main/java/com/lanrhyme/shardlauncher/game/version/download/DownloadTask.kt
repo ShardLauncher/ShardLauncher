@@ -8,6 +8,7 @@ import kotlinx.coroutines.runInterruptible
 import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 
 class DownloadTask(
     val urls: List<String>,
@@ -31,13 +32,17 @@ class DownloadTask(
 
         runCatching {
             runInterruptible {
-                downloadFromMirrorList(
+                val success = downloadFromMirrorList(
                     urls = urls,
                     sha1 = sha1,
                     outputFile = targetFile,
-                    bufferSize = bufferSize
-                ) { size ->
-                    downloadedSize(size)
+                    bufferSize = bufferSize,
+                    onProgress = { size ->
+                        downloadedSize(size)
+                    }
+                )
+                if (!success) {
+                    throw IOException("Download failed from all mirrors")
                 }
             }
             downloadedFile()

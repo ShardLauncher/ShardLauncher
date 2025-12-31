@@ -1,25 +1,50 @@
 /*
  * Shard Launcher
+ * Adapted from Zalith Launcher 2
  */
 
 package com.lanrhyme.shardlauncher.utils.device
 
+import android.os.Build
+
+/**
+ * Device architecture utilities
+ */
 object Architecture {
-    const val ARCH_X86 = 0
-    const val ARCH_ARM = 1
-    const val ARCH_ARM64 = 2
-    const val ARCH_X86_64 = 3
-
-    val is64BitsDevice: Boolean
-        get() = System.getProperty("os.arch")?.contains("64") == true
-
-    fun archAsInt(arch: String?): Int {
-        return when (arch?.lowercase()) {
-            "x86", "i386", "i486", "i586", "i686" -> ARCH_X86
-            "x86_64", "x86-64", "amd64" -> ARCH_X86_64
-            "arm", "armeabi", "armeabi-v7a", "armv7", "armv7l" -> ARCH_ARM
-            "arm64", "arm64-v8a", "armv8", "aarch64" -> ARCH_ARM64
-            else -> -1
+    
+    /**
+     * Get architecture as string
+     */
+    fun archAsString(): String {
+        return when (Build.SUPPORTED_ABIS[0]) {
+            "arm64-v8a" -> "aarch64"
+            "armeabi-v7a" -> "arm"
+            "x86_64" -> "x86_64"
+            "x86" -> "x86"
+            else -> Build.SUPPORTED_ABIS[0]
         }
+    }
+
+    /**
+     * Check if device is 64-bit
+     */
+    fun is64Bit(): Boolean {
+        return Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+    }
+
+    /**
+     * Check if device is ARM
+     */
+    fun isARM(): Boolean {
+        val arch = archAsString()
+        return arch == "aarch64" || arch == "arm"
+    }
+
+    /**
+     * Check if device is x86
+     */
+    fun isX86(): Boolean {
+        val arch = archAsString()
+        return arch == "x86_64" || arch == "x86"
     }
 }

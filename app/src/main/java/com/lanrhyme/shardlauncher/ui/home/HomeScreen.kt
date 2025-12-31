@@ -67,7 +67,10 @@ import java.io.FileOutputStream
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
+import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -85,6 +88,11 @@ fun HomeScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val selectedAccount by accountViewModel.selectedAccount.collectAsState()
     val cardLayoutConfig = LocalCardLayoutConfig.current
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Get installed versions
+    val installedVersions by VersionsManager.versionsFlow.collectAsState()
+    val selectedVersion = installedVersions.firstOrNull { it.isValid() }
 
     val animatedSpeed by
             animateFloatAsState(
@@ -104,10 +112,7 @@ fun HomeScreen(
                 try {
                     Logger.log(context, "HomeScreen", "Fetching latest versions...")
                     errorMessage = null // Clear previous error
-                    val response =
-                            withContext(Dispatchers.IO) {
-                                ApiClient.versionApiService.getLatestVersions()
-                            }
+                    val response = ApiClient.versionApiService.getLatestVersions()
                     latestVersions = response
                     Logger.log(
                             context,
@@ -214,14 +219,43 @@ fun HomeScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
                     // Selected Version
-                    Text(text = "版本: 1.20.1", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "版本: ${selectedVersion?.getVersionName() ?: "未选择版本"}", 
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Launch Button
                     ScalingActionButton(
-                            onClick = { /* TODO: Handle launch */},
-                            modifier = Modifier.fillMaxWidth(),
-                            text = "启动游戏"
+                        onClick = { 
+                            selectedVersion?.let { version ->
+                                selectedAccount?.let { account ->
+                                    coroutineScope.launch {
+                                        try {
+                                            Logger.log(context, "HomeScreen", "Starting game launch...")
+                                            val exitCode = GameLaunchManager.launchGame(
+                                                activity = context as android.app.Activity,
+                                                version = version,
+                                                account = account,
+                                                onExit = { code, isSignal ->
+                                                    Logger.log(context, "HomeScreen", "Game exited with code: $code, signal: $isSignal")
+                                                }
+                                            )
+                                            Logger.log(context, "HomeScreen", "Game launch completed with exit code: $exitCode")
+                                        } catch (e: Exception) {
+                                            Logger.log(context, "HomeScreen", "Game launch failed: ${e.message}")
+                                        }
+                                    }
+                                } ?: run {
+                                    Logger.log(context, "HomeScreen", "No account selected")
+                                }
+                            } ?: run {
+                                Logger.log(context, "HomeScreen", "No version available")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        text = if (selectedVersion != null && selectedAccount != null) "启动游戏" else "无法启动",
+                        enabled = selectedVersion != null && selectedAccount != null
                     )
                 }
             }

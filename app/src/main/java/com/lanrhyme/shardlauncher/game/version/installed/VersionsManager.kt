@@ -32,6 +32,9 @@ import com.lanrhyme.shardlauncher.utils.logging.Logger.lWarning
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.apache.commons.io.FileUtils
 import java.io.File
@@ -59,8 +62,14 @@ object VersionsManager {
     /**
      * 当前所有的游戏版本
      */
+    private val _versionsFlow = MutableStateFlow<List<Version>>(emptyList())
+    val versionsFlow: StateFlow<List<Version>> = _versionsFlow.asStateFlow()
+    
     var versions: List<Version> = emptyList()
-        private set
+        private set(value) {
+            field = value
+            _versionsFlow.value = value
+        }
 
     /**
      * 当前的游戏信息
@@ -111,11 +120,17 @@ object VersionsManager {
 
             versions = newVersions.toList()
 
-            // currentGameInfo = refreshCurrentInfo() // TODO: Implement logic
             lDebug("Version list refreshed, refreshing the current version now.")
             refreshCurrentVersion()
 
-            listeners.forEach { it.invoke(versions) }
+            // Notify listeners
+            runCatching {
+                listeners.forEach { listener ->
+                    listener.invoke(versions)
+                }
+            }.onFailure { e ->
+                lError("Failed to notify listeners", e)
+            }
 
             isRefreshing = false
         }
@@ -129,8 +144,6 @@ object VersionsManager {
             val jsonFile = File(versionFile, "${versionFile.name}.json")
             val versionInfo = if (jsonFile.exists() && jsonFile.isFile) {
                 parseJsonToVersionInfo(jsonFile)?.also {
-                    //如果解析失败了，可能不是标准版本
-                    //保险起见，只有解析成功了的版本，才会被判定为有效版本
                     isVersion = true
                 }
             } else {

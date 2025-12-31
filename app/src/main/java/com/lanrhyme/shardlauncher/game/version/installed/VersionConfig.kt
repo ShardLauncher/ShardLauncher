@@ -26,6 +26,7 @@ import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.getZali
 import com.lanrhyme.shardlauncher.utils.GSON
 import com.lanrhyme.shardlauncher.utils.logging.Logger.lError
 import com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo
+import com.lanrhyme.shardlauncher.utils.json.*
 import com.lanrhyme.shardlauncher.utils.string.getStringNotNull
 import java.io.File
 import java.io.FileWriter
