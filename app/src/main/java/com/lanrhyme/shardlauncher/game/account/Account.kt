@@ -65,19 +65,19 @@ data class Account(
  * 是否是本地账号登录
  */
 fun Account.isLocalAccount(): Boolean {
-    return accountType == "离线登录"
+    return accountType == AccountType.LOCAL || accountType == "离线登录"
 }
 
 /**
  * 是否是外置验证登录
  */
 fun Account.isAuthServerAccount(): Boolean {
-    return accountType == "外置登录"
+    return accountType == AccountType.AUTHSERVER || accountType == "外置登录"
 }
 
 /**
  * 是否是微软账号登录
  */
 fun Account.isMicrosoftAccount(): Boolean {
-    return accountType == "微软登录"
+    return accountType == AccountType.MICROSOFT || accountType == "微软登录"
 }

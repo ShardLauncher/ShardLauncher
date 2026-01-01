@@ -20,28 +20,65 @@
 package com.lanrhyme.shardlauncher.bridge;
 
 import androidx.annotation.Keep;
+import com.lanrhyme.shardlauncher.utils.logging.Logger;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
- * Singleton class made to log on one file
- * The singleton part can be removed but will require more implementation from
- * the end-dev
- * <a href=
- * "https://github.com/PojavLauncherTeam/PojavLauncher/blob/f1cb9e6/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/Logger.java">Modified
- * from PojavLauncher</a>
+ * Temporary LoggerBridge implementation that doesn't rely on native libraries
+ * This is a fallback implementation until native libraries are properly compiled
  */
 @Keep
 public final class LoggerBridge {
+    private static File logFile;
+    private static EventLogListener listener;
+    
     /** Reset the log file, effectively erasing any previous logs */
     @Keep
-    public static native void start(String filePath);
+    public static void start(String filePath) {
+        try {
+            logFile = new File(filePath);
+            logFile.getParentFile().mkdirs();
+            if (logFile.exists()) {
+                logFile.delete();
+            }
+            logFile.createNewFile();
+            Logger.INSTANCE.lInfo("LoggerBridge started with file: " + filePath);
+        } catch (IOException e) {
+            Logger.INSTANCE.lError("Failed to start LoggerBridge", e);
+        }
+    }
 
     /** Print the text to the log file if not censored */
     @Keep
-    public static native void append(String log);
+    public static void append(String log) {
+        try {
+            // Write to file if available
+            if (logFile != null && logFile.exists()) {
+                try (FileWriter writer = new FileWriter(logFile, true)) {
+                    writer.write(log + "\n");
+                    writer.flush();
+                }
+            }
+            
+            // Also log to Android log
+            Logger.INSTANCE.lInfo("[Bridge] " + log);
+            
+            // Notify listener if available
+            if (listener != null) {
+                listener.onEventLogged(log);
+            }
+        } catch (IOException e) {
+            Logger.INSTANCE.lError("Failed to append to log", e);
+        }
+    }
 
     /** Link a log listener to the logger */
     @Keep
-    public static native void setListener(EventLogListener listener);
+    public static void setListener(EventLogListener listener) {
+        LoggerBridge.listener = listener;
+    }
 
     /** Small listener for anything listening to the log */
     @Keep

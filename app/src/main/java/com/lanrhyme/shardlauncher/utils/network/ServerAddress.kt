@@ -10,7 +10,7 @@ import java.util.Objects
 /**
  * Server address parser
  */
-class ServerAddress private constructor(val host: String, val port: Int) {
+data class ServerAddress(val host: String, val port: Int) {
     companion object {
         private const val UNKNOWN_PORT = -1
         private val PORT_RANGE = 0..65535
@@ -63,14 +63,6 @@ class ServerAddress private constructor(val host: String, val port: Int) {
     }
     
     constructor(host: String) : this(host, UNKNOWN_PORT)
-    
-    override fun equals(other: Any?): Boolean = when {
-        this === other -> true
-        other !is ServerAddress -> false
-        else -> port == other.port && host == other.host
-    }
-    
-    override fun hashCode(): Int = Objects.hash(host, port)
     
     override fun toString(): String = "ServerAddress[host='$host', port=$port]"
 }

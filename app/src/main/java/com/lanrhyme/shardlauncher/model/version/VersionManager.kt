@@ -3,6 +3,8 @@ package com.lanrhyme.shardlauncher.model.version
 import android.content.Context
 import com.google.gson.Gson
 import com.lanrhyme.shardlauncher.utils.network.fetchStringFromUrls
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -27,12 +29,16 @@ object VersionManager {
                 manifestFile.lastModified() + TimeUnit.DAYS.toMillis(1) < System.currentTimeMillis()
 
         val newManifest = if (force || isOutdated) {
-            downloadAndCacheManifest(manifestFile)
+            withContext(Dispatchers.IO) {
+                downloadAndCacheManifest(manifestFile)
+            }
         } else {
             try {
                 gson.fromJson(manifestFile.readText(), VersionManifest::class.java)
             } catch (e: Exception) {
-                downloadAndCacheManifest(manifestFile)
+                withContext(Dispatchers.IO) {
+                    downloadAndCacheManifest(manifestFile)
+                }
             }
         }
 
@@ -40,13 +46,13 @@ object VersionManager {
         return newManifest
     }
 
-    private suspend fun downloadAndCacheManifest(manifestFile: File): VersionManifest {
+    private fun downloadAndCacheManifest(manifestFile: File): VersionManifest {
         val rawJson = fetchStringFromUrls(listOf(MINECRAFT_VERSION_MANIFEST_URL))
         manifestFile.writeText(rawJson)
         return gson.fromJson(rawJson, VersionManifest::class.java)
     }
 
-    suspend fun getGameManifest(version: Version): GameManifest {
+    fun getGameManifest(version: Version): GameManifest {
         val rawJson = fetchStringFromUrls(listOf(version.url ?: throw IllegalArgumentException("Version URL is null")))
         return gson.fromJson(rawJson, GameManifest::class.java)
     }

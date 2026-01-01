@@ -23,8 +23,9 @@ import com.lanrhyme.shardlauncher.path.LibPath
 import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.utils.logging.Logger
 import com.lanrhyme.shardlauncher.utils.json.insertJSONValueList
-import com.lanrhyme.shardlauncher.utils.string.toUnicodeEscaped
+import com.lanrhyme.shardlauncher.utils.version.isLowerOrEqualVer
 import com.lanrhyme.shardlauncher.utils.network.ServerAddress
+import com.lanrhyme.shardlauncher.utils.string.toUnicodeEscaped
 import java.io.File
 
 class LaunchArgs(
@@ -34,7 +35,7 @@ class LaunchArgs(
     private val version: Version,
     private val gameManifest: MinecraftVersionJson,
     private val runtime: Runtime,
-    private val getCacioJavaArgs: (javaVersion: Int) -> List<String>,
+    private val getCacioJavaArgs: (isJava8: Boolean) -> List<String>,
     private val offlineServerPort: Int = 0
 ) {
     
@@ -93,7 +94,9 @@ class LaunchArgs(
         // Handle authentication
         if (account.isLocalAccount()) {
             if (offlineServerPort != 0) {
+                Logger.lInfo("Using offline Yggdrasil server on port $offlineServerPort")
                 argsList.add("-javaagent:${LibPath.AUTHLIB_INJECTOR.absolutePath}=http://localhost:$offlineServerPort")
+                argsList.add("-Dauthlibinjector.side=client")
             }
         } else if (account.isAuthServerAccount()) {
             account.otherBaseUrl?.let { baseUrl ->
@@ -107,19 +110,24 @@ class LaunchArgs(
         }
 
         // Add Cacio args for window management
-        argsList.addAll(getCacioJavaArgs(runtime.javaVersion))
+        argsList.addAll(getCacioJavaArgs(runtime.javaVersion == 8))
 
         // Configure Log4j
-        val log4jVersion = if (version.getVersionInfo()?.minecraftVersion?.startsWith("1.7") == true) "1.7" else "1.12"
-        val configFileName = "log4j2-$log4jVersion.xml"
         val configFilePath = File(version.getVersionPath(), "log4j2.xml")
-        
-        // In a real implementation, we would copy from assets
-        // For now, ensure some config exists
         if (!configFilePath.exists()) {
-             configFilePath.writeText("<!-- Log4j config -->") 
+            val is7 = (version.getVersionInfo()?.minecraftVersion ?: "0.0").isLowerOrEqualVer("1.12")
+            runCatching {
+                val content = if (is7) {
+                    // In a real implementation, this would read from assets
+                    "<!-- Log4j 1.7 config -->"
+                } else {
+                    "<!-- Log4j 1.12 config -->"
+                }
+                configFilePath.writeText(content)
+            }.onFailure {
+                Logger.lWarning("Failed to write fallback Log4j configuration autonomously!", it)
+            }
         }
-        
         argsList.add("-Dlog4j.configurationFile=${configFilePath.absolutePath}")
         argsList.add("-Dminecraft.client.jar=${version.getClientJar().absolutePath}")
 
@@ -158,17 +166,54 @@ class LaunchArgs(
         }
 
         val jvmArgs = gameManifest1.arguments?.jvm
-            ?.mapNotNull { it.processJvmArg() }
+            ?.mapNotNull { arg ->
+                when {
+                    arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> arg.asString.processJvmArg()
+                    arg.isJsonObject -> {
+                        // Handle conditional arguments
+                        val rules = arg.asJsonObject.get("rules")?.asJsonArray
+                        val value = arg.asJsonObject.get("value")
+                        
+                        if (rules != null && checkArgumentRules(rules)) {
+                            when {
+                                value?.isJsonPrimitive == true && value.asJsonPrimitive.isString -> 
+                                    value.asString.processJvmArg()
+                                value?.isJsonArray == true -> 
+                                    value.asJsonArray.joinToString(" ") { it.asString }
+                                else -> null
+                            }
+                        } else null
+                    }
+                    else -> null
+                }
+            }
             ?.toTypedArray()
             ?: emptyArray()
 
         val allArgs = jvmArgs.toList() + varArgMap.keys.toList()
-        val replacedArgs = insertJSONValueList(*allArgs.toTypedArray())
+        val replacedArgs = insertJSONValueList(varArgMap, *allArgs.toTypedArray())
         return if (hasClasspath) {
             replacedArgs
         } else {
             replacedArgs + arrayOf("-cp", launchClassPath)
         }
+    }
+
+    private fun checkArgumentRules(rules: com.google.gson.JsonArray): Boolean {
+        var allowed = false
+        for (rule in rules) {
+            val ruleObj = rule.asJsonObject
+            val action = ruleObj.get("action")?.asString ?: continue
+            val os = ruleObj.get("os")?.asJsonObject
+            
+            val osMatches = os?.get("name")?.asString?.equals("linux", ignoreCase = true) ?: true
+            
+            when (action) {
+                "allow" -> if (osMatches) allowed = true
+                "disallow" -> if (osMatches) allowed = false
+            }
+        }
+        return allowed
     }
 
     private fun generateLaunchClassPath(gameManifest: MinecraftVersionJson): String {
@@ -192,7 +237,7 @@ class LaunchArgs(
     private fun generateLibClasspath(gameManifest: MinecraftVersionJson): Array<String> {
         val libDir: MutableList<String> = ArrayList()
         for (libItem in gameManifest.libraries) {
-            if (!(checkLibraryRules(libItem.rules) && libItem.downloads.artifact != null)) continue
+            if (!checkLibraryRules(libItem.rules)) continue
             val libArtifactPath: String = libItem.progressLibrary() ?: continue
             libDir.add(getLibrariesHome() + "/" + libArtifactPath)
         }
@@ -237,7 +282,26 @@ class LaunchArgs(
 
         val minecraftArgs: MutableList<String> = ArrayList()
         gameManifest.arguments?.apply {
-            game?.forEach { if (it.isJsonPrimitive && it.asJsonPrimitive.isString) minecraftArgs.add(it.asString) }
+            game?.forEach { arg ->
+                when {
+                    arg.isJsonPrimitive && arg.asJsonPrimitive.isString -> 
+                        minecraftArgs.add(arg.asString)
+                    arg.isJsonObject -> {
+                        // Handle conditional arguments
+                        val rules = arg.asJsonObject.get("rules")?.asJsonArray
+                        val value = arg.asJsonObject.get("value")
+                        
+                        if (rules != null && checkArgumentRules(rules)) {
+                            when {
+                                value?.isJsonPrimitive == true && value.asJsonPrimitive.isString -> 
+                                    minecraftArgs.add(value.asString)
+                                value?.isJsonArray == true -> 
+                                    value.asJsonArray.forEach { minecraftArgs.add(it.asString) }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         val baseArgs = splitAndFilterEmpty(
@@ -245,7 +309,7 @@ class LaunchArgs(
             minecraftArgs.toTypedArray().joinToString(" ")
         )
         val allArgs = baseArgs.toList() + varArgMap.keys.toList()
-        return insertJSONValueList(*allArgs.toTypedArray())
+        return insertJSONValueList(varArgMap, *allArgs.toTypedArray())
     }
 
     private fun setLauncherInfo(verArgMap: MutableMap<String, String>) {

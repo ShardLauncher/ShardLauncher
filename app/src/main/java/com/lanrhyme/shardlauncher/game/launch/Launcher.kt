@@ -1,17 +1,36 @@
 package com.lanrhyme.shardlauncher.game.launch
 
+import android.content.Context
 import android.os.Build
+import androidx.compose.ui.unit.IntSize
+import com.lanrhyme.shardlauncher.bridge.LoggerBridge
 import com.lanrhyme.shardlauncher.bridge.ZLBridge
-import com.lanrhyme.shardlauncher.bridge.ZLNativeInvoker
+import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
+import com.lanrhyme.shardlauncher.game.multirt.Runtime
 import com.lanrhyme.shardlauncher.info.InfoDistributor
 import com.lanrhyme.shardlauncher.path.LibPath
 import com.lanrhyme.shardlauncher.path.PathManager
+import com.lanrhyme.shardlauncher.settings.AllSettings
+import com.lanrhyme.shardlauncher.utils.logging.Logger
+import com.lanrhyme.shardlauncher.utils.platform.getDisplayFriendlyRes
+import com.lanrhyme.shardlauncher.bridge.ZLNativeInvoker
 import com.oracle.dalvik.VMLauncher
 import java.io.File
 import java.util.Locale
 import java.util.TimeZone
 
-abstract class Launcher {
+abstract class Launcher(
+    val onExit: (code: Int, isSignal: Boolean) -> Unit
+) {
+    lateinit var runtime: Runtime
+        protected set
+
+    private val runtimeHome: String by lazy {
+        RuntimesManager.getRuntimeHome(runtime.name).absolutePath
+    }
+
+    private fun getJavaHome() = if (runtime.isJDK8) "$runtimeHome/jre" else runtimeHome
+
     /**
      * Launch the game/JVM application
      */
@@ -20,7 +39,7 @@ abstract class Launcher {
     /**
      * Change working directory
      */
-    abstract fun chdir()
+    abstract fun chdir(): String
 
     /**
      * Get log file name
@@ -30,106 +49,103 @@ abstract class Launcher {
     /**
      * Exit handling
      */
-    abstract fun exit(exitCode: Int)
+    abstract fun exit()
 
     /**
-     * Set up the JVM environment and launch
+     * Put Java system properties specific to this launcher
      */
-    protected fun launchJvm(
-        allArgs: Array<String>,
-        ldLibraryPath: String,
-        envMap: Map<String, String> = emptyMap()
-    ): Int {
-        ZLNativeInvoker.staticLauncher = this
-        
-        // Ensure DNS configuration
-        ensureDNSConfig()
-        
-        // Initialize environment variables
-        initEnv(ldLibraryPath, envMap)
-
-        // Load Java runtime and other necessary libraries
-        dlopenJavaRuntime(ldLibraryPath)
-        dlopenEngine()
-
-        // Change directory
-        chdir()
-
-        // Launch JVM
-        val exitCode = VMLauncher.launchJVM(allArgs)
-        exit(exitCode)
-        return exitCode
-    }
-
-    private fun ensureDNSConfig() {
-        val resolvFile = File(PathManager.DIR_FILES_PRIVATE, "resolv.conf")
-        if (!resolvFile.exists()) {
-            runCatching {
-                resolvFile.writeText("nameserver 8.8.8.8\nnameserver 8.8.4.4\n")
-            }
-        }
-    }
-
-    /**
-     * Get basic Java system properties
-     */
-    protected fun getJavaArgs(): MutableMap<String, String> {
-        val args = mutableMapOf<String, String>()
-        val locale = Locale.getDefault()
-        
-        args["java.home"] = PathManager.DIR_MULTIRT.absolutePath // Placeholder, will be updated by specific runtime
-        args["java.io.tmpdir"] = PathManager.DIR_CACHE.absolutePath
-        args["user.home"] = PathManager.DIR_FILES_PRIVATE.absolutePath
-        args["user.language"] = locale.language
-        args["user.country"] = locale.country
-        args["user.timezone"] = TimeZone.getDefault().id
-        args["os.name"] = "Linux"
-        args["os.version"] = Build.VERSION.RELEASE
-        
-        // Launcher identification
-        args["pojav.path.minecraft"] = PathManager.DIR_GAME.absolutePath
-        args["pojav.path.private.account"] = PathManager.DIR_FILES_PRIVATE.absolutePath
-        
-        // Log4j RCE Fixes
-        args["log4j2.formatMsgNoLookups"] = "true"
-        
-        // Extra DNS config for java
-        args["ext.net.resolvPath"] = File(PathManager.DIR_FILES_PRIVATE, "resolv.conf").absolutePath
-        
-        return args
+    protected open fun MutableMap<String, String>.putJavaArgs() {
+        // Override in subclasses for specific Java args
     }
 
     /**
      * Initialize environment variables
      */
-    protected open fun initEnv(ldLibraryPath: String, extraEnv: Map<String, String>) {
-        val env = mutableMapOf<String, String>()
-        env["POJAV_NATIVEDIR"] = PathManager.DIR_NATIVE_LIB
-        env["JAVA_HOME"] = PathManager.DIR_MULTIRT.absolutePath // Should be specific to selected JRE
-        env["HOME"] = PathManager.DIR_FILES_PRIVATE.absolutePath
-        env["TMPDIR"] = PathManager.DIR_CACHE.absolutePath
-        env["LD_LIBRARY_PATH"] = ldLibraryPath
-        env["PATH"] = System.getenv("PATH") ?: "/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
-        
-        // AWT Stub size
-        env["AWTSTUB_WIDTH"] = "1280"
-        env["AWTSTUB_HEIGHT"] = "720"
-        
-        env.putAll(extraEnv)
-        
-        // Note: Actual environment variable setting is usually done via JNI or native dlopen environment
-        ZLBridge.setLdLibraryPath(ldLibraryPath)
+    protected open fun initEnv(): MutableMap<String, String> {
+        val envMap = mutableMapOf<String, String>()
+        envMap["POJAV_NATIVEDIR"] = PathManager.DIR_NATIVE_LIB
+        envMap["JAVA_HOME"] = getJavaHome()
+        envMap["HOME"] = PathManager.DIR_FILES_PRIVATE.absolutePath
+        envMap["TMPDIR"] = PathManager.DIR_CACHE.absolutePath
+        envMap["PATH"] = System.getenv("PATH") ?: "/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
+        return envMap
+    }
+
+    /**
+     * Set up the JVM environment and launch
+     */
+    protected suspend fun launchJvm(
+        context: Context,
+        jvmArgs: List<String>,
+        userArgs: String,
+        getWindowSize: () -> IntSize
+    ): Int {
+        ZLNativeInvoker.staticLauncher = this
+
+        val runtimeLibraryPath = getRuntimeLibraryPath()
+        ZLBridge.setLdLibraryPath(runtimeLibraryPath)
+
+        LoggerBridge.appendTitle("Env Map")
+        setEnv()
+
+        LoggerBridge.appendTitle("DLOPEN Java Runtime")
+        dlopenJavaRuntime()
+
+        dlopenEngine()
+
+        return launchJavaVM(
+            context = context,
+            jvmArgs = jvmArgs,
+            userArgs = userArgs,
+            getWindowSize = getWindowSize
+        )
+    }
+
+    private suspend fun launchJavaVM(
+        context: Context,
+        jvmArgs: List<String>,
+        userArgs: String,
+        getWindowSize: () -> IntSize
+    ): Int {
+        val windowSize = getWindowSize()
+        val args = getJavaArgs(userArgs, windowSize).toMutableList()
+        progressFinalUserArgs(args)
+
+        args.addAll(jvmArgs)
+        args.add(0, "$runtimeHome/bin/java")
+
+        LoggerBridge.appendTitle("JVM Args")
+        args.forEach { arg ->
+            LoggerBridge.append("ARG: $arg")
+        }
+
+        ZLBridge.chdir(chdir())
+
+        val exitCode = VMLauncher.launchJVM(args.toTypedArray())
+        LoggerBridge.append("Java Exit code: $exitCode")
+        exit()
+        onExit(exitCode, false)
+        return exitCode
+    }
+
+    private fun setEnv() {
+        val envMap = initEnv()
+        envMap.forEach { (key, value) ->
+            LoggerBridge.append("ENV: $key=$value")
+            // Note: Actual environment variable setting would be done via JNI
+        }
     }
 
     /**
      * Construct runtime library path
      */
-    protected fun getRuntimeLibraryPath(javaPath: String): String {
+    protected fun getRuntimeLibraryPath(): String {
+        val runtimeHome = RuntimesManager.getRuntimeHome(runtime.name).absolutePath
         val abi = Build.SUPPORTED_ABIS[0]
-        val base = "$javaPath/lib"
+        val base = "$runtimeHome/lib"
         return listOf(
             "$base/$abi/jli",
-            "$base/$abi/server",
+            "$base/$abi/server", 
             "$base/$abi",
             base,
             PathManager.DIR_NATIVE_LIB
@@ -139,13 +155,13 @@ abstract class Launcher {
     /**
      * Load Java runtime libraries via dlopen
      */
-    protected fun dlopenJavaRuntime(ldLibraryPath: String) {
+    protected fun dlopenJavaRuntime() {
         val libs = listOf(
-            "libjli.so", "libjvm.so", "libverify.so", "libjava.so", 
+            "libjli.so", "libjvm.so", "libverify.so", "libjava.so",
             "libnet.so", "libnio.so", "libawt.so", "libawt_headless.so"
         )
         libs.forEach { lib ->
-            val path = findLibInPath(lib, ldLibraryPath)
+            val path = findLibInPath(lib, getRuntimeLibraryPath())
             if (path != null) {
                 ZLBridge.dlopen(path)
             }
@@ -170,47 +186,115 @@ abstract class Launcher {
     }
 
     /**
-     * Get Cacio specific JVM arguments
+     * Get basic Java system properties and arguments
      */
-    protected fun getCacioJavaArgs(javaVersion: Int): List<String> {
-        val args = mutableListOf<String>()
-        val cacioJarDir = if (javaVersion >= 17) LibPath.CACIO_17 else LibPath.CACIO_8
-        
-        args.add("-Djava.awt.headless=false")
-        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctk.CToolkit")
-        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctk.CGraphicsEnvironment")
-        
-        if (javaVersion >= 9) {
-            args.add("--add-exports=java.desktop/sun.awt=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/sun.java2d=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED")
+    private fun getJavaArgs(userArgs: String, windowSize: IntSize): List<String> {
+        // Ensure DNS configuration
+        ensureDNSConfig()
+
+        val userArguments = parseJavaArguments(userArgs).toMutableList()
+
+        val overridableArguments = mutableMapOf<String, String>().apply {
+            put("java.home", getJavaHome())
+            put("java.io.tmpdir", PathManager.DIR_CACHE.absolutePath)
+            put("jna.boot.library.path", PathManager.DIR_NATIVE_LIB)
+            put("user.home", PathManager.DIR_FILES_PRIVATE.absolutePath)
+            put("user.language", System.getProperty("user.language") ?: Locale.getDefault().language)
+            put("user.country", Locale.getDefault().country)
+            put("user.timezone", TimeZone.getDefault().id)
+            put("os.name", "Linux")
+            put("os.version", "Android-${Build.VERSION.RELEASE}")
+            put("pojav.path.minecraft", PathManager.DIR_GAME.absolutePath)
+            put("pojav.path.private.account", PathManager.DIR_FILES_PRIVATE.absolutePath)
+            put("org.lwjgl.vulkan.libname", "libvulkan.so")
             
-            if (javaVersion >= 17) {
-                args.add("-javaagent:${LibPath.CACIO_17_AGENT.absolutePath}")
+            val scaleFactor = AllSettings.resolutionRatio.getValue() / 100f
+            put("glfwstub.windowWidth", getDisplayFriendlyRes(windowSize.width, scaleFactor).toString())
+            put("glfwstub.windowHeight", getDisplayFriendlyRes(windowSize.height, scaleFactor).toString())
+            put("glfwstub.initEgl", "false")
+            put("ext.net.resolvPath", File(PathManager.DIR_FILES_PRIVATE, "resolv.conf").absolutePath)
+
+            // Security fixes
+            put("log4j2.formatMsgNoLookups", "true")
+            put("java.rmi.server.useCodebaseOnly", "true")
+            put("com.sun.jndi.rmi.object.trustURLCodebase", "false")
+            put("com.sun.jndi.cosnaming.object.trustURLCodebase", "false")
+
+            put("net.minecraft.clientmodname", InfoDistributor.LAUNCHER_NAME)
+
+            // FML
+            put("fml.earlyprogresswindow", "false")
+            put("fml.ignoreInvalidMinecraftCertificates", "true")
+            put("fml.ignorePatchDiscrepancies", "true")
+
+            put("loader.disable_forked_guis", "true")
+            put("jdk.lang.Process.launchMechanism", "FORK")
+
+            put("sodium.checks.issue2561", "false")
+
+            putJavaArgs()
+        }.map { entry ->
+            "-D${entry.key}=${entry.value}"
+        }
+
+        val additionalArguments = overridableArguments.filter { arg ->
+            val stripped = arg.substringBefore('=')
+            val overridden = userArguments.any { it.startsWith(stripped) }
+            if (overridden) {
+                Logger.lInfo("Arg skipped: $arg")
+            }
+            !overridden
+        }
+
+        userArguments += additionalArguments
+        return userArguments
+    }
+
+    private fun ensureDNSConfig() {
+        val resolvFile = File(PathManager.DIR_FILES_PRIVATE, "resolv.conf")
+        if (!resolvFile.exists()) {
+            runCatching {
+                val configText = if (Locale.getDefault().displayName != Locale.CHINA.displayName) {
+                    "nameserver 1.1.1.1\nnameserver 1.0.0.1\n"
+                } else {
+                    "nameserver 8.8.8.8\nnameserver 8.8.4.4\n"
+                }
+                resolvFile.writeText(configText)
+            }.onFailure {
+                Logger.lWarning("Failed to create resolv.conf", it)
             }
         }
-        
-        args.add("-Xbootclasspath/a:${File(cacioJarDir, "cacio-ttc.jar").absolutePath}")
-        return args
     }
 
     /**
      * Finalize user-provided arguments (memory, GC, etc.)
      */
-    protected fun progressFinalUserArgs(userArgs: List<String>): List<String> {
-        val result = userArgs.toMutableList()
-        
-        // Remove potentially conflicting args
-        result.removeAll { it.startsWith("-Xmx") || it.startsWith("-Xms") }
-        
+    protected open fun progressFinalUserArgs(
+        args: MutableList<String>,
+        ramAllocation: Int = AllSettings.ramAllocation.getValue()
+    ) {
+        args.purgeArg("-Xms")
+        args.purgeArg("-Xmx")
+        args.purgeArg("-d32")
+        args.purgeArg("-d64")
+        args.purgeArg("-Xint")
+        args.purgeArg("-XX:+UseTransparentHugePages")
+        args.purgeArg("-XX:+UseLargePagesInMetaspace")
+        args.purgeArg("-XX:+UseLargePages")
+        args.purgeArg("-Dorg.lwjgl.opengl.libname")
+
+        args.add("-Xms${ramAllocation}M")
+        args.add("-Xmx${ramAllocation}M")
+
         // Add patches if missing
         val patcherPath = LibPath.MIO_LIB_PATCHER.absolutePath
-        if (result.none { it.contains("MioLibPatcher.jar") }) {
-            result.add("-javaagent:$patcherPath")
+        if (args.none { it.contains("MioLibPatcher.jar") }) {
+            args.add("-javaagent:$patcherPath")
         }
-        
-        return result
+    }
+
+    private fun MutableList<String>.purgeArg(argPrefix: String) {
+        removeAll { it.startsWith(argPrefix) }
     }
 
     /**

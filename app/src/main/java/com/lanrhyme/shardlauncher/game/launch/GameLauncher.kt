@@ -29,18 +29,19 @@ import com.lanrhyme.shardlauncher.game.version.remote.MinecraftVersionJson
 import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.device.Architecture
+import com.lanrhyme.shardlauncher.game.account.isLocalAccount
 import com.lanrhyme.shardlauncher.utils.logging.Logger
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class GameLauncher(
     private val activity: Activity,
     private val version: Version,
     private val getWindowSize: () -> IntSize,
-    private val onExit: (code: Int, isSignal: Boolean) -> Unit
-) : Launcher() {
+    onExit: (code: Int, isSignal: Boolean) -> Unit
+) : Launcher(onExit) {
     
     private lateinit var gameManifest: MinecraftVersionJson
-    private var runtime: Runtime? = null
     private var offlinePort: Int = 0
 
     override suspend fun launch(): Int {
@@ -55,7 +56,7 @@ class GameLauncher(
         // Get current account
         val currentAccount = AccountsManager.currentAccountFlow.value!!
         val account = if (version.offlineAccountLogin) {
-            currentAccount.copy(accountType = "离线登录")
+            currentAccount.copy(accountType = AccountType.LOCAL.toString())
         } else {
             currentAccount
         }
@@ -75,8 +76,8 @@ class GameLauncher(
         MCOptions.save()
 
         // Start offline Yggdrasil if needed
-        if (version.offlineAccountLogin) {
-            offlinePort = OfflineYggdrasilServer.start()
+        if (account.isLocalAccount() && account.hasSkinFile) {
+            offlinePort = runBlocking { OfflineYggdrasilServer.start() }
             OfflineYggdrasilServer.addCharacter(account.username, account.profileId)
         }
 
@@ -86,49 +87,85 @@ class GameLauncher(
             account = account
         )
 
+        return launchGame(account, javaRuntimeName, customArgs)
+    }
+
+    private suspend fun launchGame(
+        account: Account,
+        javaRuntime: String,
+        customArgs: String
+    ): Int {
+        val runtime = RuntimesManager.forceReload(javaRuntime)
+        this.runtime = runtime
+
         val gameDirPath = version.getGameDir()
         disableSplash(gameDirPath)
 
-        val ldLibraryPath = getRuntimeLibraryPath(RuntimesManager.getRuntimeHome(selectedRuntime.name).absolutePath)
-        
-        // Build environment
-        val env = initEnv(ldLibraryPath)
+        val runtimeLibraryPath = getRuntimeLibraryPath()
 
-        // Build launch arguments
         val launchArgs = LaunchArgs(
-            runtimeLibraryPath = ldLibraryPath,
+            runtimeLibraryPath = runtimeLibraryPath,
             account = account,
             gameDirPath = gameDirPath,
             version = version,
             gameManifest = gameManifest,
-            runtime = selectedRuntime,
-            getCacioJavaArgs = { javaVersion ->
-                getCacioJavaArgs(javaVersion)
+            runtime = runtime,
+            getCacioJavaArgs = { isJava8 ->
+                val windowSize = getWindowSize()
+                getCacioJavaArgs(windowSize.width, windowSize.height, isJava8)
             },
             offlineServerPort = offlinePort
         ).getAllArgs()
 
-        val finalArgs = progressFinalUserArgs(launchArgs + parseJavaArguments(customArgs))
-
-        return launchJvm(finalArgs.toTypedArray(), ldLibraryPath, env)
+        return launchJvm(
+            context = activity,
+            jvmArgs = launchArgs,
+            userArgs = customArgs,
+            getWindowSize = getWindowSize
+        )
     }
 
-    override fun chdir() {
-        val path = version.getGameDir().absolutePath
-        ZLBridge.chdir(path)
+    override fun chdir(): String {
+        return version.getGameDir().absolutePath
     }
 
     override fun getLogName(): String = "game_${version.getVersionName()}_${System.currentTimeMillis()}"
 
-    override fun exit(exitCode: Int) {
+    override fun exit() {
         if (offlinePort != 0) {
             OfflineYggdrasilServer.stop()
         }
-        onExit(exitCode, false)
     }
 
-    private fun initEnv(ldLibraryPath: String): Map<String, String> {
-        val envMap = mutableMapOf<String, String>()
+    override fun MutableMap<String, String>.putJavaArgs() {
+        val versionInfo = version.getVersionInfo()
+        
+        // Fix Forge 1.7.2
+        val is172 = (versionInfo?.minecraftVersion ?: "0.0") == "1.7.2"
+        if (is172 && (versionInfo?.loaderInfo?.loader?.name == "forge")) {
+            Logger.lDebug("Is Forge 1.7.2, use the patched sorting method.")
+            put("sort.patch", "true")
+        }
+
+        // JNA library path
+        gameManifest.libraries?.find { library ->
+            library.name.startsWith("net.java.dev.jna:jna:")
+        }?.let { library ->
+            val components = library.name.split(":")
+            if (components.size >= 3) {
+                val jnaVersion = components[2]
+                val jnaDir = File(PathManager.DIR_COMPONENTS, "jna/$jnaVersion")
+                if (jnaDir.exists()) {
+                    val dirPath = jnaDir.absolutePath
+                    put("java.library.path", "$dirPath:${PathManager.DIR_NATIVE_LIB}")
+                    put("jna.boot.library.path", dirPath)
+                }
+            }
+        }
+    }
+
+    override fun initEnv(): MutableMap<String, String> {
+        val envMap = super.initEnv()
 
         // Set driver
         DriverPluginManager.setDriverById(version.getDriver())
@@ -144,33 +181,78 @@ class GameLauncher(
             setRendererEnv(envMap)
         }
 
-        // Set window size with resolution scaling
-        val windowSize = getWindowSize()
-        val scaleFactor = AllSettings.resolutionRatio.state / 100f
-        val scaledWidth = getDisplayFriendlyRes(windowSize.width, scaleFactor)
-        val scaledHeight = getDisplayFriendlyRes(windowSize.height, scaleFactor)
-        
-        envMap["glfwstub.windowWidth"] = scaledWidth.toString()
-        envMap["glfwstub.windowHeight"] = scaledHeight.toString()
-        envMap["AWTSTUB_WIDTH"] = scaledWidth.toString()
-        envMap["AWTSTUB_HEIGHT"] = scaledHeight.toString()
-
         envMap["SHARD_VERSION_CODE"] = BuildConfig.VERSION_CODE.toString()
         
-        super.initEnv(ldLibraryPath, envMap)
         return envMap
     }
 
     override fun dlopenEngine() {
         super.dlopenEngine()
         
-        // Load renderer libraries
-        RendererPluginManager.selectedRendererPlugin?.let { _ ->
-             // Implementation for loading plugin libs
+        LoggerBridge.appendTitle("DLOPEN Renderer")
+        
+        // Load renderer plugin libraries
+        RendererPluginManager.selectedRendererPlugin?.let { renderer ->
+            renderer.dlopen.forEach { lib -> 
+                ZLBridge.dlopen("${renderer.path}/$lib") 
+            }
         }
 
-        loadGraphicsLibrary()?.let { rendererLib ->
-             ZLBridge.dlopen(rendererLib)
+        // Load graphics library
+        val rendererLib = loadGraphicsLibrary()
+        if (rendererLib != null) {
+            if (!ZLBridge.dlopen(rendererLib) && !ZLBridge.dlopen(findInLdLibPath(rendererLib))) {
+                Logger.lError("Failed to load renderer $rendererLib")
+            }
+        }
+    }
+
+    override fun progressFinalUserArgs(args: MutableList<String>, ramAllocation: Int) {
+        super.progressFinalUserArgs(args, ramAllocation)
+        if (Renderers.isCurrentRendererValid()) {
+            args.add("-Dorg.lwjgl.opengl.libname=${loadGraphicsLibrary()}")
+        }
+    }
+
+    private fun getCacioJavaArgs(windowWidth: Int, windowHeight: Int, isJava8: Boolean): List<String> {
+        val args = mutableListOf<String>()
+        val scaleFactor = AllSettings.resolutionRatio.getValue() / 100f
+        val scaledWidth = getDisplayFriendlyRes(windowWidth, scaleFactor)
+        val scaledHeight = getDisplayFriendlyRes(windowHeight, scaleFactor)
+        
+        args.add("-Djava.awt.headless=false")
+        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctk.CToolkit")
+        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctk.CGraphicsEnvironment")
+        args.add("-Dglfwstub.windowWidth=$scaledWidth")
+        args.add("-Dglfwstub.windowHeight=$scaledHeight")
+        args.add("-Dglfwstub.initEgl=false")
+        
+        if (!isJava8) {
+            args.add("--add-exports=java.desktop/sun.awt=ALL-UNNAMED")
+            args.add("--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED")
+            args.add("--add-exports=java.desktop/sun.java2d=ALL-UNNAMED")
+            args.add("--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED")
+            
+            if (runtime?.javaVersion ?: 8 >= 17) {
+                args.add("-javaagent:${PathManager.DIR_COMPONENTS}/cacio-17/cacio-agent.jar")
+            }
+        }
+        
+        val cacioJarDir = if (runtime?.javaVersion ?: 8 >= 17) {
+            File(PathManager.DIR_COMPONENTS, "cacio-17")
+        } else {
+            File(PathManager.DIR_COMPONENTS, "cacio-8")
+        }
+        args.add("-Xbootclasspath/a:${File(cacioJarDir, "cacio-ttc.jar").absolutePath}")
+        
+        return args
+    }
+
+    private fun findInLdLibPath(libName: String): String? {
+        val ldLibraryPath = getRuntimeLibraryPath()
+        return ldLibraryPath.split(":").firstNotNullOfOrNull { dir ->
+            val file = File(dir, libName)
+            if (file.exists()) file.absolutePath else null
         }
     }
 

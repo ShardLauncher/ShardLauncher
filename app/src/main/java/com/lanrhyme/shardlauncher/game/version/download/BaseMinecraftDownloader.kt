@@ -46,7 +46,7 @@ class BaseMinecraftDownloader(
     /**
      * 创建版本 Json
      */
-    suspend fun createVersionJson(version: Version): GameManifest {
+    fun createVersionJson(version: Version): GameManifest {
         return createVersionJson(version, version.id)
     }
 
@@ -54,7 +54,7 @@ class BaseMinecraftDownloader(
      * 创建版本 Json
      * @param targetVersion 目标版本名称
      */
-    suspend fun createVersionJson(
+    fun createVersionJson(
         version: Version,
         targetVersion: String,
         mcFolder: File = versionsTarget
@@ -71,7 +71,7 @@ class BaseMinecraftDownloader(
     /**
      * 创建 assets 索引 Json
      */
-    suspend fun createAssetIndex(
+    fun createAssetIndex(
         assetIndexTarget: File,
         gameManifest: GameManifest
     ): AssetIndexJson? {

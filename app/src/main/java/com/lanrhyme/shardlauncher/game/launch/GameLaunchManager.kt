@@ -66,7 +66,11 @@ object GameLaunchManager {
             
         } catch (e: Exception) {
             Logger.lError("Failed to launch game", e)
-            LoggerBridge.append("Launch failed: ${e.message}")
+            try {
+                LoggerBridge.append("Launch failed: ${e.message}")
+            } catch (bridgeError: Exception) {
+                Logger.lError("Failed to log to bridge", bridgeError)
+            }
             -1
         }
 

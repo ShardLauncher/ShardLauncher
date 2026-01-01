@@ -20,9 +20,13 @@
 package com.lanrhyme.shardlauncher.bridge;
 
 import android.content.Context;
-
 import androidx.annotation.Keep;
+import com.lanrhyme.shardlauncher.utils.logging.Logger;
 
+/**
+ * Temporary ZLBridge implementation that doesn't rely on native libraries
+ * This is a fallback implementation until native libraries are properly compiled
+ */
 @Keep
 public final class ZLBridge {
     // AWT
@@ -61,45 +65,69 @@ public final class ZLBridge {
 
     // Game
     @Keep
-    public static native void initializeGameExitHook();
+    public static void initializeGameExitHook() {
+        Logger.INSTANCE.lInfo("ZLBridge: initializeGameExitHook (stub)");
+    }
 
     @Keep
-    public static native void setupExitMethod(Context context);
+    public static void setupExitMethod(Context context) {
+        Logger.INSTANCE.lInfo("ZLBridge: setupExitMethod (stub)");
+    }
 
     // Launch
     @Keep
-    public static native void setLdLibraryPath(String ldLibraryPath);
+    public static void setLdLibraryPath(String ldLibraryPath) {
+        Logger.INSTANCE.lInfo("ZLBridge: setLdLibraryPath: " + ldLibraryPath);
+        // TODO: Set LD_LIBRARY_PATH environment variable
+    }
 
     @Keep
-    public static native boolean dlopen(String libPath);
+    public static boolean dlopen(String libPath) {
+        Logger.INSTANCE.lInfo("ZLBridge: dlopen: " + libPath);
+        // TODO: Load library dynamically
+        return true; // Return true for now to avoid failures
+    }
 
     // Render
     @Keep
-    public static native void setupBridgeWindow(Object surface);
+    public static void setupBridgeWindow(Object surface) {
+        Logger.INSTANCE.lInfo("ZLBridge: setupBridgeWindow (stub)");
+    }
 
     @Keep
-    public static native void releaseBridgeWindow();
+    public static void releaseBridgeWindow() {
+        Logger.INSTANCE.lInfo("ZLBridge: releaseBridgeWindow (stub)");
+    }
 
     @Keep
-    public static native void moveWindow(int xOffset, int yOffset);
+    public static void moveWindow(int xOffset, int yOffset) {
+        Logger.INSTANCE.lInfo("ZLBridge: moveWindow: " + xOffset + ", " + yOffset);
+    }
 
     @Keep
-    public static native int[] renderAWTScreenFrame();
+    public static int[] renderAWTScreenFrame() {
+        // Return empty array for now
+        return new int[0];
+    }
 
     // Input
     @Keep
-    public static native void sendInputData(int type, int i1, int i2, int i3, int i4);
+    public static void sendInputData(int type, int i1, int i2, int i3, int i4) {
+        Logger.INSTANCE.lDebug("ZLBridge: sendInputData: " + type + ", " + i1 + ", " + i2 + ", " + i3 + ", " + i4);
+    }
 
     @Keep
-    public static native void clipboardReceived(String data, String mimeTypeSub);
+    public static void clipboardReceived(String data, String mimeTypeSub) {
+        Logger.INSTANCE.lInfo("ZLBridge: clipboardReceived: " + data + ", " + mimeTypeSub);
+    }
 
     // Utils
     @Keep
-    public static native int chdir(String path);
-
-    static {
-        System.loadLibrary("exithook");
-        System.loadLibrary("pojavexec");
-        System.loadLibrary("pojavexec_awt");
+    public static int chdir(String path) {
+        Logger.INSTANCE.lInfo("ZLBridge: chdir: " + path);
+        // TODO: Change directory
+        return 0; // Return success for now
     }
+
+    // No static block to load native libraries - using stub implementation
 }

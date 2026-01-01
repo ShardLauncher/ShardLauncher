@@ -4,7 +4,6 @@ import com.lanrhyme.shardlauncher.utils.file.compareSHA1
 import com.lanrhyme.shardlauncher.utils.logging.Logger.lError
 import com.lanrhyme.shardlauncher.utils.network.downloadFromMirrorList
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runInterruptible
 import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileNotFoundException
@@ -23,7 +22,7 @@ class DownloadTask(
     private val onFileDownloaded: () -> Unit = {},
     var fileDownloadedTask: (() -> Unit)? = null
 ) {
-    suspend fun download() {
+    fun download() {
         //若目标文件存在，验证通过或关闭完整性验证时，跳过此次下载
         if (verifySha1()) {
             downloadedSize(FileUtils.sizeOf(targetFile))
@@ -31,24 +30,23 @@ class DownloadTask(
             return
         }
 
-        runCatching {
-            runInterruptible {
-                val success = downloadFromMirrorList(
-                    urls = urls,
-                    sha1 = sha1,
-                    outputFile = targetFile,
-                    bufferSize = bufferSize,
-                    onProgress = { size ->
-                        downloadedSize(size)
-                    }
-                )
-                if (!success) {
-                    throw IOException("Download failed from all mirrors")
+        try {
+            val success = downloadFromMirrorList(
+                urls = urls,
+                sha1 = sha1,
+                outputFile = targetFile,
+                bufferSize = bufferSize,
+                onProgress = { size ->
+                    downloadedSize(size)
                 }
+            )
+            if (!success) {
+                throw IOException("Download failed from all mirrors")
             }
             downloadedFile()
-        }.onFailure { e ->
-            if (e is CancellationException) return@onFailure
+        } catch (e: CancellationException) {
+            throw e // Re-throw cancellation
+        } catch (e: Exception) {
             lError("Download failed: ${targetFile.absolutePath}\nurls: ${urls.joinToString("\n")}", e)
             if (!isDownloadable && e is FileNotFoundException) throw e
             onDownloadFailed(this)

@@ -168,7 +168,7 @@ class Version(
     // TODO: Implement settings
     fun getRamAllocation(context: Context? = null): Int = versionConfig.ramAllocation.takeIf { it >= 256 }?.let {
         if (context != null) {
-            min(it, com.lanrhyme.shardlauncher.utils.platform.getMaxMemoryForSettings(context))
+            min(it, com.lanrhyme.shardlauncher.utils.platform.getMaxMemoryForSettings())
         } else {
             it
         }
