@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "ShardLauncher"
 include(":app")
+include(":NG-GL4ES")
  

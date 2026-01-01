@@ -181,6 +181,7 @@ dependencies {
 
     // Native libraries
     implementation("com.bytedance:bytehook:1.0.9")
+    implementation(project(":NG-GL4ES"))
 
 
     testImplementation(libs.junit)
