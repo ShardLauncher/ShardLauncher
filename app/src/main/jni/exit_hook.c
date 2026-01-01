@@ -71,7 +71,7 @@ static bool init_exit_hook() {
 }
 
 JNIEXPORT void JNICALL
-Java_com_movtery_zalithlauncher_bridge_ZLBridge_initializeGameExitHook(JNIEnv *env, jclass clazz) {
+Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_initializeGameExitHook(JNIEnv *env, jclass clazz) {
     bool hookReady = init_exit_hook();
     if(!hookReady){
         // If we can't hook, register atexit(). This won't report a proper error code,

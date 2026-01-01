@@ -83,12 +83,21 @@ abstract class Launcher(
         ZLNativeInvoker.staticLauncher = this
 
         val runtimeLibraryPath = getRuntimeLibraryPath()
-        ZLBridge.setLdLibraryPath(runtimeLibraryPath)
+        // ZLBridge.setLdLibraryPath(runtimeLibraryPath)  // Temporarily disabled due to JNI issues
+        // Logger.lInfo("Skipping setLdLibraryPath due to JNI issues - runtime path: $runtimeLibraryPath")
+        
+        // Try to restore setLdLibraryPath - this is critical for library loading
+        try {
+            ZLBridge.setLdLibraryPath(runtimeLibraryPath)
+            Logger.lInfo("Successfully set LD_LIBRARY_PATH: $runtimeLibraryPath")
+        } catch (e: UnsatisfiedLinkError) {
+            Logger.lWarning("Failed to set LD_LIBRARY_PATH, continuing without it: ${e.message}")
+        }
 
-        LoggerBridge.appendTitle("Env Map")
+        Logger.lInfo("==================== Env Map ====================")
         setEnv()
 
-        LoggerBridge.appendTitle("DLOPEN Java Runtime")
+        Logger.lInfo("==================== DLOPEN Java Runtime ====================")
         dlopenJavaRuntime()
 
         dlopenEngine()
@@ -114,15 +123,26 @@ abstract class Launcher(
         args.addAll(jvmArgs)
         args.add(0, "$runtimeHome/bin/java")
 
-        LoggerBridge.appendTitle("JVM Args")
+        Logger.lInfo("==================== JVM Args ====================")
         args.forEach { arg ->
-            LoggerBridge.append("ARG: $arg")
+            Logger.lInfo("ARG: $arg")
         }
 
-        ZLBridge.chdir(chdir())
+        // ZLBridge.chdir(chdir())  // Temporarily disabled due to JNI issues
+        // Logger.lInfo("Skipping chdir due to JNI issues - target dir: ${chdir()}")
+        
+        // Try to restore chdir - this is important for correct working directory
+        try {
+            ZLBridge.chdir(chdir())
+            Logger.lInfo("Successfully changed directory to: ${chdir()}")
+        } catch (e: UnsatisfiedLinkError) {
+            Logger.lWarning("Failed to change directory, continuing without it: ${e.message}")
+        }
 
         val exitCode = VMLauncher.launchJVM(args.toTypedArray())
-        LoggerBridge.append("Java Exit code: $exitCode")
+        Logger.lInfo("Java Exit code: $exitCode")
+        exit()
+        onExit(exitCode, false)
         exit()
         onExit(exitCode, false)
         return exitCode
@@ -131,7 +151,7 @@ abstract class Launcher(
     private fun setEnv() {
         val envMap = initEnv()
         envMap.forEach { (key, value) ->
-            LoggerBridge.append("ENV: $key=$value")
+            Logger.lInfo("ENV: $key=$value")
             // Note: Actual environment variable setting would be done via JNI
         }
     }
@@ -163,7 +183,20 @@ abstract class Launcher(
         libs.forEach { lib ->
             val path = findLibInPath(lib, getRuntimeLibraryPath())
             if (path != null) {
-                ZLBridge.dlopen(path)
+                // ZLBridge.dlopen(path)  // Temporarily disabled due to JNI issues
+                // Logger.lInfo("Skipping dlopen due to JNI issues - lib: $path")
+                
+                // Try to restore dlopen for Java runtime libraries - these are critical
+                try {
+                    val success = ZLBridge.dlopen(path)
+                    if (success) {
+                        Logger.lInfo("Successfully loaded Java runtime library: $path")
+                    } else {
+                        Logger.lWarning("Failed to load Java runtime library: $path")
+                    }
+                } catch (e: UnsatisfiedLinkError) {
+                    Logger.lWarning("JNI error loading Java runtime library $path: ${e.message}")
+                }
             }
         }
     }
@@ -182,7 +215,22 @@ abstract class Launcher(
     protected open fun dlopenEngine() {
         // Load OpenAL or other engine specific libs
         val openal = File(PathManager.DIR_NATIVE_LIB, "libopenal.so")
-        if (openal.exists()) ZLBridge.dlopen(openal.absolutePath)
+        if (openal.exists()) {
+            // ZLBridge.dlopen(openal.absolutePath)  // Temporarily disabled due to JNI issues
+            // Logger.lInfo("Skipping dlopen for OpenAL due to JNI issues - path: ${openal.absolutePath}")
+            
+            // Try to restore OpenAL dlopen - this is important for audio
+            try {
+                val success = ZLBridge.dlopen(openal.absolutePath)
+                if (success) {
+                    Logger.lInfo("Successfully loaded OpenAL library: ${openal.absolutePath}")
+                } else {
+                    Logger.lWarning("Failed to load OpenAL library: ${openal.absolutePath}")
+                }
+            } catch (e: UnsatisfiedLinkError) {
+                Logger.lWarning("JNI error loading OpenAL library: ${e.message}")
+            }
+        }
     }
 
     /**

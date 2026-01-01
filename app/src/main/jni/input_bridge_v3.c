@@ -46,7 +46,7 @@ jint JNI_OnLoad(JavaVM* vm, __attribute__((unused)) void* reserved) {
         pojav_environ->method_onCursorShapeChanged = (*pojav_environ->dalvikJNIEnvPtr_ANDROID)->GetStaticMethodID(pojav_environ->dalvikJNIEnvPtr_ANDROID, pojav_environ->bridgeClazz, "onCursorShapeChanged", "(I)V");
         pojav_environ->isUseStackQueueCall = JNI_FALSE;
         //ZL Invoker
-        pojav_environ->class_ZLInvoker = (*pojav_environ->dalvikJNIEnvPtr_ANDROID)->NewGlobalRef(pojav_environ->dalvikJNIEnvPtr_ANDROID,(*pojav_environ->dalvikJNIEnvPtr_ANDROID) ->FindClass(pojav_environ->dalvikJNIEnvPtr_ANDROID, "com/movtery/zalithlauncher/bridge/ZLNativeInvoker"));
+        pojav_environ->class_ZLInvoker = (*pojav_environ->dalvikJNIEnvPtr_ANDROID)->NewGlobalRef(pojav_environ->dalvikJNIEnvPtr_ANDROID,(*pojav_environ->dalvikJNIEnvPtr_ANDROID) ->FindClass(pojav_environ->dalvikJNIEnvPtr_ANDROID, "com/lanrhyme/shardlauncher/bridge/ZLNativeInvoker"));
         pojav_environ->method_PutFpsValue = (*pojav_environ->dalvikJNIEnvPtr_ANDROID)->GetStaticMethodID(pojav_environ->dalvikJNIEnvPtr_ANDROID, pojav_environ->class_ZLInvoker, "putFpsValue", "(I)V");
     } else if (pojav_environ->dalvikJavaVMPtr != vm) {
         LOG_TO_I("<%s> %s", "Native", "Saving JVM environ...");
@@ -548,7 +548,7 @@ static bool tryCriticalNative(JNIEnv *env) {
     static const JNINativeMethod testJNIMethod[] = {
             { "testCriticalNative", "(II)V", dvm_testCriticalNative}
     };
-    jclass criticalNativeTest = (*env)->FindClass(env, "com/movtery/zalithlauncher/game/input/CriticalNativeTest");
+    jclass criticalNativeTest = (*env)->FindClass(env, "com/lanrhyme/shardlauncher/game/input/CriticalNativeTest");
     if(criticalNativeTest == NULL) {
         LOG_TO_D("No CriticalNativeTest class found !");
         (*env)->ExceptionClear(env);

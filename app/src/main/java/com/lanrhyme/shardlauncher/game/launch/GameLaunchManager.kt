@@ -50,12 +50,8 @@ object GameLaunchManager {
             Logger.lInfo("Starting game launch for version: ${version.getVersionName()}")
             Logger.lInfo("Using account: ${launchAccount.username}")
             
-            // Initialize native logging (this will load the native libraries)
-            try {
-                LoggerBridge.appendTitle("Game Launch Started")
-            } catch (e: UnsatisfiedLinkError) {
-                Logger.lWarning("Native logging not available: ${e.message}")
-            }
+            // Skip native logging initialization for now to avoid crashes
+            // TODO: Initialize native logging properly after game launch system is stable
             
             // Create and launch game
             val launcher = LauncherFactory.createGameLauncher(
@@ -73,11 +69,6 @@ object GameLaunchManager {
             
         } catch (e: Exception) {
             Logger.lError("Failed to launch game", e)
-            try {
-                LoggerBridge.append("Launch failed: ${e.message}")
-            } catch (bridgeError: Exception) {
-                Logger.lError("Failed to log to bridge", bridgeError)
-            }
             -1
         }
 

@@ -38,7 +38,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
         dalvikJavaVMPtr = vm;
         JNIEnv *env = NULL;
         (*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_4);
-        class_ZLInvoker = (*env)->NewGlobalRef(env,(*env)->FindClass(env, "com/movtery/zalithlauncher/bridge/ZLNativeInvoker"));
+        class_ZLInvoker = (*env)->NewGlobalRef(env,(*env)->FindClass(env, "com/lanrhyme/shardlauncher/bridge/ZLNativeInvoker"));
         method_OpenLink= (*env)->GetStaticMethodID(env, class_ZLInvoker, "openLink", "(Ljava/lang/String;)V");
         method_OpenPath= (*env)->GetStaticMethodID(env, class_ZLInvoker, "openLink", "(Ljava/lang/String;)V");
         method_QuerySystemClipboard = (*env)->GetStaticMethodID(env, class_ZLInvoker, "querySystemClipboard", "()V");
@@ -50,7 +50,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     return JNI_VERSION_1_4;
 }
 
-JNIEXPORT void JNICALL Java_com_movtery_zalithlauncher_bridge_ZLBridge_sendInputData(JNIEnv* env, jclass clazz, jint type, jint i1, jint i2, jint i3, jint i4) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_sendInputData(JNIEnv* env, jclass clazz, jint type, jint i1, jint i2, jint i3, jint i4) {
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return;
@@ -80,7 +80,7 @@ JNIEXPORT void JNICALL Java_com_movtery_zalithlauncher_bridge_ZLBridge_sendInput
 // TODO: check for memory leaks
 // int printed = 0;
 int threadAttached = 0;
-JNIEXPORT jintArray JNICALL Java_com_movtery_zalithlauncher_bridge_ZLBridge_renderAWTScreenFrame(JNIEnv* env, jclass clazz /*, jobject canvas, jint width, jint height */) {
+JNIEXPORT jintArray JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_renderAWTScreenFrame(JNIEnv* env, jclass clazz /*, jobject canvas, jint width, jint height */) {
     if (runtimeJNIEnvPtr_GRAPHICS == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return NULL;
@@ -187,7 +187,7 @@ JNIEXPORT void JNICALL Java_net_java_openjdk_cacio_ctc_CTCDesktopPeer_openUri(JN
     if(detachable) (*dalvikJavaVMPtr)->DetachCurrentThread(dalvikJavaVMPtr);
 }
 
-JNIEXPORT void JNICALL Java_com_movtery_zalithlauncher_bridge_ZLBridge_clipboardReceived(JNIEnv *env, jclass clazz, jstring clipboardData, jstring clipboardDataMime) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_clipboardReceived(JNIEnv *env, jclass clazz, jstring clipboardData, jstring clipboardDataMime) {
     if(method_SystemClipboardDataReceived == NULL || class_CTCClipboard == NULL) return;
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
@@ -206,7 +206,7 @@ JNIEXPORT void JNICALL Java_com_movtery_zalithlauncher_bridge_ZLBridge_clipboard
 }
 
 JNIEXPORT void JNICALL
-Java_com_movtery_zalithlauncher_bridge_ZLBridge_moveWindow(JNIEnv *env, jclass clazz, jint xoff, jint yoff) {
+Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_moveWindow(JNIEnv *env, jclass clazz, jint xoff, jint yoff) {
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return;

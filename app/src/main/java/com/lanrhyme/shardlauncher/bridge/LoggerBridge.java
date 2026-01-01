@@ -55,9 +55,10 @@ public final class LoggerBridge {
         append(logText);
     }
 
+    // Remove static library loading to prevent crashes during class initialization
+    // Libraries will be loaded when actually needed by the game launch process
+    
     static {
-        System.loadLibrary("exithook");
         System.loadLibrary("pojavexec");
-        System.loadLibrary("pojavexec_awt");
     }
 }

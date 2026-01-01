@@ -165,6 +165,9 @@ class MainActivity : ComponentActivity() {
         AccountsManager.initialize(applicationContext)
         com.lanrhyme.shardlauncher.game.path.GamePathManager.initialize(applicationContext)
         
+        // Initialize renderers
+        com.lanrhyme.shardlauncher.game.renderer.Renderers.init()
+        
         com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.refresh("MainActivity.onCreate")
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -274,19 +277,25 @@ class MainActivity : ComponentActivity() {
             val newIntent by newIntentState
 
             LaunchedEffect(newIntent) {
-                newIntent?.let {
-                    navController.handleDeepLink(it)
+                newIntent?.let { intent ->
+                    // Wait for NavController to be properly initialized with a graph
+                    try {
+                        // Use a simple try-catch to handle deep link
+                        navController.handleDeepLink(intent)
+                    } catch (e: Exception) {
+                        // NavController not ready yet or deep link handling failed, ignore
+                        // This is expected during app startup
+                    }
                     newIntentState.value = null
                 }
             }
 
             var showSplash by remember { mutableStateOf(true) }
 
-            val scaledDensity =
-                    Density(
-                            LocalDensity.current.density * uiScale,
-                            LocalDensity.current.fontScale * uiScale
-                    )
+            val scaledDensity = Density(
+                LocalDensity.current.density * uiScale,
+                LocalDensity.current.fontScale * uiScale
+            )
 
             CompositionLocalProvider(
                     LocalDensity provides scaledDensity,

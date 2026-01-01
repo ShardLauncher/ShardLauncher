@@ -23,10 +23,23 @@ import dalvik.annotation.optimization.CriticalNative;
 
 @Keep
 public class CallbackBridge {
-    public static final Choreographer sChoreographer = Choreographer.getInstance();
+    private static Choreographer sChoreographer;
     private static boolean isGrabbing = false;
     private static final Consumer<Boolean> grabListener = isGrabbing -> ZLBridgeStates
             .setCursorMode(isGrabbing ? CURSOR_DISABLED : CURSOR_ENABLED);
+
+    public static Choreographer getChoreographer() {
+        if (sChoreographer == null) {
+            // Only initialize Choreographer on the main thread
+            if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+                sChoreographer = Choreographer.getInstance();
+            } else {
+                // If not on main thread, return null and handle gracefully
+                return null;
+            }
+        }
+        return sChoreographer;
+    }
 
     private static int cursorShape = 0x36001;
     private static final Consumer<CursorShape> cursorShapeListener = ZLBridgeStates::setCursorShape;
@@ -48,7 +61,14 @@ public class CallbackBridge {
 
     public static void putMouseEvent(int button) {
         putMouseEvent(button, true);
-        sChoreographer.postFrameCallbackDelayed(l -> putMouseEvent(button, false), 33);
+        Choreographer choreographer = getChoreographer();
+        if (choreographer != null) {
+            choreographer.postFrameCallbackDelayed(l -> putMouseEvent(button, false), 33);
+        } else {
+            // Fallback: use a simple delay mechanism
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                () -> putMouseEvent(button, false), 33);
+        }
     }
 
     public static void putMouseEvent(int button, boolean isDown) {
@@ -202,7 +222,7 @@ public class CallbackBridge {
     @Keep
     private static void onGrabStateChanged(final boolean grabbing) {
         isGrabbing = grabbing;
-        sChoreographer.postFrameCallbackDelayed((time) -> {
+        getChoreographer().postFrameCallbackDelayed((time) -> {
             // If the grab re-changed, skip notify process
             if (isGrabbing != grabbing)
                 return;
@@ -220,7 +240,7 @@ public class CallbackBridge {
     @Keep
     private static void onCursorShapeChanged(final int shape) {
         cursorShape = shape;
-        sChoreographer.postFrameCallbackDelayed((time) -> {
+        getChoreographer().postFrameCallbackDelayed((time) -> {
             if (cursorShape != shape)
                 return;
 

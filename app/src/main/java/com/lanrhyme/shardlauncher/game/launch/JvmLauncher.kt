@@ -68,8 +68,8 @@ open class JvmLauncher(
             addAll(args)
         }
 
-        LoggerBridge.appendTitle("Launch JVM")
-        LoggerBridge.append("Info: Java arguments: \r\n${argList.joinToString("\r\n")}")
+        Logger.lInfo("==================== Launch JVM ====================")
+        Logger.lInfo("Info: Java arguments: \r\n${argList.joinToString("\r\n")}")
 
         return Pair(runtime, argList)
     }

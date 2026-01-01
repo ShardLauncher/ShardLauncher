@@ -67,7 +67,7 @@ static void *logger_thread() {
 }
 
 JNIEXPORT void JNICALL
-Java_com_movtery_zalithlauncher_bridge_LoggerBridge_start(JNIEnv *env, __attribute((unused)) jclass clazz, jstring logPath) {
+Java_com_lanrhyme_shardlauncher_bridge_LoggerBridge_start(JNIEnv *env, __attribute((unused)) jclass clazz, jstring logPath) {
     if (latestlog_fd != -1)
     {
         int localfd = latestlog_fd;
@@ -77,7 +77,7 @@ Java_com_movtery_zalithlauncher_bridge_LoggerBridge_start(JNIEnv *env, __attribu
 
     if (logger_onEventLogged == NULL)
     {
-        jclass eventLogListener = (*env)->FindClass(env, "com/movtery/zalithlauncher/bridge/LoggerBridge$EventLogListener");
+        jclass eventLogListener = (*env)->FindClass(env, "com/lanrhyme/shardlauncher/bridge/LoggerBridge$EventLogListener");
         logger_onEventLogged = (*env)->GetMethodID(env, eventLogListener, "onEventLogged", "(Ljava/lang/String;)V");
     }
 
@@ -147,7 +147,7 @@ _Noreturn void nominal_exit(int code, bool is_signal) {
     while(1) {}
 }
 
-JNIEXPORT void JNICALL Java_com_movtery_zalithlauncher_bridge_LoggerBridge_append(JNIEnv *env, __attribute((unused)) jclass clazz, jstring text) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_LoggerBridge_append(JNIEnv *env, __attribute((unused)) jclass clazz, jstring text) {
     jsize appendStringLength = (*env)->GetStringUTFLength(env, text);
     char newChars[appendStringLength+2];
     (*env)->GetStringUTFRegion(env, text, 0, (*env)->GetStringLength(env, text), newChars);
@@ -158,7 +158,7 @@ JNIEXPORT void JNICALL Java_com_movtery_zalithlauncher_bridge_LoggerBridge_appen
 }
 
 JNIEXPORT void JNICALL
-Java_com_movtery_zalithlauncher_bridge_LoggerBridge_setListener(JNIEnv *env, __attribute((unused)) jclass clazz, jobject log_listener) {
+Java_com_lanrhyme_shardlauncher_bridge_LoggerBridge_setListener(JNIEnv *env, __attribute((unused)) jclass clazz, jobject log_listener) {
     jobject logListenerLocal = logListener;
 
     if (log_listener == NULL) logListener = NULL;
@@ -169,10 +169,10 @@ Java_com_movtery_zalithlauncher_bridge_LoggerBridge_setListener(JNIEnv *env, __a
 }
 
 JNIEXPORT void JNICALL
-Java_com_movtery_zalithlauncher_bridge_ZLBridge_setupExitMethod(JNIEnv *env, jclass clazz,
+Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_setupExitMethod(JNIEnv *env, jclass clazz,
                                                         jobject context) {
     exitTrap_ctx = (*env)->NewGlobalRef(env,context);
     (*env)->GetJavaVM(env,&exitTrap_jvm);
-    exitTrap_exitClass = (*env)->NewGlobalRef(env,(*env)->FindClass(env,"com/movtery/zalithlauncher/bridge/ZLNativeInvoker"));
+    exitTrap_exitClass = (*env)->NewGlobalRef(env,(*env)->FindClass(env,"com/lanrhyme/shardlauncher/bridge/ZLNativeInvoker"));
     exitTrap_exitMethod = (*env)->GetStaticMethodID(env, exitTrap_exitClass, "jvmExit", "(IZ)V");
 }
