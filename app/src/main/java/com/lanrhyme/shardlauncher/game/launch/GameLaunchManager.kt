@@ -50,6 +50,13 @@ object GameLaunchManager {
             Logger.lInfo("Starting game launch for version: ${version.getVersionName()}")
             Logger.lInfo("Using account: ${launchAccount.username}")
             
+            // Initialize native logging (this will load the native libraries)
+            try {
+                LoggerBridge.appendTitle("Game Launch Started")
+            } catch (e: UnsatisfiedLinkError) {
+                Logger.lWarning("Native logging not available: ${e.message}")
+            }
+            
             // Create and launch game
             val launcher = LauncherFactory.createGameLauncher(
                 activity = activity,
