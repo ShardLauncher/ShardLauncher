@@ -156,7 +156,7 @@ class GameInstaller(
                     id = "Download.Game.ClearTemp",
                     title = context.getString(R.string.download_install_clear_temp),
                     icon = Icons.Outlined.CleaningServices,
-                    task = Task.runTask("Download.Game.ClearTemp") { task ->
+                    task = Task.runTask(id = "Download.Game.ClearTemp") { task ->
                         clearTempGameDir()
                         //清理完成缓存目录后，创建新的缓存目录
                         pathConfig.tempClientDir.createDirAndLog()
@@ -275,21 +275,21 @@ class GameInstaller(
                         R.string.download_game_install_fabric,
                         info.fabric?.version
                     ),
-                    task = Task.runTask("Download.Fabric.Json") { task ->
+                    task = Task.runTask(id = "Download.Fabric.Json") { task ->
                         // Fabric 下载逻辑
                         // 这里需要实现 Fabric 下载和安装
                         val fabricVersion = info.fabric ?: return@runTask
-                        
+
                         // 构造 Fabric 版本 URL
                         val fabricUrl = "https://meta.fabricmc.net/v2/versions/loader/${info.gameVersion}/${fabricVersion.version}/profile/json"
-                        
+
                         // 下载 Fabric 配置文件
                         val fabricJson = fetchStringFromUrls(listOf(fabricUrl))
-                        
+
                         // 保存 Fabric 配置文件
                         tempVersionJson.parentFile.mkdirs()
                         tempVersionJson.writeText(fabricJson)
-                        
+
                         Logger.lInfo("Downloaded Fabric profile: $fabricUrl")
                     }
                 )
@@ -297,12 +297,12 @@ class GameInstaller(
                 // 补全游戏库
                 addTask(
                     title = context.getString(R.string.download_game_install_game_files_progress),
-                    task = Task.runTask("Download.Fabric.Libraries") { task ->
+                    task = Task.runTask(id = "Download.Fabric.Libraries") { task ->
                         // 这里需要实现 Fabric 库补全逻辑
                         // 从 Fabric 配置文件中提取并下载所需的库
                         val fabricJson = tempVersionJson.readText()
                         val gameManifest = GSON.fromJson(fabricJson, GameManifest::class.java)
-                        
+
                         // 使用 BaseMinecraftDownloader 下载所需的库
                         downloader.loadLibraryDownloads(gameManifest, downloader.librariesTarget) {
                             urls, hash, targetFile, size, isDownloadable ->
