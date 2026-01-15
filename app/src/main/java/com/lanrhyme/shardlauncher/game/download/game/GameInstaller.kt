@@ -156,7 +156,7 @@ class GameInstaller(
                     id = "Download.Game.ClearTemp",
                     title = context.getString(R.string.download_install_clear_temp),
                     icon = Icons.Outlined.CleaningServices,
-                    task = Task.runTask("Download.Game.ClearTemp") {
+                    task = Task.runTask("Download.Game.ClearTemp") { task ->
                         clearTempGameDir()
                         //清理完成缓存目录后，创建新的缓存目录
                         pathConfig.tempClientDir.createDirAndLog()
@@ -270,48 +270,48 @@ class GameInstaller(
         val tempVersionJson = File(tempMinecraftDir, "versions/$tempFolderName/$tempFolderName.json")
 
         //下载 Fabric Json
-        addTask(
-            title = context.getString(
-                R.string.download_game_install_fabric,
-                info.fabric?.version
-            ),
-            task = Task.runTask("Download.Fabric.Json") {
-                // Fabric 下载逻辑
-                // 这里需要实现 Fabric 下载和安装
-                val fabricVersion = info.fabric ?: return@runTask
+                addTask(
+                    title = context.getString(
+                        R.string.download_game_install_fabric,
+                        info.fabric?.version
+                    ),
+                    task = Task.runTask("Download.Fabric.Json") { task ->
+                        // Fabric 下载逻辑
+                        // 这里需要实现 Fabric 下载和安装
+                        val fabricVersion = info.fabric ?: return@runTask
+                        
+                        // 构造 Fabric 版本 URL
+                        val fabricUrl = "https://meta.fabricmc.net/v2/versions/loader/${info.gameVersion}/${fabricVersion.version}/profile/json"
+                        
+                        // 下载 Fabric 配置文件
+                        val fabricJson = fetchStringFromUrls(listOf(fabricUrl))
+                        
+                        // 保存 Fabric 配置文件
+                        tempVersionJson.parentFile.mkdirs()
+                        tempVersionJson.writeText(fabricJson)
+                        
+                        Logger.lInfo("Downloaded Fabric profile: $fabricUrl")
+                    }
+                )
                 
-                // 构造 Fabric 版本 URL
-                val fabricUrl = "https://meta.fabricmc.net/v2/versions/loader/${info.gameVersion}/${fabricVersion.version}/profile/json"
-                
-                // 下载 Fabric 配置文件
-                val fabricJson = fetchStringFromUrls(listOf(fabricUrl))
-                
-                // 保存 Fabric 配置文件
-                tempVersionJson.parentFile.mkdirs()
-                tempVersionJson.writeText(fabricJson)
-                
-                Logger.lInfo("Downloaded Fabric profile: $fabricUrl")
-            }
-        )
-        
-        // 补全游戏库
-        addTask(
-            title = context.getString(R.string.download_game_install_game_files_progress),
-            task = Task.runTask("Download.Fabric.Libraries") {
-                // 这里需要实现 Fabric 库补全逻辑
-                // 从 Fabric 配置文件中提取并下载所需的库
-                val fabricJson = tempVersionJson.readText()
-                val gameManifest = GSON.fromJson(fabricJson, GameManifest::class.java)
-                
-                // 使用 BaseMinecraftDownloader 下载所需的库
-                downloader.loadLibraryDownloads(gameManifest, downloader.librariesTarget) {
-                    urls, hash, targetFile, size, isDownloadable ->
-                    // 这里可以直接添加到下载任务列表
-                    // 但由于我们在 Task 内部，需要另一种方式处理
-                    // 目前先跳过，后续优化
-                }
-            }
-        )
+                // 补全游戏库
+                addTask(
+                    title = context.getString(R.string.download_game_install_game_files_progress),
+                    task = Task.runTask("Download.Fabric.Libraries") { task ->
+                        // 这里需要实现 Fabric 库补全逻辑
+                        // 从 Fabric 配置文件中提取并下载所需的库
+                        val fabricJson = tempVersionJson.readText()
+                        val gameManifest = GSON.fromJson(fabricJson, GameManifest::class.java)
+                        
+                        // 使用 BaseMinecraftDownloader 下载所需的库
+                        downloader.loadLibraryDownloads(gameManifest, downloader.librariesTarget) {
+                            urls, hash, targetFile, size, isDownloadable ->
+                            // 这里可以直接添加到下载任务列表
+                            // 但由于我们在 Task 内部，需要另一种方式处理
+                            // 目前先跳过，后续优化
+                        }
+                    }
+                )
     }
 
     /**
@@ -326,9 +326,9 @@ class GameInstaller(
     ) = Task.runTask(
         id = GAME_JSON_MERGER_ID,
         dispatcher = Dispatchers.IO,
-        task = {
+        task = { task ->
             //合并版本 Json
-            updateProgress(0.1f)
+            task.updateProgress(0.1f)
             mergeGameJson(
                 info = info,
                 outputFolder = targetClientDir,
@@ -352,7 +352,7 @@ class GameInstaller(
             )
 
             //清除临时游戏目录
-            updateProgress(-1f, R.string.download_install_clear_temp)
+            task.updateProgress(-1f, R.string.download_install_clear_temp)
             clearTempGameDir()
         }
     )
@@ -365,7 +365,7 @@ class GameInstaller(
     ): Task {
         return Task.runTask(
             id = "VanillaFilesCopy",
-            task = {
+            task = { task ->
                 //复制客户端文件
                 copyVanillaFiles(
                     sourceGameFolder = tempMinecraftDir,
@@ -375,7 +375,7 @@ class GameInstaller(
                 )
 
                 //清除临时游戏目录
-                updateProgress(-1f, R.string.download_install_clear_temp)
+                task.updateProgress(-1f, R.string.download_install_clear_temp)
                 clearTempGameDir()
             }
         )
