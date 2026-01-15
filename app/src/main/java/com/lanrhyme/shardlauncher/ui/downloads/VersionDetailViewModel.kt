@@ -270,6 +270,8 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                             _downloadTask.value = null
                         },
                         onFinally = {
+                            // 延迟清理任务状态，让用户看到完成状态
+                            kotlinx.coroutines.delay(500)
                             _downloadTask.value = null
                         }
                     )
@@ -285,6 +287,11 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                         },
                         onInstalled = { installedVersion ->
                             downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
+                            // 刷新版本列表，让新安装的版本被检测到
+                            com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.refresh(
+                                tag = "VersionDetailViewModel.download",
+                                trySetVersion = installedVersion
+                            )
                         },
                         onError = { error ->
                             downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
