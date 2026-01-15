@@ -258,17 +258,39 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                         scope = viewModelScope
                     )
                     
-                    // 执行安装
-                    installer?.installGame(
-                        isRunning = { /* 已在安装中 */ },
-                        onInstalled = { installedVersion ->
-                            _downloadTask.value = null
+                    // 创建一个虚拟的Task来跟踪下载状态
+                    val downloadTask = com.lanrhyme.shardlauncher.coroutine.Task.runTask(
+                        id = "game_download_${versionId}",
+                        task = { task ->
+                            task.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.RUNNING
+                            // 这里不执行实际任务，实际任务由GameInstaller处理
+                            // 我们只是用这个Task来跟踪UI状态
                         },
                         onError = { error ->
                             _downloadTask.value = null
                         },
-                        onGameAlreadyInstalled = {
+                        onFinally = {
                             _downloadTask.value = null
+                        }
+                    )
+                    
+                    // 设置下载任务状态
+                    _downloadTask.value = downloadTask
+                    
+                    // 执行安装
+                    installer?.installGame(
+                        isRunning = { 
+                            // 已在安装中，取消虚拟任务
+                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
+                        },
+                        onInstalled = { installedVersion ->
+                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
+                        },
+                        onError = { error ->
+                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
+                        },
+                        onGameAlreadyInstalled = {
+                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
                         }
                     )
                 } else {
@@ -276,6 +298,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                 }
             } catch (e: Exception) {
                 // Handle error
+                _downloadTask.value = null
             }
         }
     }

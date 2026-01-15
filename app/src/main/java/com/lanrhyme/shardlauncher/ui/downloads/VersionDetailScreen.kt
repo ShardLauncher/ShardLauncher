@@ -216,7 +216,7 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
         TaskFlowDialog(
             title = "正在安装 $versionId",
             tasks = tasksFlow,
-            visible = downloadTask != null && downloadTask?.taskState == TaskState.RUNNING,
+            visible = downloadTask != null,
             onDismiss = { /* 不允许点击背景关闭 */ },
             onCancel = { viewModel.cancelInstall() }
         )
