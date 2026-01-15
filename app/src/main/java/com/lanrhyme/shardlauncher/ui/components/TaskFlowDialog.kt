@@ -93,9 +93,10 @@ fun TaskFlowDialog(
                     onCancel()
                     onDismiss()
                 },
-                text = "取消",
                 modifier = Modifier.fillMaxWidth()
-            )
+            ) {
+                Text("取消")
+            }
         }
     }
 }
