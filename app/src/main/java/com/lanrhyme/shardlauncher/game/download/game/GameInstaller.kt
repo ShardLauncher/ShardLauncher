@@ -156,12 +156,12 @@ class GameInstaller(
                     id = "Download.Game.ClearTemp",
                     title = context.getString(R.string.download_install_clear_temp),
                     icon = Icons.Outlined.CleaningServices,
-                    task = Task.runTask(id = "Download.Game.ClearTemp") { task ->
+                    task = Task.runTask(id = "Download.Game.ClearTemp", task = { task ->
                         clearTempGameDir()
                         //清理完成缓存目录后，创建新的缓存目录
                         pathConfig.tempClientDir.createDirAndLog()
                         pathConfig.fabricDir?.createDirAndLog()
-                    }
+                    })
                 )
 
                 //下载安装原版
@@ -275,7 +275,7 @@ class GameInstaller(
                         R.string.download_game_install_fabric,
                         info.fabric?.version
                     ),
-                    task = Task.runTask(id = "Download.Fabric.Json") { task ->
+                    task = Task.runTask(id = "Download.Fabric.Json", task = { task ->
                         // Fabric 下载逻辑
                         // 这里需要实现 Fabric 下载和安装
                         val fabricVersion = info.fabric ?: return@runTask
@@ -291,13 +291,13 @@ class GameInstaller(
                         tempVersionJson.writeText(fabricJson)
 
                         Logger.lInfo("Downloaded Fabric profile: $fabricUrl")
-                    }
+                    })
                 )
                 
                 // 补全游戏库
                 addTask(
                     title = context.getString(R.string.download_game_install_game_files_progress),
-                    task = Task.runTask(id = "Download.Fabric.Libraries") { task ->
+                    task = Task.runTask(id = "Download.Fabric.Libraries", task = { task ->
                         // 这里需要实现 Fabric 库补全逻辑
                         // 从 Fabric 配置文件中提取并下载所需的库
                         val fabricJson = tempVersionJson.readText()
@@ -310,7 +310,7 @@ class GameInstaller(
                             // 但由于我们在 Task 内部，需要另一种方式处理
                             // 目前先跳过，后续优化
                         }
-                    }
+                    })
                 )
     }
 
