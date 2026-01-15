@@ -271,8 +271,10 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                         },
                         onFinally = {
                             // 延迟清理任务状态，让用户看到完成状态
-                            kotlinx.coroutines.delay(500)
-                            _downloadTask.value = null
+                            viewModelScope.launch {
+                                kotlinx.coroutines.delay(500)
+                                _downloadTask.value = null
+                            }
                         }
                     )
                     
