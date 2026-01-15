@@ -39,6 +39,8 @@ import com.lanrhyme.shardlauncher.coroutine.TitledTask
  * @param visible 是否显示对话框
  * @param onDismiss 关闭对话框回调（点击取消按钮）
  * @param onCancel 取消任务回调
+ * @param isCompleted 是否已完成
+ * @param onComplete 完成回调（点击完成按钮）
  */
 @Composable
 fun TaskFlowDialog(
@@ -46,7 +48,9 @@ fun TaskFlowDialog(
     tasks: List<TitledTask>,
     visible: Boolean,
     onDismiss: () -> Unit = {},
-    onCancel: () -> Unit = {}
+    onCancel: () -> Unit = {},
+    isCompleted: Boolean = false,
+    onComplete: () -> Unit = {}
 ) {
     CustomDialog(
         visible = visible,
@@ -88,15 +92,19 @@ fun TaskFlowDialog(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // 取消按钮
+            // 取消/完成按钮
             CustomButton(
                 onClick = {
-                    onCancel()
+                    if (isCompleted) {
+                        onComplete()
+                    } else {
+                        onCancel()
+                    }
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("取消")
+                Text(if (isCompleted) "完成" else "取消")
             }
         }
     }

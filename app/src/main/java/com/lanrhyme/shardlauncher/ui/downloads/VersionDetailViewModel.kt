@@ -326,4 +326,11 @@ class VersionDetailViewModel(application: Application, private val versionId: St
         installer?.cancelInstall()
         _downloadTask.value = null
     }
+
+    /**
+     * 完成下载
+     */
+    fun completeDownload() {
+        _downloadTask.value = null
+    }
 }
