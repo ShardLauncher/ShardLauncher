@@ -41,4 +41,10 @@
     <string name="generic_delete">删除</string>
     <string name="generic_more">更多</string>
     <string name="generic_cannot_empty">不能为空</string>
+    
+    <!-- Game Download -->
+    <string name="download_install_clear_temp">清理临时文件</string>
+    <string name="download_game_install_vanilla">安装原版 Minecraft %1$s</string>
+    <string name="download_game_install_game_files_progress">安装游戏文件</string>
+    <string name="download_game_install_fabric">安装 Fabric %1$s</string>
 </resources>
