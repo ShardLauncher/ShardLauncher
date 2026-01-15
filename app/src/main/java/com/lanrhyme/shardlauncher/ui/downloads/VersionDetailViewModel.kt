@@ -74,6 +74,9 @@ class VersionDetailViewModel(application: Application, private val versionId: St
 
     private val _downloadTask = MutableStateFlow<Task?>(null)
     val downloadTask = _downloadTask.asStateFlow()
+    
+    // GameInstaller 实例
+    private var installer: com.lanrhyme.shardlauncher.game.download.game.GameInstaller? = null
 
     init {
         loadAllLoaderVersions()
@@ -249,14 +252,14 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                     )
                     
                     // 创建游戏安装器
-                    val installer = com.lanrhyme.shardlauncher.game.download.game.GameInstaller(
+                    installer = com.lanrhyme.shardlauncher.game.download.game.GameInstaller(
                         context = getApplication(),
                         info = downloadInfo,
                         scope = viewModelScope
                     )
                     
                     // 执行安装
-                    installer.installGame(
+                    installer?.installGame(
                         isRunning = { /* 已在安装中 */ },
                         onInstalled = { installedVersion ->
                             _downloadTask.value = null
@@ -268,14 +271,6 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                             _downloadTask.value = null
                         }
                     )
-                    
-                    // 将任务流设置为下载任务
-                    _downloadTask.value = com.lanrhyme.shardlauncher.coroutine.Task.runTask(
-                        id = "Install.Game",
-                        task = { task ->
-                            // 这个任务只是占位符，实际任务由GameInstaller管理
-                        }
-                    )
                 } else {
                     // Handle version not found
                 }
@@ -283,5 +278,20 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                 // Handle error
             }
         }
+    }
+    
+    /**
+     * 获取游戏安装器的任务流
+     */
+    fun getTasksFlow(): kotlinx.coroutines.flow.StateFlow<List<com.lanrhyme.shardlauncher.coroutine.TitledTask>> {
+        return installer?.tasksFlow ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList())
+    }
+    
+    /**
+     * 取消安装
+     */
+    fun cancelInstall() {
+        installer?.cancelInstall()
+        _downloadTask.value = null
     }
 }
