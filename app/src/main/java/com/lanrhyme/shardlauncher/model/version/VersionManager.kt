@@ -1,7 +1,7 @@
 package com.lanrhyme.shardlauncher.model.version
 
-import android.content.Context
 import com.google.gson.Gson
+import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.utils.network.fetchStringFromUrls
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,17 +12,13 @@ object VersionManager {
     private const val MINECRAFT_VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
     private const val MANIFEST_FILE_NAME = "version_manifest_v2.json"
 
-    private lateinit var cacheDir: File
     private val gson = Gson()
     private var manifest: VersionManifest? = null
-
-    fun init(context: Context) {
-        cacheDir = context.cacheDir
-    }
 
     suspend fun getVersionManifest(force: Boolean = false): VersionManifest {
         manifest?.takeIf { !force }?.let { return it }
 
+        val cacheDir = PathManager.DIR_CACHE
         val manifestFile = File(cacheDir, MANIFEST_FILE_NAME)
 
         val isOutdated = !manifestFile.exists() ||

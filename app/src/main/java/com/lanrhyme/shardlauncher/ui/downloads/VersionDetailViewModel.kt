@@ -76,7 +76,6 @@ class VersionDetailViewModel(application: Application, private val versionId: St
     val downloadTask = _downloadTask.asStateFlow()
 
     init {
-        VersionManager.init(application)
         loadAllLoaderVersions()
     }
 
