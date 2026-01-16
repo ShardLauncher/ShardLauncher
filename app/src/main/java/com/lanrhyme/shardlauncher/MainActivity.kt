@@ -93,6 +93,7 @@ import com.lanrhyme.shardlauncher.ui.components.CardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.glow
 import com.lanrhyme.shardlauncher.ui.developeroptions.ComponentDemoScreen
+import com.lanrhyme.shardlauncher.ui.developeroptions.LogViewerScreen
 import com.lanrhyme.shardlauncher.ui.developeroptions.DeveloperOptionsScreen
 import com.lanrhyme.shardlauncher.ui.downloads.DownloadScreen
 import com.lanrhyme.shardlauncher.ui.downloads.VersionDetailScreen
@@ -1048,6 +1049,7 @@ fun MainContent(
                 composable(Screen.DeveloperOptions.route) {
                     DeveloperOptionsScreen(navController = navController)
                 }
+                composable("log_viewer") { LogViewerScreen(navController = navController) }
                 composable("component_demo") { ComponentDemoScreen() }
             }
         }

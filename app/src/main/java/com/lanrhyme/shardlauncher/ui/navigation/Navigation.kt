@@ -31,6 +31,7 @@ val navigationItems = listOf(
 val routeHierarchy = mapOf(
     Screen.DeveloperOptions.route to Screen.Settings.route,
     "component_demo" to Screen.DeveloperOptions.route,
+    "log_viewer" to Screen.DeveloperOptions.route,
     "version_detail/{versionId}" to Screen.Download.route,
     Screen.Account.route to Screen.Home.route
 )

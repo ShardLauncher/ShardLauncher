@@ -26,34 +26,42 @@ object Logger {
 
     fun d(tag: String, message: String) {
         Log.d("$TAG-$tag", message)
+        LogCollector.add(LogCollector.LogLevel.DEBUG, tag, message)
     }
 
     fun i(tag: String, message: String) {
         Log.i("$TAG-$tag", message)
+        LogCollector.add(LogCollector.LogLevel.INFO, tag, message)
     }
 
     fun w(tag: String, message: String) {
         Log.w("$TAG-$tag", message)
+        LogCollector.add(LogCollector.LogLevel.WARNING, tag, message)
     }
 
     fun e(tag: String, message: String, throwable: Throwable? = null) {
         Log.e("$TAG-$tag", message, throwable)
+        LogCollector.add(LogCollector.LogLevel.ERROR, tag, message, throwable)
     }
 
     // Legacy methods for compatibility
     fun lDebug(message: String) {
         Log.d(TAG, message)
+        LogCollector.add(LogCollector.LogLevel.DEBUG, TAG, message)
     }
 
     fun lInfo(message: String) {
         Log.i(TAG, message)
+        LogCollector.add(LogCollector.LogLevel.INFO, TAG, message)
     }
 
     fun lWarning(message: String, throwable: Throwable? = null) {
         Log.w(TAG, message, throwable)
+        LogCollector.add(LogCollector.LogLevel.WARNING, TAG, message, throwable)
     }
 
     fun lError(message: String, throwable: Throwable? = null) {
         Log.e(TAG, message, throwable)
+        LogCollector.add(LogCollector.LogLevel.ERROR, TAG, message, throwable)
     }
 }
