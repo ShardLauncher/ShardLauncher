@@ -18,6 +18,7 @@ import com.lanrhyme.shardlauncher.game.version.download.MinecraftDownloader
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.game.versioninfo.models.GameManifest
 import com.lanrhyme.shardlauncher.path.PathManager
+import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.GSON
 import com.lanrhyme.shardlauncher.utils.logging.Logger
 import com.lanrhyme.shardlauncher.utils.network.downloadFromMirrorListSuspend
@@ -329,7 +330,8 @@ class GameInstaller(
                 val loaderUrl = "$baseUrl/${info.gameVersion}/${loaderVersion.version}/profile/json"
 
                 // 下载 Mod Loader 配置文件
-                val loaderJson = fetchStringFromUrls(loaderUrl.mapMirrorableUrls())
+                val downloadSource = AllSettings.fetchModLoaderSource.state
+                val loaderJson = fetchStringFromUrls(loaderUrl.mapMirrorableUrls(downloadSource))
 
                 // 保存 Mod Loader 配置文件
                 tempVersionJson.parentFile.mkdirs()
@@ -390,8 +392,9 @@ class GameInstaller(
                 }
                 
                 // 下载安装器
+                val downloadSource = AllSettings.fetchModLoaderSource.state
                 downloadFromMirrorListSuspend(
-                    urls = downloadUrl.mapMirrorableUrls(),
+                    urls = downloadUrl.mapMirrorableUrls(downloadSource),
                     targetFile = tempInstallerJar
                 )
                 
@@ -419,7 +422,8 @@ class GameInstaller(
                 
                 versionJsonUrl?.let { url ->
                     try {
-                        val versionJson = fetchStringFromUrls(url.mapMirrorableUrls())
+                        val downloadSource = AllSettings.fetchModLoaderSource.state
+                        val versionJson = fetchStringFromUrls(url.mapMirrorableUrls(downloadSource))
                         tempVersionJson.parentFile.mkdirs()
                         tempVersionJson.writeText(versionJson)
                         

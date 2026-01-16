@@ -1,12 +1,15 @@
 package com.lanrhyme.shardlauncher.ui
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.lanrhyme.shardlauncher.data.SettingsRepository
-import com.lanrhyme.shardlauncher.setting.enums.MirrorSourceType
+import com.lanrhyme.shardlauncher.settings.AllSettings
+import com.lanrhyme.shardlauncher.settings.enums.MirrorSourceType
 
-class SettingsProvider(private val settingsRepository: SettingsRepository) {
+class SettingsProvider {
     val fileDownloadSource: MirrorSourceType
-        get() = if (settingsRepository.getUseBmclapi()) MirrorSourceType.MIRROR_FIRST else MirrorSourceType.OFFICIAL_FIRST
+        get() = AllSettings.fileDownloadSource.state
+    
+    val fetchModLoaderSource: MirrorSourceType
+        get() = AllSettings.fetchModLoaderSource.state
 }
 
 val LocalSettingsProvider = staticCompositionLocalOf<SettingsProvider> { error("No SettingsProvider provided") }

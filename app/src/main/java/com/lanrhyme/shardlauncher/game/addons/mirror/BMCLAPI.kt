@@ -1,6 +1,6 @@
 package com.lanrhyme.shardlauncher.game.addons.mirror
 
-import com.lanrhyme.shardlauncher.setting.enums.MirrorSourceType
+import com.lanrhyme.shardlauncher.settings.enums.MirrorSourceType
 
 private const val ROOT = "https://bmclapi2.bangbang93.com"
 
@@ -39,23 +39,15 @@ private val REPLACE_MIRROR_HOLDERS = mapOf(
  * 替换为 BMCL API 镜像源链接，若如匹配的链接，则仅返回官方链接集合
  */
 fun String.mapMirrorableUrls(fileDownloadSource: MirrorSourceType = MirrorSourceType.OFFICIAL_FIRST): List<String> {
-    var isAssetsFile = false
-
-    val mirrorUrl = REPLACE_MIRROR_HOLDERS.entries.find { (key, mirror) ->
-        isAssetsFile = mirror == BMCLAPI.ASSETS.url
+    val mirrorUrl = REPLACE_MIRROR_HOLDERS.entries.find { (key, _) ->
         this.startsWith(key)
     }?.let { (origin, mirror) ->
         this.replaceFirst(origin, mirror)
     }
 
-    val type = if (!isAssetsFile) {
-        fileDownloadSource
-    } else {
-        //资源文件数量过多，请求量大，应先尝试官方源，减轻 BMCL API 源压力
-        MirrorSourceType.OFFICIAL_FIRST
-    }
-
-    return when (type) {
+    // 尊重用户的下载源设置，包括资源文件
+    // 资源文件数量较多，但用户可能因网络原因需要镜像源
+    return when (fileDownloadSource) {
         MirrorSourceType.OFFICIAL_FIRST -> listOfNotNull(this, mirrorUrl)
         MirrorSourceType.MIRROR_FIRST -> listOfNotNull(mirrorUrl, this)
     }

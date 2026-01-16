@@ -291,15 +291,6 @@ class SettingsRepository(context: Context) {
         saveProperties()
     }
 
-    fun getUseBmclapi(): Boolean {
-        return properties.getProperty(KEY_USE_BMCLAPI, "true").toBoolean()
-    }
-
-    fun setUseBmclapi(enabled: Boolean) {
-        properties.setProperty(KEY_USE_BMCLAPI, enabled.toString())
-        saveProperties()
-    }
-
     fun getCurrentGamePathId(): String {
         return properties.getProperty(KEY_CURRENT_GAME_PATH_ID, "default")
     }
@@ -498,8 +489,6 @@ class SettingsRepository(context: Context) {
             private const val KEY_IS_CARD_BLUR_ENABLED = "is_card_blur_enabled"
 
             private const val KEY_CARD_ALPHA = "card_alpha"
-
-            private const val KEY_USE_BMCLAPI = "use_bmclapi"
 
             private const val KEY_LIGHT_COLOR_SCHEME = "light_color_scheme"
 
