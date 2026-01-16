@@ -55,12 +55,15 @@ class GameLibDownloader(
             val totalSize = downloadTasks.sumOf { it.size }
             
             Logger.lInfo("Starting download of $totalFiles libraries (${"%.2f".format(totalSize / 1024.0 / 1024.0)} MB)")
+            Logger.lInfo("Max download threads: $maxDownloadThreads")
             
             // 并发下载所有库文件
             val downloadJobs = downloadTasks.map { downloadTask ->
                 launch {
                     semaphore.withPermit {
                         try {
+                            Logger.lDebug("Starting download: ${downloadTask.targetFile.name} (${"%.2f".format(downloadTask.size / 1024.0 / 1024.0)} MB)")
+                            
                             // 下载文件
                             downloadFromMirrorListSuspend(
                                 urls = downloadTask.urls,
@@ -78,9 +81,9 @@ class GameLibDownloader(
                             val progress = count.toFloat() / totalFiles
                             task.updateProgress(progress)
                             
-                            Logger.lDebug("Downloaded library: ${downloadTask.targetFile.name} ($count/$totalFiles)")
+                            Logger.lDebug("Downloaded library: ${downloadTask.targetFile.name} ($count/$totalFiles, ${"%.2f".format(sizeDownloaded / 1024.0 / 1024.0)}/${"%.2f".format(totalSize / 1024.0 / 1024.0)} MB)")
                         } catch (e: Exception) {
-                            Logger.lError("Failed to download library: ${downloadTask.targetFile.name}")
+                            Logger.lError("Failed to download library: ${downloadTask.targetFile.name} - ${e.message}", e)
                             throw e
                         }
                     }
@@ -90,7 +93,7 @@ class GameLibDownloader(
             // 等待所有下载完成
             downloadJobs.forEach { it.join() }
             
-            Logger.lInfo("Successfully downloaded all $totalFiles libraries")
+            Logger.lInfo("Successfully downloaded all $totalFiles libraries (${"%.2f".format(downloadedFileSize.get() / 1024.0 / 1024.0)} MB)")
         }
     }
     

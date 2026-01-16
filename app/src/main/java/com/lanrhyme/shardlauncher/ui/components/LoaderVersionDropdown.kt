@@ -38,12 +38,12 @@ fun <T> LoaderVersionDropdown(
     // 如果选中版本为null且列表不为空，自动选择第一个
     val actualSelectedVersion = selectedVersion ?: versions.firstOrNull()
     
-    val selectedVersionText = when (actualSelectedVersion) {
+    val selectedVersionText = (when (actualSelectedVersion) {
         is FabricLoaderVersion -> actualSelectedVersion.version
         is LoaderVersion -> actualSelectedVersion.version
         is String -> actualSelectedVersion
-        else -> ""
-    }
+        else -> null
+    }) ?: ""
 
     ExposedDropdownMenuBox(
         expanded = expanded,

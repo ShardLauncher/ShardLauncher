@@ -81,21 +81,28 @@ class GameInstaller(
         onError: (th: Throwable) -> Unit,
         onGameAlreadyInstalled: () -> Unit
     ) {
+        Logger.lInfo("Starting game installation: ${info.customVersionName} (Minecraft ${info.gameVersion})")
+        Logger.lInfo("Mod loaders: Fabric=${info.fabric != null}, Forge=${info.forge != null}, NeoForge=${info.neoForge != null}, Quilt=${info.quilt != null}")
+        
         if (taskExecutor.isRunning()) {
             //正在安装中，阻止这次安装请求
+            Logger.lWarning("Game installation is already in progress, ignoring new request")
             isRunning()
             return
         }
 
         taskExecutor.executePhasesAsync(
             onStart = {
+                Logger.lInfo("Game installation started: ${info.customVersionName}")
                 val tasks = getTaskPhase()
                 taskExecutor.addPhases(tasks)
             },
             onComplete = {
+                Logger.lInfo("Game installation completed successfully: ${info.customVersionName}")
                 onInstalled(info.customVersionName)
             },
             onError = { th ->
+                Logger.lError("Game installation failed: ${info.customVersionName}", th)
                 if (th is GameAlreadyInstalledException) {
                     onGameAlreadyInstalled()
                 } else {
@@ -257,8 +264,10 @@ class GameInstaller(
     }
 
     fun cancelInstall() {
+        Logger.lInfo("Cancelling game installation: ${info.customVersionName}")
         taskExecutor.cancel()
         clearTargetClient()
+        Logger.lInfo("Game installation cancelled")
     }
 
     /**
@@ -266,8 +275,9 @@ class GameInstaller(
      */
     private fun clearTempGameDir() {
         PathManager.DIR_CACHE_GAME_DOWNLOADER.takeIf { it.exists() }?.let { folder ->
+            Logger.lInfo("Clearing temporary game directory: ${folder.absolutePath}")
             FileUtils.deleteQuietly(folder)
-            Logger.lInfo("Temporary game directory cleared.")
+            Logger.lInfo("Temporary game directory cleared successfully")
         }
     }
 
@@ -280,6 +290,7 @@ class GameInstaller(
 
         CoroutineScope(Dispatchers.IO).launch {
             dirToDelete?.let {
+                Logger.lInfo("Deleting target client directory: ${it.absolutePath}")
                 //直接清除上一次安装的目标目录
                 FileUtils.deleteQuietly(it)
                 Logger.lInfo("Successfully deleted version directory: ${it.name} at path: ${it.absolutePath}")
@@ -294,6 +305,7 @@ class GameInstaller(
         tempClientName: String,
         tempVersionsDir: File
     ): Task {
+        Logger.lInfo("Creating Minecraft download task for version: ${info.gameVersion}")
         val mcDownloader = MinecraftDownloader(
             context = context,
             version = info.gameVersion,
@@ -310,6 +322,7 @@ class GameInstaller(
         tempMinecraftDir: File,
         tempFolderName: String
     ) {
+        Logger.lInfo("Creating $loaderName download task for version: ${loaderVersion.version}")
         val tempVersionJson = File(tempMinecraftDir, "versions/$tempFolderName/$tempFolderName.json")
         val tempVersionJar = File(tempMinecraftDir, "versions/$tempFolderName/$tempFolderName.jar")
 
@@ -329,6 +342,8 @@ class GameInstaller(
                 
                 val loaderUrl = "$baseUrl/${info.gameVersion}/${loaderVersion.version}/profile/json"
 
+                Logger.lInfo("Downloading $loaderName profile from: $loaderUrl")
+                
                 // 下载 Mod Loader 配置文件
                 val downloadSource = AllSettings.fetchModLoaderSource.state
                 val loaderJson = fetchStringFromUrls(loaderUrl.mapMirrorableUrls(downloadSource))
@@ -337,7 +352,7 @@ class GameInstaller(
                 tempVersionJson.parentFile.mkdirs()
                 tempVersionJson.writeText(loaderJson)
 
-                Logger.lInfo("Downloaded $loaderName profile: $loaderUrl")
+                Logger.lInfo("Successfully downloaded $loaderName profile to: ${tempVersionJson.absolutePath}")
             })
         )
         
@@ -345,6 +360,8 @@ class GameInstaller(
         addTask(
             title = context.getString(R.string.download_game_install_game_files_progress),
             task = Task.runTask(id = "Download.$loaderName.Libraries", task = { task ->
+                Logger.lInfo("Starting $loaderName libraries download")
+                
                 // 从 Mod Loader 配置文件中提取并下载所需的库
                 val loaderJson = tempVersionJson.readText()
                 val gameManifest = GSON.fromJson(loaderJson, GameManifest::class.java)
@@ -359,7 +376,7 @@ class GameInstaller(
                 // 下载所有库文件
                 libDownloader.download(task)
                 
-                Logger.lInfo("Downloaded $loaderName libraries")
+                Logger.lInfo("Successfully downloaded all $loaderName libraries")
             })
         )
     }
@@ -371,6 +388,7 @@ class GameInstaller(
         tempMinecraftDir: File,
         tempFolderName: String
     ) {
+        Logger.lInfo("Creating $loaderName download task for version: ${loaderVersion.version}")
         val tempVersionJson = File(tempMinecraftDir, "versions/$tempFolderName/$tempFolderName.json")
         val tempInstallerJar = File(tempGameDir, "$tempFolderName-installer.jar")
 
@@ -391,6 +409,8 @@ class GameInstaller(
                     else -> throw IllegalArgumentException("Unsupported loader: $loaderName")
                 }
                 
+                Logger.lInfo("Downloading $loaderName installer from: $downloadUrl")
+                
                 // 下载安装器
                 val downloadSource = AllSettings.fetchModLoaderSource.state
                 downloadFromMirrorListSuspend(
@@ -398,7 +418,7 @@ class GameInstaller(
                     targetFile = tempInstallerJar
                 )
                 
-                Logger.lInfo("Downloaded $loaderName installer: $downloadUrl")
+                Logger.lInfo("Successfully downloaded $loaderName installer to: ${tempInstallerJar.absolutePath}")
             })
         )
         
@@ -406,6 +426,8 @@ class GameInstaller(
         addTask(
             title = context.getString(R.string.download_game_install_game_files_progress),
             task = Task.runTask(id = "Install.$loaderName", task = { task ->
+                Logger.lInfo("Starting $loaderName installation")
+                
                 // TODO: 运行 Forge/NeoForge 安装器
                 // 由于 Forge/NeoForge 安装器需要运行 Java 程序，这里先简化处理
                 // 实际应该：
@@ -422,10 +444,13 @@ class GameInstaller(
                 
                 versionJsonUrl?.let { url ->
                     try {
+                        Logger.lInfo("Downloading $loaderName version JSON from: $url")
                         val downloadSource = AllSettings.fetchModLoaderSource.state
                         val versionJson = fetchStringFromUrls(url.mapMirrorableUrls(downloadSource))
                         tempVersionJson.parentFile.mkdirs()
                         tempVersionJson.writeText(versionJson)
+                        
+                        Logger.lInfo("Starting $loaderName libraries download")
                         
                         // 下载库文件
                         val gameManifest = GSON.fromJson(versionJson, GameManifest::class.java)
@@ -435,13 +460,15 @@ class GameInstaller(
                             maxDownloadThreads = 32
                         )
                         libDownloader.download(task)
+                        
+                        Logger.lInfo("Successfully downloaded all $loaderName libraries")
                     } catch (e: Exception) {
-                        Logger.lError("Failed to install $loaderName: ${e.message}")
+                        Logger.lError("Failed to install $loaderName: ${e.message}", e)
                         throw e
                     }
                 }
                 
-                Logger.lInfo("Installed $loaderName")
+                Logger.lInfo("$loaderName installation completed successfully")
             })
         )
     }

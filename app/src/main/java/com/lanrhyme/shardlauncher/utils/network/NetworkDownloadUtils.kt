@@ -88,6 +88,7 @@ fun downloadFromMirrorList(
     
     for (url in urls) {
         try {
+            Logger.lDebug("Attempting to download from: $url")
             val connection = URL(url).openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.connectTimeout = 10000
@@ -109,12 +110,16 @@ fun downloadFromMirrorList(
                     }
                 }
                 
+                Logger.lDebug("Downloaded ${outputFile.length()} bytes from: $url")
+                
                 // Verify SHA1 if provided
                 sha1?.let { expectedSha1 ->
                     if (!com.lanrhyme.shardlauncher.utils.file.compareSHA1(outputFile, expectedSha1)) {
+                        Logger.lError("SHA1 verification failed for ${outputFile.name}")
                         outputFile.delete()
                         throw IOException("SHA1 verification failed")
                     }
+                    Logger.lDebug("SHA1 verification passed for ${outputFile.name}")
                 }
                 
                 return true
@@ -123,11 +128,11 @@ fun downloadFromMirrorList(
             }
         } catch (e: Exception) {
             lastException = e
-            Logger.lWarning("Failed to download from $url, trying next...")
+            Logger.lWarning("Failed to download from $url: ${e.message}")
         }
     }
     
-    Logger.lError("All mirrors failed", lastException)
+    Logger.lError("All mirrors failed for ${outputFile.name}", lastException)
     return false
 }
 
@@ -194,6 +199,10 @@ suspend fun downloadFromMirrorListSuspend(
     verifyIntegrity: Boolean = false
 ): Boolean {
     return try {
+        Logger.lDebug("Attempting to download: ${targetFile.name} from ${urls.size} mirror(s)")
+        size?.let { Logger.lDebug("Expected size: ${"%.2f".format(it / 1024.0 / 1024.0)} MB") }
+        sha1?.let { Logger.lDebug("Expected SHA1: $it") }
+        
         withRetry("Download from mirror list") {
             val success = downloadFromMirrorList(
                 urls = urls,
@@ -209,16 +218,20 @@ suspend fun downloadFromMirrorListSuspend(
             
             // Verify size if provided
             size?.let { expectedSize ->
-                if (targetFile.length() != expectedSize) {
+                val actualSize = targetFile.length()
+                if (actualSize != expectedSize) {
+                    Logger.lError("Size verification failed for ${targetFile.name}: expected $expectedSize, got $actualSize")
                     targetFile.delete()
-                    throw IOException("Size verification failed: expected $expectedSize, got ${targetFile.length()}")
+                    throw IOException("Size verification failed: expected $expectedSize, got $actualSize")
                 }
+                Logger.lDebug("Size verification passed for ${targetFile.name}")
             }
             
+            Logger.lDebug("Successfully downloaded: ${targetFile.name}")
             true
         }
     } catch (e: Exception) {
-        Logger.lError("Download failed from all URLs", e)
+        Logger.lError("Download failed from all URLs for ${targetFile.name}", e)
         false
     }
 }

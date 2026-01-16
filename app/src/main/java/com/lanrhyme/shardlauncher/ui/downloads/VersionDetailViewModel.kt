@@ -237,11 +237,16 @@ class VersionDetailViewModel(application: Application, private val versionId: St
     fun download() {
         viewModelScope.launch {
             try {
+                com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Starting download for version: $versionId")
+                
                 val manifest = VersionManager.getVersionManifest()
                 val version = manifest.versions.find { it.id == versionId }
                 if (version != null) {
+                    com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Found version manifest: ${version.id}")
+                    
                     // 根据选择的 Mod Loader 创建相应的版本信息
                     val fabricVersion = selectedFabricVersion.value?.let {
+                        com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Selected Fabric version: ${it.version}")
                         com.lanrhyme.shardlauncher.game.download.game.FabricVersion(
                             version = it.version,
                             loaderName = "Fabric"
@@ -249,6 +254,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                     }
                     
                     val forgeVersion = selectedForgeVersion.value?.let {
+                        com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Selected Forge version: ${it.version}")
                         com.lanrhyme.shardlauncher.game.download.game.ForgeVersion(
                             version = it.version,
                             loaderName = "Forge"
@@ -256,6 +262,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                     }
                     
                     val neoForgeVersion = selectedNeoForgeVersion.value?.let {
+                        com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Selected NeoForge version: ${it.version}")
                         com.lanrhyme.shardlauncher.game.download.game.NeoForgeVersion(
                             version = it.version,
                             loaderName = "NeoForge"
@@ -263,6 +270,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                     }
                     
                     val quiltVersion = selectedQuiltVersion.value?.let {
+                        com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Selected Quilt version: ${it.version}")
                         com.lanrhyme.shardlauncher.game.download.game.QuiltVersion(
                             version = it.version,
                             loaderName = "Quilt"
@@ -277,6 +285,8 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                         neoForge = neoForgeVersion,
                         quilt = quiltVersion
                     )
+                    
+                    com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Creating game installer for: ${downloadInfo.customVersionName}")
                     
                     // 创建游戏安装器
                     installer = com.lanrhyme.shardlauncher.game.download.game.GameInstaller(
@@ -294,6 +304,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                             // 我们只是用这个Task来跟踪UI状态
                         },
                         onError = { error ->
+                            com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Download task error: ${error.message}", error)
                             _downloadTask.value = null
                         },
                         onFinally = {
@@ -311,10 +322,12 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                     // 执行安装
                     installer?.installGame(
                         isRunning = { 
+                            com.lanrhyme.shardlauncher.utils.logging.Logger.lWarning("Installation already in progress")
                             // 已在安装中，取消虚拟任务
                             downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
                         },
                         onInstalled = { installedVersion ->
+                            com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Game installed successfully: $installedVersion")
                             downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
                             // 刷新版本列表，让新安装的版本被检测到
                             com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.refresh(
@@ -323,16 +336,20 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                             )
                         },
                         onError = { error ->
+                            com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Game installation failed: ${error.message}", error)
                             downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
                         },
                         onGameAlreadyInstalled = {
+                            com.lanrhyme.shardlauncher.utils.logging.Logger.lWarning("Game already installed: ${_versionName.value}")
                             downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
                         }
                     )
                 } else {
+                    com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Version not found: $versionId")
                     // Handle version not found
                 }
             } catch (e: Exception) {
+                com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Download initialization failed: ${e.message}", e)
                 // Handle error
                 _downloadTask.value = null
             }
@@ -350,8 +367,10 @@ class VersionDetailViewModel(application: Application, private val versionId: St
      * 取消安装
      */
     fun cancelInstall() {
+        com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Cancelling installation for version: $versionId")
         installer?.cancelInstall()
         _downloadTask.value = null
+        com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Installation cancelled")
     }
 
     /**
