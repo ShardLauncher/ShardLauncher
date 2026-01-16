@@ -182,3 +182,43 @@ suspend fun <T> withRetry(
     
     throw lastException ?: IOException("All retry attempts failed for $operation")
 }
+
+/**
+ * Suspend version of download from mirror list with fallback
+ */
+suspend fun downloadFromMirrorListSuspend(
+    urls: List<String>,
+    targetFile: File,
+    sha1: String? = null,
+    size: Long? = null,
+    verifyIntegrity: Boolean = false
+): Boolean {
+    return try {
+        withRetry("Download from mirror list") {
+            val success = downloadFromMirrorList(
+                urls = urls,
+                sha1 = sha1,
+                outputFile = targetFile
+            ) { downloadedBytes ->
+                // Progress callback - could be enhanced
+            }
+            
+            if (!success) {
+                throw IOException("Failed to download from all mirrors")
+            }
+            
+            // Verify size if provided
+            size?.let { expectedSize ->
+                if (targetFile.length() != expectedSize) {
+                    targetFile.delete()
+                    throw IOException("Size verification failed: expected $expectedSize, got ${targetFile.length()}")
+                }
+            }
+            
+            true
+        }
+    } catch (e: Exception) {
+        Logger.lError("Download failed from all URLs", e)
+        false
+    }
+}

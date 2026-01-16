@@ -13,7 +13,7 @@ import com.lanrhyme.shardlauncher.coroutine.buildPhase
 import com.lanrhyme.shardlauncher.game.addons.mirror.mapMirrorableUrls
 import com.lanrhyme.shardlauncher.game.path.getGameHome
 import com.lanrhyme.shardlauncher.game.version.download.BaseMinecraftDownloader
-import com.lanrhyme.shardlauncher.game.version.download.DownloadTask
+import com.lanrhyme.shardlauncher.game.version.download.GameLibDownloader
 import com.lanrhyme.shardlauncher.game.version.download.MinecraftDownloader
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.game.versioninfo.models.GameManifest
@@ -329,7 +329,7 @@ class GameInstaller(
                 val loaderUrl = "$baseUrl/${info.gameVersion}/${loaderVersion.version}/profile/json"
 
                 // 下载 Mod Loader 配置文件
-                val loaderJson = fetchStringFromUrls(listOf(loaderUrl).mapMirrorableUrls())
+                val loaderJson = fetchStringFromUrls(loaderUrl.mapMirrorableUrls())
 
                 // 保存 Mod Loader 配置文件
                 tempVersionJson.parentFile.mkdirs()
@@ -374,10 +374,7 @@ class GameInstaller(
 
         // 下载安装器
         addTask(
-            title = context.getString(
-                R.string.download_game_install_forge,
-                loaderVersion.version
-            ),
+            title = context.getString(R.string.download_game_install_game_files_progress),
             task = Task.runTask(id = "Download.$loaderName.Installer", task = { task ->
                 // 获取下载 URL
                 val downloadUrl = when (loaderName) {
@@ -394,7 +391,7 @@ class GameInstaller(
                 
                 // 下载安装器
                 downloadFromMirrorListSuspend(
-                    urls = listOf(downloadUrl).mapMirrorableUrls(),
+                    urls = downloadUrl.mapMirrorableUrls(),
                     targetFile = tempInstallerJar
                 )
                 
@@ -422,7 +419,7 @@ class GameInstaller(
                 
                 versionJsonUrl?.let { url ->
                     try {
-                        val versionJson = fetchStringFromUrls(listOf(url).mapMirrorableUrls())
+                        val versionJson = fetchStringFromUrls(url.mapMirrorableUrls())
                         tempVersionJson.parentFile.mkdirs()
                         tempVersionJson.writeText(versionJson)
                         

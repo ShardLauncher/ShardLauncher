@@ -76,7 +76,7 @@ class GameLibDownloader(
                             
                             // 更新进度
                             val progress = count.toFloat() / totalFiles
-                            task.updateProgress(progress, "Downloading libraries: $count/$totalFiles")
+                            task.updateProgress(progress)
                             
                             Logger.lDebug("Downloaded library: ${downloadTask.targetFile.name} ($count/$totalFiles)")
                         } catch (e: Exception) {

@@ -23,7 +23,7 @@ const val MINECRAFT_RES: String = "https://resources.download.minecraft.net/"
  * 设计为通用化 Minecraft 原版完整下载
  */
 class BaseMinecraftDownloader(
-    private val verifyIntegrity: Boolean
+    val verifyIntegrity: Boolean
 ) {
     //Dir
     val assetsTarget = File(getAssetsHome()).ensureDirectory()
