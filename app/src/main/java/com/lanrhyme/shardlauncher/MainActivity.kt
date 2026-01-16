@@ -300,7 +300,7 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                     LocalDensity provides scaledDensity,
                     LocalSettingsProvider provides
-                            com.lanrhyme.shardlauncher.ui.SettingsProvider(settingsRepository)
+                            com.lanrhyme.shardlauncher.ui.SettingsProvider()
             ) {
                 Crossfade(
                         targetState = showSplash,
