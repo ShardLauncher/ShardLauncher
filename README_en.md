@@ -1,93 +1,69 @@
-# ShardLauncher
+# ShardLauncher ✨
 
-[中文版本 (README.md)](README.md)
+[中文版本 (README.md)](README.md) | [Official Website (shardlauncher.cn)](https://shardlauncher.cn)
 
 [![Development Build Status](https://github.com/LanRhyme/ShardLauncher/actions/workflows/development.yml/badge.svg?branch=master)](https://github.com/LanRhyme/ShardLauncher/actions/workflows/development.yml)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
-ShardLauncher is a modern Minecraft Java Edition Android launcher application built with Jetpack Compose. It offers a contemporary user interface and rich customization options.
+**ShardLauncher** is a modern Minecraft Java Edition launcher designed specifically for Android devices. Built with **Jetpack Compose** and **Material Design 3**, it aims to provide a premium visual experience and fluid user interaction.
 
-## Core Features
+---
 
-*   **Multiple Login Methods:** Supports Microsoft and offline login.
-*   **Game Management:** Automatically downloads and manages Minecraft game files, including clients, assets, and libraries.
-*   **Highly Customizable UI:**
-    *   Dark mode and multiple theme colors
-    *   Customizable launcher background (images or videos)
-    *   Adjustable UI animation speed and scaling
-    *   Customizable sidebar position
-*   **Version Check:** Option to enable fetching information about the latest Minecraft versions.
+## 🚀 Core Features
 
-## Technology Stack
+- **Modern UI Interaction**: Full Material Design 3 implementation, featuring dynamic color extraction, glassmorphism (Haze), and glow effects.
+- **High-Performance Game Engine**: Integrated renderers including VirGL, OSMesa, and Zink. Supports multiple Java Runtimes (8, 17, 21) with deeply optimized startup performance.
+- **Comprehensive Account Management**: Secure and convenient login via Microsoft Account (OAuth 2.0) or Offline mode.
+- **Extreme Customization**: 
+    - Custom theme colors with multiple presets.
+    - Customizable backgrounds (supporting both static images and video backgrounds).
+    - Global animation speed adjustment and sidebar position customization.
+- **Zero Network Dependency**: Critical runtimes and renderer libraries are pre-integrated within the APK, supporting offline installation and usage.
 
-*   **Language:** Kotlin
-*   **UI Framework:** Jetpack Compose
-*   **Design Language:** Material Design 3
-*   **Key Dependencies:**
-    *   `androidx.navigation:navigation-compose` for page navigation
-    *   `io.coil-kt:coil-compose` for image loading
-    *   `com.squareup.retrofit2:retrofit` for network requests
-    *   `androidx.media3:media3-exoplayer` for video background playback
-
-## Build and Run
+## 🛠️ Build and Run
 
 ### Requirements
+- **Android Studio**: Latest stable version recommended (Ladybug+)
+- **Android SDK**: API 36 (Android 15+)
+- **JDK**: 11
+- **NDK**: 25.2.9519653
 
-*   Android Studio (latest stable version recommended)
-*   Android SDK (API 35 or higher)
-*   JDK 11
+### Quick Start
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/LanRhyme/ShardLauncher.git
+   cd ShardLauncher
+   ```
+2. **Configuration (Optional)**: Add `MICROSOFT_CLIENT_ID` to `local.properties` for Microsoft login support.
+3. **Build and Run**: Click **Run** in Android Studio or execute via command line:
+   ```bash
+   ./gradlew :ShardLauncher:installDebug
+   ```
 
-### Build Steps
+## 📂 Project Structure
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/LanRhyme/ShardLauncher.git
-    ```
-2.  Open the project in Android Studio.
-3.  Wait for Gradle sync to complete.
-4.  Connect an Android device or start an emulator.
-5.  Click the "Run" button (green triangle) in Android Studio or use the shortcut `Shift + F10` to build and install the app.
-
-## Development Conventions
-
-*   **UI Development:** Uses Jetpack Compose for declarative UI development.
-*   **State Management:** Utilizes Compose's `State` and `ViewModel` (if used) to manage UI state.
-*   **Navigation:** Uses `androidx.navigation:navigation-compose` for single-Activity, multi-Composable page navigation.
-*   **Theming:** Employs the Material Design 3 theme system, supporting dark mode and multiple theme color customizations.
-*   **Settings Storage:** Uses `SharedPreferences` (encapsulated via `SettingsRepository`) for persisting user settings.
-
-## Project Structure
-
-```
+```text
 ShardLauncher/
-├── app/                  # Main application module
-│   ├── src/main/
-│   │   ├── java/         # Kotlin source code
-│   │   │   └── com.lanrhyme.shardlauncher/
-│   │   │       ├── MainActivity.kt          # Application entry point
-│   │   │       ├── ShardLauncherApp.kt      # Application class
-│   │   │       ├── api/                     # Network API interface definitions
-│   │   │       ├── common/                  # Common data classes (e.g., SidebarPosition)
-│   │   │       ├── data/                    # Data layer (e.g., SettingsRepository)
-│   │   │       ├── model/                   # Data models
-│   │   │       ├── ui/                      # UI layer
-│   │   │       │   ├── components/          # Reusable UI components
-│   │   │       │   ├── navigation/          # Navigation related
-│   │   │       │   ├── settings/            # Settings interface
-│   │   │       │   ├── downloads/           # Download interface
-│   │   │       │   ├── account/             # Account interface
-│   │   │       │   ├── home/                # Home interface
-│   │   │       │   ├── notification/        # Notification system
-│   │   │       │   ├── developeroptions/    # Developer options
-│   │   │       │   ├── crash/               # Crash handling
-│   │   │       │   ├── custom/              # Custom XAML parser
-│   │   │       │   ├── theme/               # Theme definitions
-│   │   │       │   └── LocalSettingsProvider.kt # Local settings provider
-│   │   │       └── utils/                   # Utility classes
-│   │   └── res/          # Resource files (images, strings, themes, etc.)
-│   └── build.gradle.kts  # Application module build script
-├── gradle/               # Gradle Wrapper and version configuration
-├── build.gradle.kts      # Project-level build script
-├── settings.gradle.kts   # Project settings
-├── gradle.properties     # Gradle properties
-└── README.md             # Project description
+├── ShardLauncher/       # UI & Application Logic (Jetpack Compose)
+│   ├── src/main/java    # Kotlin Source Code
+│   ├── src/main/assets  # JRE Runtimes & Built-in Components
+│   └── res/             # Android Resources
+├── SL-GameCore/         # Game Core Logic & JNI Bridge
+│   ├── src/main/java    # Launcher Core Code
+│   └── src/main/jni     # C/C++ Native Code (PojavExec, etc.)
+├── third_party/         # Third-party Reference Projects
+└── gradle/              # Dependency Management (Version Catalog)
 ```
+
+## 🤝 Contribution and Feedback
+
+- **Feedback**: Please submit bugs or suggestions via [GitHub Issues](https://github.com/LanRhyme/ShardLauncher/issues).
+- **Community**: Visit the [Official Website shardlauncher.cn](https://shardlauncher.cn) for more information.
+- **Contribution**: Fork the project and submit a Pull Request. Please follow the development conventions in [Developer Documentation](https://shardlauncher.cn/docs/zh/dev_convention).
+
+## 📄 License
+
+This project is open-sourced under the **GPL-3.0** License. See the [LICENSE](LICENSE) file for details.
+
+---
+*Powered by Kotlin & Jetpack Compose. Inspired by the Minecraft community.*
