@@ -39,7 +39,7 @@ jobs:
     - name: Extract Version Name
       id: extract_version
       run: |
-        VERSION_NAME=$(grep 'val vName =' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/' | sed 's/ - /_/g')
+        VERSION_NAME=$(grep 'val vName =' ShardLauncher/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/' | sed 's/ - /_/g')
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
         echo "Detected version: $VERSION_NAME"
 
@@ -84,7 +84,7 @@ jobs:
       env:
         SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
       run: |
-        echo $SIGNING_KEYSTORE_BASE64 | base64 --decode > app/keystore.jks
+        echo $SIGNING_KEYSTORE_BASE64 | base64 --decode > ShardLauncher/keystore.jks
 
     - name: Build Release APKs
       env:
@@ -93,16 +93,16 @@ jobs:
         SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-      run: ./gradlew assembleRelease -Pandroid.injected.signing.store.file=$(pwd)/app/keystore.jks -Pandroid.injected.signing.store.password=$SIGNING_KEYSTORE_PASSWORD -Pandroid.injected.signing.key.alias=$SIGNING_KEY_ALIAS -Pandroid.injected.signing.key.password=$SIGNING_KEY_PASSWORD
+      run: ./gradlew assembleRelease -Pandroid.injected.signing.store.file=$(pwd)/ShardLauncher/keystore.jks -Pandroid.injected.signing.store.password=$SIGNING_KEYSTORE_PASSWORD -Pandroid.injected.signing.key.alias=$SIGNING_KEY_ALIAS -Pandroid.injected.signing.key.password=$SIGNING_KEY_PASSWORD
 
     - name: Prepare Artifacts
       run: |
         mkdir -p release_artifacts
-        find app/build/outputs/apk/release -name "*universal*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-all.apk \;
-        find app/build/outputs/apk/release -name "*armeabi-v7a*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-armeabi-v7a.apk \;
-        find app/build/outputs/apk/release -name "*arm64-v8a*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-arm64-v8a.apk \;
-        find app/build/outputs/apk/release -name "*x86*release*.apk" -not -name "*x86_64*" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-x86.apk \;
-        find app/build/outputs/apk/release -name "*x86_64*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-x86_64.apk \;
+        find ShardLauncher/build/outputs/apk/release -name "*universal*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-all.apk \;
+        find ShardLauncher/build/outputs/apk/release -name "*armeabi-v7a*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-armeabi-v7a.apk \;
+        find ShardLauncher/build/outputs/apk/release -name "*arm64-v8a*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-arm64-v8a.apk \;
+        find ShardLauncher/build/outputs/apk/release -name "*x86*release*.apk" -not -name "*x86_64*" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-x86.apk \;
+        find ShardLauncher/build/outputs/apk/release -name "*x86_64*release*.apk" -exec cp {} release_artifacts/com.lanrhyme.shardlauncher-x86_64.apk \;
         ls -l release_artifacts/
 
     - name: Create GitHub Release
