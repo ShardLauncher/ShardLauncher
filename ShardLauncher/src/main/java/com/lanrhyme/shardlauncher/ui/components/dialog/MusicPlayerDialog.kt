@@ -1,6 +1,7 @@
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.dialog
 
 import android.net.Uri
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent

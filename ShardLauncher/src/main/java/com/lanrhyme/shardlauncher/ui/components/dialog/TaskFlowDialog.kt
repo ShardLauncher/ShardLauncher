@@ -1,4 +1,4 @@
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.dialog
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement

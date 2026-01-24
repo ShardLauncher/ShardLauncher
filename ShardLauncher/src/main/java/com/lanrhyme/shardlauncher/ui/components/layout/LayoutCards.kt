@@ -1,6 +1,8 @@
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.layout
 
 import androidx.compose.animation.*
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
+import com.lanrhyme.shardlauncher.ui.components.basic.TitleAndSummary
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource

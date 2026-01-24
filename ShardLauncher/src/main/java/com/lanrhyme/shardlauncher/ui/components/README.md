@@ -4,21 +4,31 @@
 
 所有组件均以可重用性为设计理念，旨在简化整个应用的 UI 开发。
 
-## 目录
+## 目录结构
 
-- [1. 基础组件 (Basic Components)](#1-基础组件-basic-components)
-- [2. 布局卡片 (Layout Cards)](#2-布局卡片-layout-cards)
-- [3. 对话框 (Dialogs)](#3-对话框-dialogs)
-- [4. 业务组件 (Business Components)](#4-业务组件-business-components)
-- [5. 视觉特效 (Visual Effects)](#5-视觉特效-visual-effects)
+组件库现已按照功能职责划分为以下子目录：
+
+- `basic/`: 基础原子组件 (Theme, Buttons, Cards)
+- `layout/`: 布局容器与配置 (Layout Cards, Config)
+- `dialog/`: 业务对话框 (Dialogs)
+- `business/`: 特定业务逻辑组件 (FAB, Dropdowns)
+- `effect/`: 视觉特效 (Background Effects)
+
+## 详细说明
+
+- [1. 基础组件 (Basic Components)](#1-基础组件-basic-components---basic)
+- [2. 布局卡片 (Layout Cards)](#2-布局卡片-layout-cards---layout)
+- [3. 对话框 (Dialogs)](#3-对话框-dialogs---dialog)
+- [4. 业务组件 (Business Components)](#4-业务组件-business-components---business)
+- [5. 视觉特效 (Visual Effects)](#5-视觉特效-visual-effects---effect)
 
 ---
 
-### 1. 基础组件 (Basic Components)
+### 1. 基础组件 (Basic Components) - `basic/`
 
-主要位于 `ShardThemeComponents.kt` 和 `CommonComponents.kt`。
+主要包含 `ShardThemeComponents.kt` 和 `CommonComponents.kt`。
 
-#### `ShardThemeComponents.kt`
+#### `basic/ShardThemeComponents.kt`
 提供符合 ShardTheme 主题规范的基础原子组件。
 
 - **`ShardCard`**
@@ -42,7 +52,7 @@
   - 通用文本输入框。
   - **特性**: 基于 `BasicTextField` 封装，提供一致的边框、背景和内边距样式。
 
-#### `CommonComponents.kt`
+#### `basic/CommonComponents.kt`
 通用的交互式组件。
 
 - **`ScalingActionButton`**
@@ -63,11 +73,11 @@
 
 ---
 
-### 2. 布局卡片 (Layout Cards)
+### 2. 布局卡片 (Layout Cards) - `layout/`
 
-主要位于 `LayoutCards.kt` 和 `CommonComponents.kt`，用于构建设置页或信息展示页的列表项。
+主要包含 `LayoutCards.kt` 和 `LocalLayoutConfig.kt`。
 
-#### `LayoutCards.kt`
+#### `layout/LayoutCards.kt`
 封装了常见的设置项布局。
 
 - **`SwitchLayoutCard`**
@@ -95,64 +105,51 @@
   - 纯按钮功能的列表卡片。
   - **用途**: 执行特定操作（如“清除缓存”、“重置设置”）。
 
-#### `CommonComponents.kt`
-
-- **`CollapsibleCard`**
-  - 可折叠卡片。
-  - **用途**: 用于收纳次要信息或长内容，点击标题栏展开/收起。
-
-- **`CombinedCard`**
-  - 组合卡片。
-  - **用途**: 标准的信息展示容器，包含标题、摘要和自定义内容区域。
-
-- **`TitleAndSummary`**
-  - 标题与摘要文本组件。
-  - **用途**: 布局卡片内部的基础文本排版单元。
+#### `layout/LocalLayoutConfig.kt`
+- **`LocalCardLayoutConfig`**
+  - 布局配置 CompositionLocal。
+  - **功能**: 提供全局的卡片外观配置（如 `isCardBlurEnabled`），允许组件根据环境动态调整渲染策略（如降级为纯色背景）。
 
 ---
 
-### 3. 对话框 (Dialogs)
+### 3. 对话框 (Dialogs) - `dialog/`
 
 特定功能的业务对话框。
 
-- **`MusicPlayerDialog`** (`MusicPlayerDialog.kt`)
+- **`MusicPlayerDialog`** (`dialog/MusicPlayerDialog.kt`)
   - 音乐播放器对话框。
   - **功能**: 展示音乐列表、播放控制、设置等，集成 ViewModel 数据。
 
-- **`ResourceInstallDialog`** (`ResourceInstallDialog.kt`)
+- **`ResourceInstallDialog`** (`dialog/ResourceInstallDialog.kt`)
   - 资源安装对话框。
   - **功能**: 检测并引导用户安装缺失的游戏资源文件。
 
-- **`TaskFlowDialog`** (`TaskFlowDialog.kt`)
+- **`TaskFlowDialog`** (`dialog/TaskFlowDialog.kt`)
   - 任务流进度对话框。
   - **功能**: 展示多步骤任务的执行进度（如：下载 -> 解压 -> 安装），支持终止和后台运行。
 
 ---
 
-### 4. 业务组件 (Business Components)
+### 4. 业务组件 (Business Components) - `business/`
 
 与特定业务逻辑强相关的组件。
 
-- **`FluidFab`** (`FluidFab.kt`)
+- **`FluidFab`** (`business/FluidFab.kt`)
   - 流体动画悬浮按钮。
   - **特性**: 具有独特的“粘性”展开动画，用于主界面的核心操作入口。支持多个子菜单项。
 
-- **`LoaderVersionDropdown`** (`LoaderVersionDropdown.kt`)
+- **`LoaderVersionDropdown`** (`business/LoaderVersionDropdown.kt`)
   - 加载器版本选择组件。
   - **功能**: 专门用于选择 Minecraft 加载器（Fabric/Forge）版本的下拉列表，支持分页加载。
 
-- **`VersionItem`** (`VersionItem.kt`)
+- **`VersionItem`** (`business/VersionItem.kt`)
   - 游戏版本列表项。
   - **功能**: 在主页版本列表中展示单个游戏版本的详细信息（图标、名称、状态）。
 
 ---
 
-### 5. 视觉特效 (Visual Effects)
+### 5. 视觉特效 (Visual Effects) - `effect/`
 
-- **`BackgroundLightEffect`** (`BackgroundLightEffect.kt`)
+- **`BackgroundLightEffect`** (`effect/BackgroundLightEffect.kt`)
   - 背景光斑动画。
   - **功能**: 在页面背景绘制缓慢移动和呼吸的彩色光斑，增强视觉层次感。
-
-- **`LocalLayoutConfig`** (`LocalLayoutConfig.kt`)
-  - 布局配置 CompositionLocal。
-  - **功能**: 提供全局的卡片外观配置（如 `isCardBlurEnabled`），允许组件根据环境动态调整渲染策略（如降级为纯色背景）。

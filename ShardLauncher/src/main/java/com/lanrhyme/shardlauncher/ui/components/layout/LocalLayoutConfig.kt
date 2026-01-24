@@ -1,4 +1,4 @@
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.layout
 
 import androidx.compose.runtime.compositionLocalOf
 import dev.chrisbanes.haze.HazeState

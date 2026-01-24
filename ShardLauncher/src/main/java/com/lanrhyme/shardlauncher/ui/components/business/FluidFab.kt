@@ -1,4 +1,4 @@
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.business
 
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter

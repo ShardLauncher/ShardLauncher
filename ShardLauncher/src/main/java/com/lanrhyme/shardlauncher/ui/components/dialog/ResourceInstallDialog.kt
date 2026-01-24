@@ -3,7 +3,7 @@
  * Adapted from Zalith Launcher 2
  */
 
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.dialog
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

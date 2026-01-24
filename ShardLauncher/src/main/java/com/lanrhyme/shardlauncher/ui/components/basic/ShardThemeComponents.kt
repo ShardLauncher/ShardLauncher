@@ -1,4 +1,4 @@
-package com.lanrhyme.shardlauncher.ui.components
+package com.lanrhyme.shardlauncher.ui.components.basic
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
