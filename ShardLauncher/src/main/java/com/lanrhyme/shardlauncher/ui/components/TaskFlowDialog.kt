@@ -30,6 +30,8 @@ import com.lanrhyme.shardlauncher.coroutine.Task
 import com.lanrhyme.shardlauncher.coroutine.TaskState
 import com.lanrhyme.shardlauncher.coroutine.TitledTask
 
+import androidx.compose.material3.ButtonDefaults
+
 /**
  * 任务流进度对话框
  * @param title 对话框标题
@@ -37,6 +39,7 @@ import com.lanrhyme.shardlauncher.coroutine.TitledTask
  * @param visible 是否显示对话框
  * @param onDismiss 关闭对话框回调（点击取消按钮）
  * @param onCancel 取消任务回调
+ * @param onClose 暂时关闭对话框回调（点击关闭按钮）
  * @param isCompleted 是否已完成
  * @param onComplete 完成回调（点击完成按钮）
  */
@@ -47,6 +50,7 @@ fun TaskFlowDialog(
     visible: Boolean,
     onDismiss: () -> Unit = {},
     onCancel: () -> Unit = {},
+    onClose: () -> Unit = {},
     isCompleted: Boolean = false,
     onComplete: () -> Unit = {}
 ) {
@@ -93,18 +97,42 @@ fun TaskFlowDialog(
             Spacer(modifier = Modifier.height(16.dp))
             
             // 取消/完成按钮
-            CustomButton(
-                onClick = {
-                    if (isCompleted) {
+            if (isCompleted) {
+                CustomButton(
+                    onClick = {
                         onComplete()
-                    } else {
-                        onCancel()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("完成")
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 终止按钮
+                    CustomButton(
+                        onClick = {
+                            onCancel()
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("终止")
                     }
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (isCompleted) "完成" else "取消")
+                    
+                    // 关闭按钮
+                    CustomButton(
+                        onClick = {
+                            onClose()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("关闭")
+                    }
+                }
             }
         }
     }

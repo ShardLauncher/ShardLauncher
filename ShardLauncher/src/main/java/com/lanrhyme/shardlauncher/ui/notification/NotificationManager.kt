@@ -34,6 +34,14 @@ object NotificationManager {
         }
     }
 
+    fun update(notification: Notification) {
+        _notifications.update { list ->
+            list.map {
+                if (it.id == notification.id) notification else it
+            }
+        }
+    }
+
     fun addSeenPopupId(id: String) {
         _seenPopupIds.update { it + id }
     }

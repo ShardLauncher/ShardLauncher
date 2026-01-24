@@ -72,11 +72,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
     private val _selectedOptifineVersion = MutableStateFlow<LoaderVersion?>(null)
     val selectedOptifineVersion = _selectedOptifineVersion.asStateFlow()
 
-    private val _downloadTask = MutableStateFlow<Task?>(null)
-    val downloadTask = _downloadTask.asStateFlow()
-    
-    // GameInstaller 实例
-    private var installer: com.lanrhyme.shardlauncher.game.download.game.GameInstaller? = null
+    val downloadTask = com.lanrhyme.shardlauncher.game.download.DownloadManager.downloadTask
 
     init {
         loadAllLoaderVersions()
@@ -288,61 +284,11 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                     
                     com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Creating game installer for: ${downloadInfo.customVersionName}")
                     
-                    // 创建游戏安装器
-                    installer = com.lanrhyme.shardlauncher.game.download.game.GameInstaller(
+                    // Start download using Global DownloadManager
+                    com.lanrhyme.shardlauncher.game.download.DownloadManager.startDownload(
                         context = getApplication(),
-                        info = downloadInfo,
-                        scope = viewModelScope
-                    )
-                    
-                    // 创建一个虚拟的Task来跟踪下载状态
-                    val downloadTask = com.lanrhyme.shardlauncher.coroutine.Task.runTask(
-                        id = "game_download_${versionId}",
-                        task = { task ->
-                            task.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.RUNNING
-                            // 这里不执行实际任务，实际任务由GameInstaller处理
-                            // 我们只是用这个Task来跟踪UI状态
-                        },
-                        onError = { error ->
-                            com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Download task error: ${error.message}", error)
-                            _downloadTask.value = null
-                        },
-                        onFinally = {
-                            // 延迟清理任务状态，让用户看到完成状态
-                            viewModelScope.launch {
-                                kotlinx.coroutines.delay(500)
-                                _downloadTask.value = null
-                            }
-                        }
-                    )
-                    
-                    // 设置下载任务状态
-                    _downloadTask.value = downloadTask
-                    
-                    // 执行安装
-                    installer?.installGame(
-                        isRunning = { 
-                            com.lanrhyme.shardlauncher.utils.logging.Logger.lWarning("Installation already in progress")
-                            // 已在安装中，取消虚拟任务
-                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
-                        },
-                        onInstalled = { installedVersion ->
-                            com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Game installed successfully: $installedVersion")
-                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
-                            // 刷新版本列表，让新安装的版本被检测到
-                            com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.refresh(
-                                tag = "VersionDetailViewModel.download",
-                                trySetVersion = installedVersion
-                            )
-                        },
-                        onError = { error ->
-                            com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Game installation failed: ${error.message}", error)
-                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
-                        },
-                        onGameAlreadyInstalled = {
-                            com.lanrhyme.shardlauncher.utils.logging.Logger.lWarning("Game already installed: ${_versionName.value}")
-                            downloadTask.taskState = com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED
-                        }
+                        downloadInfo = downloadInfo,
+                        versionId = versionId
                     )
                 } else {
                     com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Version not found: $versionId")
@@ -351,7 +297,6 @@ class VersionDetailViewModel(application: Application, private val versionId: St
             } catch (e: Exception) {
                 com.lanrhyme.shardlauncher.utils.logging.Logger.lError("Download initialization failed: ${e.message}", e)
                 // Handle error
-                _downloadTask.value = null
             }
         }
     }
@@ -360,7 +305,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
      * 获取游戏安装器的任务流
      */
     fun getTasksFlow(): kotlinx.coroutines.flow.StateFlow<List<com.lanrhyme.shardlauncher.coroutine.TitledTask>> {
-        return installer?.tasksFlow ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList())
+        return com.lanrhyme.shardlauncher.game.download.DownloadManager.tasksFlow
     }
     
     /**
@@ -368,8 +313,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
      */
     fun cancelInstall() {
         com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Cancelling installation for version: $versionId")
-        installer?.cancelInstall()
-        _downloadTask.value = null
+        com.lanrhyme.shardlauncher.game.download.DownloadManager.cancelDownload()
         com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Installation cancelled")
     }
 
@@ -377,6 +321,6 @@ class VersionDetailViewModel(application: Application, private val versionId: St
      * 完成下载
      */
     fun completeDownload() {
-        _downloadTask.value = null
+        com.lanrhyme.shardlauncher.game.download.DownloadManager.closeDialog()
     }
 }

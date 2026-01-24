@@ -756,6 +756,25 @@ fun MainScreen(
                 NotificationPanel(isVisible = isSidebarExpanded, sidebarPosition = sidebarPosition)
 
                 NotificationPopupHost()
+
+                // 全局下载进度对话框
+                val downloadTasks by com.lanrhyme.shardlauncher.game.download.DownloadManager.tasksFlow.collectAsState()
+                val showDownloadDialog by com.lanrhyme.shardlauncher.game.download.DownloadManager.showDialog.collectAsState()
+                val downloadTask by com.lanrhyme.shardlauncher.game.download.DownloadManager.downloadTask.collectAsState()
+                val downloadDialogTitle by com.lanrhyme.shardlauncher.game.download.DownloadManager.dialogTitle.collectAsState()
+
+                com.lanrhyme.shardlauncher.ui.components.TaskFlowDialog(
+                    title = downloadDialogTitle,
+                    tasks = downloadTasks,
+                    visible = showDownloadDialog && downloadTask != null,
+                    onDismiss = { /* 不允许点击背景关闭 */ },
+                    onCancel = { com.lanrhyme.shardlauncher.game.download.DownloadManager.cancelDownload() },
+                    onClose = { com.lanrhyme.shardlauncher.game.download.DownloadManager.closeDialog() },
+                    isCompleted = downloadTask?.taskState == com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED,
+                    onComplete = {
+                        com.lanrhyme.shardlauncher.game.download.DownloadManager.closeDialog()
+                    }
+                )
             }
         }
     }

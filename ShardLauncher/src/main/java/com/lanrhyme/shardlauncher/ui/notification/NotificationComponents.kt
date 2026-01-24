@@ -60,10 +60,16 @@ fun NotificationItem(
                     Text(text = notification.message, style = MaterialTheme.typography.bodyMedium)
                     if (notification.type == NotificationType.Progress && notification.progress != null) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = notification.progress,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        if (notification.progress < 0) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                progress = notification.progress,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }

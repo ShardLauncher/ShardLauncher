@@ -291,7 +291,7 @@ private fun PopupNotificationItem(
             backgroundContent = {},
             content = {
                 NotificationItem(
-                    notification = notification.copy(onClick = onClick),
+                    notification = notification.copy(onClick = notification.onClick ?: onClick),
                     durationProgress = if (shouldAutoDismiss) durationAnim.value else null,
                     modifier = Modifier.width(350.dp)
                 )

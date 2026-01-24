@@ -33,7 +33,6 @@ import com.lanrhyme.shardlauncher.ui.components.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.ScalingActionButton
 import com.lanrhyme.shardlauncher.ui.components.StyledFilterChip
 import com.lanrhyme.shardlauncher.ui.components.SubPageNavigationBar
-import com.lanrhyme.shardlauncher.ui.components.TaskFlowDialog
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -55,7 +54,6 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
     val isOptifineSelected by viewModel.isOptifineSelected.collectAsState()
     val isFabricApiSelected by viewModel.isFabricApiSelected.collectAsState()
     val downloadTask by viewModel.downloadTask.collectAsState()
-    val tasksFlow by viewModel.getTasksFlow().collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
         SubPageNavigationBar(
@@ -209,23 +207,5 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
                 }
             }
         }
-        
-        // 下载进度对话框
-        TaskFlowDialog(
-            title = "正在安装 $versionId",
-            tasks = tasksFlow,
-            visible = downloadTask != null,
-            onDismiss = { /* 不允许点击背景关闭 */ },
-            onCancel = { viewModel.cancelInstall() },
-            isCompleted = downloadTask?.taskState == com.lanrhyme.shardlauncher.coroutine.TaskState.COMPLETED,
-            onComplete = {
-                // 完成下载，导航到未安装版本列表界面
-                viewModel.completeDownload()
-                navController.navigate("download") {
-                    // 清除导航栈，确保用户不能返回到下载页面
-                    popUpTo("download") { inclusive = true }
-                }
-            }
-        )
     }
 }
