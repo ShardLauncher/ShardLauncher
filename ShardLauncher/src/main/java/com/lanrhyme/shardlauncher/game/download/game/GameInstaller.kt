@@ -12,6 +12,7 @@ import com.lanrhyme.shardlauncher.coroutine.addTask
 import com.lanrhyme.shardlauncher.coroutine.buildPhase
 import com.lanrhyme.shardlauncher.game.addons.mirror.mapMirrorableUrls
 import com.lanrhyme.shardlauncher.game.path.getGameHome
+import com.lanrhyme.shardlauncher.model.ModrinthVersion
 import com.lanrhyme.shardlauncher.game.version.download.BaseMinecraftDownloader
 import com.lanrhyme.shardlauncher.game.version.download.GameLibDownloader
 import com.lanrhyme.shardlauncher.game.version.download.MinecraftDownloader
@@ -190,6 +191,11 @@ class GameInstaller(
                     tempMinecraftDir = pathConfig.tempMinecraftDir,
                     fabricDir = pathConfig.fabricDir
                 )
+
+                //下载 Fabric API
+                info.fabricApi?.let {
+                    addFabricApiTask(it, pathConfig.targetClientDir)
+                }
 
                 //最终游戏安装任务
                 addTask(
@@ -472,6 +478,53 @@ class GameInstaller(
             })
         )
     }
+
+    private fun MutableList<TitledTask>.addFabricApiTask(
+        api: ModrinthVersion,
+        targetClientDir: File
+    ) {
+        addTask(
+            title = "Downloading Fabric API: ${api.versionNumber}",
+            task = Task.runTask(
+                id = "Download.FabricAPI",
+                task = { task ->
+                    Logger.lInfo("Starting Fabric API download: ${api.versionNumber}")
+                    
+                    // 1. Get primary file
+                    val file = api.files.firstOrNull { it.primary } ?: api.files.firstOrNull()
+                    if (file == null) {
+                        Logger.lError("No files found for Fabric API version: ${api.versionNumber}")
+                        throw IllegalStateException("No files found for Fabric API version: ${api.versionNumber}")
+                    }
+                    
+                    // 2. Define target path
+                    val modsDir = File(targetClientDir, "mods")
+                    if (!modsDir.exists()) {
+                        modsDir.mkdirs()
+                    }
+                    val targetFile = File(modsDir, file.filename)
+                    
+                    Logger.lInfo("Downloading Fabric API to: ${targetFile.absolutePath}")
+                    
+                    // 3. Download
+                    val success = downloadFromMirrorListSuspend(
+                        urls = listOf(file.url),
+                        targetFile = targetFile,
+                        sha1 = file.hashes.sha1,
+                        size = file.size,
+                        verifyIntegrity = true
+                    )
+                    
+                    if (!success) {
+                        throw java.io.IOException("Failed to download Fabric API")
+                    }
+                    
+                    Logger.lInfo("Fabric API downloaded successfully")
+                }
+            )
+        )
+    }
+
 
     /**
      * 游戏带附加内容安装完成，合并版本Json、迁移游戏文件

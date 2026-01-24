@@ -7,11 +7,16 @@ import com.lanrhyme.shardlauncher.api.ApiClient
 import com.lanrhyme.shardlauncher.game.version.download.BaseMinecraftDownloader
 import com.lanrhyme.shardlauncher.game.version.download.DownloadMode
 import com.lanrhyme.shardlauncher.game.version.download.MinecraftDownloader
+import com.lanrhyme.shardlauncher.game.version.modloader.FabricAPIVersions
 import com.lanrhyme.shardlauncher.model.FabricLoaderVersion
 import com.lanrhyme.shardlauncher.model.LoaderVersion
+import com.lanrhyme.shardlauncher.model.ModrinthVersion
 import com.lanrhyme.shardlauncher.model.ForgeVersionToken
 import com.lanrhyme.shardlauncher.model.QuiltVersion
 import com.lanrhyme.shardlauncher.model.OptiFineVersionToken
+import com.lanrhyme.shardlauncher.model.meta.FabricMetaResponse
+import com.lanrhyme.shardlauncher.model.meta.NeoForgeMetaResponse
+import com.lanrhyme.shardlauncher.model.meta.QuiltMetaResponse
 import com.lanrhyme.shardlauncher.model.version.VersionManager
 import com.lanrhyme.shardlauncher.coroutine.Task
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,9 +43,9 @@ class VersionDetailViewModel(application: Application, private val versionId: St
 
     private val _isFabricApiSelected = MutableStateFlow(false)
     val isFabricApiSelected = _isFabricApiSelected.asStateFlow()
-    private val _fabricApiVersions = MutableStateFlow<List<String>>(emptyList()) // Placeholder
+    private val _fabricApiVersions = MutableStateFlow<List<ModrinthVersion>>(emptyList()) // Placeholder
     val fabricApiVersions = _fabricApiVersions.asStateFlow()
-    private val _selectedFabricApiVersion = MutableStateFlow<String?>(null)
+    private val _selectedFabricApiVersion = MutableStateFlow<ModrinthVersion?>(null)
     val selectedFabricApiVersion = _selectedFabricApiVersion.asStateFlow()
 
     private val _fabricVersions = MutableStateFlow<List<FabricLoaderVersion>>(emptyList())
@@ -81,40 +86,77 @@ class VersionDetailViewModel(application: Application, private val versionId: St
     private fun loadAllLoaderVersions() {
         viewModelScope.launch {
             try {
-                val fabricVersions = ApiClient.fabricApiService.getLoaderVersions(versionId)
-                _fabricVersions.value = fabricVersions
-                _selectedFabricVersion.value = fabricVersions.firstOrNull { it.stable == true }
+                // Fetch Fabric API versions
+                // 使用单独的 try-catch 块，避免影响其他加载
+                try {
+                    val fabricApiVersions = FabricAPIVersions.fetchVersionList(versionId)
+                    _fabricApiVersions.value = fabricApiVersions ?: emptyList()
+                    _selectedFabricApiVersion.value = _fabricApiVersions.value.firstOrNull()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
-                val forgeVersionTokens = ApiClient.forgeApiService.getForgeVersions(versionId)
-                val forgeVersions = forgeVersionTokens.map { it.toLoaderVersion() }
-                _forgeVersions.value = forgeVersions
-                _selectedForgeVersion.value = forgeVersions.firstOrNull { it.isRecommended }
+                // Fetch Fabric Loader versions
+                try {
+                    val fabricResponse = ApiClient.fabricApiService.getLoaderVersions(versionId)
+                    val fabricVersions = fabricResponse.map { FabricLoaderVersion(it.loader.version, it.loader.stable) }
+                    _fabricVersions.value = fabricVersions
+                    _selectedFabricVersion.value = fabricVersions.firstOrNull { it.stable == true }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
-                val neoForgeVersionStrings = ApiClient.neoForgeApiService.getNeoForgeVersions(versionId)
-                val neoForgeVersions = neoForgeVersionStrings.map { LoaderVersion(version = it) }
-                _neoForgeVersions.value = neoForgeVersions
-                _selectedNeoForgeVersion.value = neoForgeVersions.firstOrNull()
+                // Fetch Forge versions
+                try {
+                    val forgeVersionTokens = ApiClient.forgeApiService.getForgeVersions(versionId)
+                    val forgeVersions = forgeVersionTokens.map { it.toLoaderVersion() }
+                    _forgeVersions.value = forgeVersions
+                    _selectedForgeVersion.value = forgeVersions.firstOrNull { it.isRecommended }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
-                val quiltVersions = ApiClient.quiltApiService.getQuiltVersions(versionId)
-                val mappedQuiltVersions = quiltVersions.map { it.toLoaderVersion() }
-                _quiltVersions.value = mappedQuiltVersions
-                _selectedQuiltVersion.value = mappedQuiltVersions.firstOrNull { it.status == "Stable" }
+                // Fetch NeoForge versions
+                try {
+                    val neoForgeResponse = ApiClient.neoForgeApiService.getNeoForgeVersions(versionId)
+                    val neoForgeVersions = neoForgeResponse.versions.map { LoaderVersion(version = it) }
+                    _neoForgeVersions.value = neoForgeVersions
+                    _selectedNeoForgeVersion.value = neoForgeVersions.firstOrNull()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
-                val optiFineVersionTokens = ApiClient.optiFineApiService.getOptiFineVersions()
-                val mappedOptiFineVersions = optiFineVersionTokens
-                    .filter { it.mcVersion == versionId }
-                    .map { it.toLoaderVersion() }
-                _optifineVersions.value = mappedOptiFineVersions
-                _selectedOptifineVersion.value = mappedOptiFineVersions.firstOrNull()
+                // Fetch Quilt versions
+                try {
+                    val quiltResponse = ApiClient.quiltApiService.getQuiltVersions(versionId)
+                    val mappedQuiltVersions = quiltResponse.map {
+                        LoaderVersion(
+                            version = it.loader.version,
+                            status = "Stable"
+                        )
+                    }
+                    _quiltVersions.value = mappedQuiltVersions
+                    _selectedQuiltVersion.value = mappedQuiltVersions.firstOrNull()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                // Fetch OptiFine versions
+                try {
+                    val optiFineVersionTokens = ApiClient.optiFineApiService.getOptiFineVersions()
+                    val mappedOptiFineVersions = optiFineVersionTokens
+                        .filter { it.mcVersion == versionId }
+                        .map { it.toLoaderVersion() }
+                    _optifineVersions.value = mappedOptiFineVersions
+                    _selectedOptifineVersion.value = mappedOptiFineVersions.firstOrNull()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
             } catch (e: Exception) { 
                 // 记录错误，但继续执行，让UI可以显示其他可用的Mod Loader
                 e.printStackTrace()
             }
-
-            // Placeholders
-            _fabricApiVersions.value = listOf("0.100.0+1.21", "0.99.3+1.21", "0.96.4+1.20.6")
-            _selectedFabricApiVersion.value = _fabricApiVersions.value.firstOrNull()
         }
     }
 
@@ -140,7 +182,7 @@ class VersionDetailViewModel(application: Application, private val versionId: St
         updateVersionNameSuffix()
     }
 
-    fun selectFabricApiVersion(version: String) {
+    fun selectFabricApiVersion(version: ModrinthVersion) {
         _selectedFabricApiVersion.value = version
     }
 
@@ -279,7 +321,8 @@ class VersionDetailViewModel(application: Application, private val versionId: St
                         fabric = fabricVersion,
                         forge = forgeVersion,
                         neoForge = neoForgeVersion,
-                        quilt = quiltVersion
+                        quilt = quiltVersion,
+                        fabricApi = if (isFabricApiSelected.value) selectedFabricApiVersion.value else null
                     )
                     
                     com.lanrhyme.shardlauncher.utils.logging.Logger.lInfo("Creating game installer for: ${downloadInfo.customVersionName}")

@@ -1,5 +1,7 @@
 package com.lanrhyme.shardlauncher.game.download.game
 
+import com.lanrhyme.shardlauncher.model.ModrinthVersion
+
 /**
  * 游戏下载信息
  * @param gameVersion Minecraft 版本
@@ -8,6 +10,7 @@ package com.lanrhyme.shardlauncher.game.download.game
  * @param forge Forge 版本
  * @param neoForge NeoForge 版本
  * @param quilt Quilt 版本
+ * @param fabricApi Fabric API 版本
  */
 data class GameDownloadInfo(
     /** Minecraft 版本 */
@@ -21,7 +24,9 @@ data class GameDownloadInfo(
     /** NeoForge 版本 */
     val neoForge: ModLoaderVersion? = null,
     /** Quilt 版本 */
-    val quilt: ModLoaderVersion? = null
+    val quilt: ModLoaderVersion? = null,
+    /** Fabric API 版本 */
+    val fabricApi: ModrinthVersion? = null
 )
 
 /**

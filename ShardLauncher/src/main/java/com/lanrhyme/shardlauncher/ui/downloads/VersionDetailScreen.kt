@@ -46,6 +46,7 @@ import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.coroutine.TaskState
 import com.lanrhyme.shardlauncher.model.FabricLoaderVersion
 import com.lanrhyme.shardlauncher.model.LoaderVersion
+import com.lanrhyme.shardlauncher.model.ModrinthVersion
 import com.lanrhyme.shardlauncher.ui.components.CapsuleTextField
 import com.lanrhyme.shardlauncher.ui.components.CombinedCard
 import com.lanrhyme.shardlauncher.ui.components.LoaderVersionDropdown
@@ -251,7 +252,7 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
                                         versions = fabricApiVersions,
                                         selectedVersion = selectedApiVersion,
                                         onVersionSelected = {
-                                            viewModel.selectFabricApiVersion(it as String)
+                                            viewModel.selectFabricApiVersion(it as ModrinthVersion)
                                         }
                                     )
                                 }
