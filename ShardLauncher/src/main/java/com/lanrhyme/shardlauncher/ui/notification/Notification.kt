@@ -11,6 +11,7 @@ data class Notification(
     val type: NotificationType,
     val progress: Float? = null,
     val isClickable: Boolean = false,
+    val keepOnScreen: Boolean? = null,
     val onClick: (() -> Unit)? = null
 )
 

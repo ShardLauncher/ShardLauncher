@@ -1,9 +1,16 @@
 package com.lanrhyme.shardlauncher.ui.notification
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -25,7 +32,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,6 +57,10 @@ fun NotificationPanel(
     isVisible: Boolean,
     sidebarPosition: SidebarPosition
 ) {
+    // 自定义缓动曲线，效果更显著
+    val enterEasing = remember { CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f) } // 极快启动，缓慢结束
+    val exitEasing = remember { CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f) } // 缓慢启动，极快结束
+
     val panelAlignment = if (sidebarPosition == SidebarPosition.Left) Alignment.CenterEnd else Alignment.CenterStart
     val enterAnimation = if (sidebarPosition == SidebarPosition.Left) slideInHorizontally(initialOffsetX = { it }) else slideInHorizontally(initialOffsetX = { -it })
     val exitAnimation = if (sidebarPosition == SidebarPosition.Left) slideOutHorizontally(targetOffsetX = { it }) else slideOutHorizontally(targetOffsetX = { -it })
@@ -69,7 +83,7 @@ fun NotificationPanel(
             visibleItems.clear()
             persistentNotifications.forEachIndexed { index, item ->
                 coroutineScope.launch {
-                    delay(index * 50L + 100L) // Stagger delay
+                    delay(index * 50L + 100L) // 错峰延迟
                     visibleItems.add(item.id)
                 }
             }
@@ -112,20 +126,33 @@ fun NotificationPanel(
                             items(persistentNotifications, key = { it.id }) { notification ->
                                 AnimatedVisibility(
                                     visible = notification.id in visibleItems,
-                                    enter = fadeIn(animationSpec = tween(durationMillis = 200)) + slideInVertically(initialOffsetY = { it / 2 }),
-                                    exit = fadeOut(animationSpec = tween(durationMillis = 200))
+                                    enter = fadeIn(animationSpec = tween(durationMillis = 800, easing = enterEasing)) + slideInVertically(animationSpec = tween(durationMillis = 800, easing = enterEasing), initialOffsetY = { it / 2 }),
+                                    exit = fadeOut(animationSpec = tween(durationMillis = 800, easing = exitEasing))
                                 ) {
-                                    NotificationItem(
-                                        notification = notification.copy(onClick = {
-                                            dialogNotification = notification
-                                        }),
-                                        onDismiss = { NotificationManager.dismiss(it) },
-                                        modifier = Modifier.fillMaxWidth()
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it != SwipeToDismissBoxValue.Settled) {
+                                                NotificationManager.dismiss(notification.id)
+                                                true
+                                            } else false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {},
+                                        content = {
+                                            NotificationItem(
+                                                notification = notification.copy(onClick = {
+                                                    dialogNotification = notification
+                                                }),
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
                                     )
                                 }
                             }
                         }
-                        // Clear All Button
+                        // 全部清除按钮
                         IconButton(
                             onClick = { NotificationManager.clearAll() },
                             modifier = Modifier
@@ -160,13 +187,14 @@ fun NotificationPopupHost() {
         contentAlignment = Alignment.TopEnd
     ) {
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            notificationsToShowAsPopup.forEach { notification ->
+            notificationsToShowAsPopup.forEachIndexed { index, notification ->
                 key(notification.id) {
                     PopupNotificationItem(
                         notification = notification,
-                        onDismiss = { id, type ->
+                        isTop = index == 0,
+                        onDismiss = { id, type, remove ->
                             NotificationManager.addSeenPopupId(id)
-                            if (type == NotificationType.Temporary) {
+                            if (remove) {
                                 NotificationManager.dismiss(id)
                             }
                         },
@@ -183,28 +211,91 @@ fun NotificationPopupHost() {
 @Composable
 private fun PopupNotificationItem(
     notification: Notification,
-    onDismiss: (String, NotificationType) -> Unit,
+    isTop: Boolean,
+    onDismiss: (String, NotificationType, Boolean) -> Unit,
     onClick: () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
+    val durationAnim = remember { Animatable(1f) }
+
+    // 逻辑：默认自动消失时间为5秒。
+    // 进度通知如果 keepOnScreen = true (或默认) 则不会自动消失。
+    val isSticky = notification.keepOnScreen ?: (notification.type == NotificationType.Progress)
+    val shouldAutoDismiss = !isSticky
 
     LaunchedEffect(notification.id) {
         visible = true
-        delay(3000)
-        visible = false
-        delay(500) // wait for exit animation
-        onDismiss(notification.id, notification.type)
+        if (shouldAutoDismiss) {
+            val totalDuration = 5000L
+            val animDuration = 2100L
+            // 引入 300ms 缓冲时间，提前开始退出动画，防止因系统延迟导致视觉上超过 5s
+            val bufferTime = 300L 
+            val staticDuration = totalDuration - animDuration - bufferTime // 2600ms
+
+            // 独立启动进度条动画，使其跨越完整的5秒时长 (直到通知彻底消失)
+            val progressJob = launch {
+                durationAnim.animateTo(0f, animationSpec = tween(totalDuration.toInt(), easing = LinearEasing))
+            }
+
+            // 等待静止阶段结束。
+            // 注意：visible=true 触发进入动画 (2.1s)。
+            // 我们希望通知在 T = 2.9s 时开始退出。
+            // 由于 `delay` 是顺序执行的，我们只需等待静止时间。
+            delay(staticDuration)
+            
+            visible = false // 开始退出动画 (2.1s)
+            
+            delay(animDuration) // 等待退出动画完成
+            
+            // 自动消失时，如果是临时通知则移除，否则只隐藏弹窗（保留在列表中）
+            val remove = notification.type == NotificationType.Temporary
+            onDismiss(notification.id, notification.type, remove)
+            progressJob.cancel()
+        }
     }
+    
+    // 粘性进度通知在进度完成时自动消失
+    LaunchedEffect(notification.progress) {
+        if (notification.type == NotificationType.Progress && isSticky && notification.progress == 1.0f) {
+            delay(1000)
+            visible = false
+            delay(2100)
+            // 进度完成后自动消失，保留在列表中（除非是临时通知）
+            val remove = notification.type == NotificationType.Temporary
+            onDismiss(notification.id, notification.type, remove)
+        }
+    }
+
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            if (it != SwipeToDismissBoxValue.Settled) {
+                // 手动滑动删除时，如果是临时通知则移除，否则只隐藏弹窗（保留在列表中）
+                val remove = notification.type == NotificationType.Temporary
+                onDismiss(notification.id, notification.type, remove)
+                true
+            } else false
+        }
+    )
+    
+    // 自定义缓动曲线
+    val enterEasing = remember { CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f) }
+    val exitEasing = remember { CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f) }
 
     AnimatedVisibility(
         visible = visible,
-        enter = slideInHorizontally { it } + fadeIn(),
-        exit = slideOutHorizontally { it } + fadeOut()
+        enter = slideInHorizontally(animationSpec = tween(2100, easing = enterEasing)) { it } + fadeIn(animationSpec = tween(2100, easing = enterEasing)),
+        exit = slideOutHorizontally(animationSpec = tween(2100, easing = exitEasing)) { it } + fadeOut(animationSpec = tween(2100, easing = exitEasing)) + if (isTop) shrinkVertically(animationSpec = tween(2100, easing = exitEasing)) else androidx.compose.animation.ExitTransition.None
     ) {
-        NotificationItem(
-            notification = notification.copy(onClick = onClick),
-            onDismiss = { onDismiss(notification.id, notification.type) },
-            modifier = Modifier.width(350.dp)
+        SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {},
+            content = {
+                NotificationItem(
+                    notification = notification.copy(onClick = onClick),
+                    durationProgress = if (shouldAutoDismiss) durationAnim.value else null,
+                    modifier = Modifier.width(350.dp)
+                )
+            }
         )
     }
 }
