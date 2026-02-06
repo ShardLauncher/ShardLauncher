@@ -62,6 +62,10 @@ import com.lanrhyme.shardlauncher.ui.version.management.ModsManagementScreen
 import com.lanrhyme.shardlauncher.ui.version.management.ResourcePacksManagementScreen
 import com.lanrhyme.shardlauncher.ui.version.management.SavesManagementScreen
 import com.lanrhyme.shardlauncher.ui.version.management.ShaderPacksManagementScreen
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorScreen
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorMode
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorResult
 
 enum class VersionDetailPane(val title: String, val icon: ImageVector) {
     Overview("版本概览", Icons.Default.Info),
@@ -632,18 +636,7 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
     val gamePaths by GamePathManager.gamePathData.collectAsState()
     val currentPathId = GamePathManager.currentPathId
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let {
-            val path = PathHelper.getPathFromUri(context, it)
-            if (path != null) {
-                // TODO: 最好弹出一个对话框让用户输入名称，这里暂且用目录名
-                val title = it.pathSegments.lastOrNull() ?: "新目录" // TODO: i18n
-                GamePathManager.addNewPath(title, path)
-            }
-        }
-    }
+    var showFileSelector by remember { mutableStateOf(false) }
 
     PopupContainer(
         visible = true,
@@ -714,7 +707,7 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
 
                 item {
                     OutlinedButton(
-                        onClick = { launcher.launch(null) },
+                        onClick = { showFileSelector = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -725,6 +718,30 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
                 }
             }
         }
+    }
+
+    // 自定义文件选择器
+    if (showFileSelector) {
+        FileSelectorScreen(
+            visible = showFileSelector,
+            config = FileSelectorConfig(
+                initialPath = android.os.Environment.getExternalStorageDirectory(),
+                mode = FileSelectorMode.DIRECTORY_ONLY,
+                showHiddenFiles = true,
+                allowCreateDirectory = true
+            ),
+            onDismissRequest = { showFileSelector = false },
+            onSelection = { result ->
+                when (result) {
+                    is FileSelectorResult.Selected -> {
+                        val title = result.path.name.ifEmpty { "新目录" } // TODO: i18n
+                        GamePathManager.addNewPath(title, result.path.absolutePath)
+                    }
+                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
+                }
+                showFileSelector = false
+            }
+        )
     }
 }
 
