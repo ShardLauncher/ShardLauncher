@@ -77,9 +77,7 @@ fun VersionOverviewScreen(
                 iconFileExists = VersionsManager.getVersionIconFile(version).exists()
             },
             onResetIcon = { versionsOperation = VersionOverviewOperation.ResetIconAlert },
-            showIconSelector = showIconSelector,
             onShowIconSelector = { showIconSelector = true },
-            onDismissIconSelector = { showIconSelector = false },
             onError = onError,
             isCardBlurEnabled = isCardBlurEnabled,
             cardAlpha = cardAlpha,
@@ -125,6 +123,47 @@ fun VersionOverviewScreen(
             versionSummary = version.getVersionSummary()
         }
     )
+    
+    // 显示文件选择器
+    if (showIconSelector) {
+        FileSelectorScreen(
+            visible = showIconSelector,
+            config = FileSelectorConfig(
+                initialPath = android.os.Environment.getExternalStorageDirectory(),
+                mode = FileSelectorMode.FILE_ONLY,
+                showHiddenFiles = true,
+                allowCreateDirectory = false,
+                fileFilter = { file ->
+                    file.isFile && file.extension.lowercase() in listOf("png", "jpg", "jpeg", "webp", "gif")
+                }
+            ),
+            onDismissRequest = { showIconSelector = false },
+            onSelection = { result ->
+                when (result) {
+                    is FileSelectorResult.Selected -> {
+                        try {
+                            val iconFile = VersionsManager.getVersionIconFile(version)
+                            val sourceFile = result.path
+                            sourceFile.inputStream().use { input ->
+                                iconFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            refreshVersionIcon++
+                            iconFileExists = iconFile.exists()
+                        } catch (e: Exception) {
+                            lError("Failed to import icon!", e)
+                            FileUtils.deleteQuietly(iconFile)
+                            onError("导入图标失败: ${e.message}")
+                        }
+                    }
+                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
+                    FileSelectorResult.MultipleSelected -> { /* 不支持多选 */ }
+                }
+                showIconSelector = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -135,9 +174,7 @@ private fun VersionInfoCard(
     refreshKey: Any?,
     onIconPicked: () -> Unit,
     onResetIcon: () -> Unit,
-    showIconSelector: Boolean,
     onShowIconSelector: () -> Unit,
-    onDismissIconSelector: () -> Unit,
     onError: (String) -> Unit,
     isCardBlurEnabled: Boolean,
     cardAlpha: Float,
@@ -236,45 +273,6 @@ private fun VersionInfoCard(
                 }
             }
         }
-    }
-    
-    // 显示文件选择器
-    if (showIconSelector) {
-        FileSelectorScreen(
-            visible = showIconSelector,
-            config = FileSelectorConfig(
-                initialPath = android.os.Environment.getExternalStorageDirectory(),
-                mode = FileSelectorMode.FILE_ONLY,
-                showHiddenFiles = true,
-                allowCreateDirectory = false,
-                fileFilter = { file ->
-                    file.isFile && file.extension.lowercase() in listOf("png", "jpg", "jpeg", "webp", "gif")
-                }
-            },
-            onDismissRequest = onDismissIconSelector,
-            onSelection = { result ->
-                when (result) {
-                    is FileSelectorResult.Selected -> {
-                        try {
-                            val sourceFile = result.path
-                            sourceFile.inputStream().use { input ->
-                                iconFile.outputStream().use { output ->
-                                    input.copyTo(output)
-                                }
-                            }
-                            onIconPicked()
-                        } catch (e: Exception) {
-                            lError("Failed to import icon!", e)
-                            FileUtils.deleteQuietly(iconFile)
-                            onError("导入图标失败: ${e.message}")
-                        }
-                    }
-                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
-                    FileSelectorResult.MultipleSelected -> { /* 不支持多选 */ }
-                }
-                onDismissIconSelector()
-            }
-        )
     }
 }
 
