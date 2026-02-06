@@ -27,7 +27,9 @@ data class FileSelectorConfig(
     /** 是否允许创建新目录 */
     val allowCreateDirectory: Boolean = true,
     /** 文件过滤器 */
-    val fileFilter: ((File) -> Boolean)? = null
+    val fileFilter: ((File) -> Boolean)? = null,
+    /** 是否支持多文件选择 */
+    val allowMultipleSelection: Boolean = false
 )
 
 /**
@@ -37,8 +39,11 @@ sealed class FileSelectorResult {
     /** 用户取消选择 */
     data object Cancelled : FileSelectorResult()
     
-    /** 用户选择了路径 */
+    /** 用户选择了单个路径 */
     data class Selected(val path: File) : FileSelectorResult()
+    
+    /** 用户选择了多个文件 */
+    data class MultipleSelected(val paths: List<File>) : FileSelectorResult()
 }
 
 /**
