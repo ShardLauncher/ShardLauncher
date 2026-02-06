@@ -140,8 +140,8 @@ fun VersionOverviewScreen(
             onSelection = { result ->
                 when (result) {
                     is FileSelectorResult.Selected -> {
+                        val iconFile = VersionsManager.getVersionIconFile(version)
                         try {
-                            val iconFile = VersionsManager.getVersionIconFile(version)
                             val sourceFile = result.path
                             sourceFile.inputStream().use { input ->
                                 iconFile.outputStream().use { output ->

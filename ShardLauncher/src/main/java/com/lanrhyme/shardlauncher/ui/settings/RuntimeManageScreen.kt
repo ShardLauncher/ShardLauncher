@@ -296,7 +296,7 @@ fun RuntimeManageScreen(
                         val files = result.paths
                         if (files.isEmpty()) {
                             showFileSelector = false
-                            return@onSelection
+                            return@when
                         }
                         showProgressDialog = true
                         progressMessage = "准备导入..."
