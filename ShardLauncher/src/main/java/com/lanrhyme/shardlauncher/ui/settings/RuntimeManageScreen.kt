@@ -9,6 +9,10 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorMode
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorResult
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorScreen
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -53,53 +57,7 @@ fun RuntimeManageScreen(
     var importErrorMessage by remember { mutableStateOf<String?>(null) }
 
     // File picker for importing tar.xz files
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments()
-    ) { uris: List<Uri> ->
-        if (uris.isEmpty()) return@rememberLauncherForActivityResult
-        showProgressDialog = true
-        progressMessage = "准备导入..."
-        progressValue = 0
-
-        scope.launch {
-            val total = uris.size
-            uris.forEachIndexed { index, selectedUri ->
-                val rawName = getFileName(context, selectedUri)
-                if (rawName.isNullOrBlank()) {
-                    progressMessage = "导入失败：无法获取文件名"
-                    importErrorMessage = progressMessage
-                    return@forEachIndexed
-                }
-                if (!isTarXzFileName(rawName)) {
-                    progressMessage = "导入失败：仅支持 .tar.xz 文件"
-                    importErrorMessage = progressMessage
-                    return@forEachIndexed
-                }
-                val runtimeName = normalizeRuntimeName(rawName)
-                if (runtimeName.isBlank()) {
-                    progressMessage = "导入失败：文件名无效"
-                    importErrorMessage = progressMessage
-                    return@forEachIndexed
-                }
-                RuntimeInstaller.importRuntimeFromFile(
-                    context = context,
-                    uri = selectedUri,
-                    runtimeName = runtimeName,
-                    onProgress = { progress, message ->
-                        val base = (index * 100) / total
-                        val step = progress / total
-                        progressValue = (base + step).coerceAtMost(100)
-                        progressMessage = message
-                    }
-                ).onFailure {
-                    progressMessage = "导入失败：$runtimeName"
-                    importErrorMessage = progressMessage
-                }
-            }
-            showProgressDialog = false
-            runtimes = RuntimesManager.getRuntimes()
-        }
-    }
+    var showFileSelector by remember { mutableStateOf(false) }
 
     ShardDialog(
         visible = visible,
@@ -139,7 +97,7 @@ fun RuntimeManageScreen(
                         androidx.compose.material3.Text("内置")
                     }
                     OutlinedButton(
-                        onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
+                        onClick = { showFileSelector = true },
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.FileOpen, contentDescription = null)
@@ -315,6 +273,114 @@ fun RuntimeManageScreen(
                 }
             }
         }
+    }
+    
+    // 显示文件选择器
+    if (showFileSelector) {
+        FileSelectorScreen(
+            visible = showFileSelector,
+            config = FileSelectorConfig(
+                initialPath = android.os.Environment.getExternalStorageDirectory(),
+                mode = FileSelectorMode.FILE_ONLY,
+                showHiddenFiles = true,
+                allowCreateDirectory = false,
+                fileFilter = { file ->
+                    file.isFile && file.name.lowercase().endsWith(".tar.xz")
+                },
+                allowMultipleSelection = true
+            ),
+            onDismissRequest = { showFileSelector = false },
+            onSelection = { result ->
+                when (result) {
+                    is FileSelectorResult.MultipleSelected -> {
+                        val files = result.paths
+                        if (files.isEmpty()) return
+                        showProgressDialog = true
+                        progressMessage = "准备导入..."
+                        progressValue = 0
+
+                        scope.launch {
+                            val total = files.size
+                            files.forEachIndexed { index, selectedFile ->
+                                val rawName = selectedFile.name
+                                if (rawName.isBlank()) {
+                                    progressMessage = "导入失败：无法获取文件名"
+                                    importErrorMessage = progressMessage
+                                    return@forEachIndexed
+                                }
+                                if (!isTarXzFileName(rawName)) {
+                                    progressMessage = "导入失败：仅支持 .tar.xz 文件"
+                                    importErrorMessage = progressMessage
+                                    return@forEachIndexed
+                                }
+                                val runtimeName = normalizeRuntimeName(rawName)
+                                if (runtimeName.isBlank()) {
+                                    progressMessage = "导入失败：文件名无效"
+                                    importErrorMessage = progressMessage
+                                    return@forEachIndexed
+                                }
+                                RuntimeInstaller.importRuntimeFromFile(
+                                    context = context,
+                                    uri = Uri.fromFile(selectedFile),
+                                    runtimeName = runtimeName,
+                                    onProgress = { progress, message ->
+                                        val base = (index * 100) / total
+                                        val step = progress / total
+                                        progressValue = (base + step).coerceAtMost(100)
+                                        progressMessage = message
+                                    }
+                                ).onFailure {
+                                    progressMessage = "导入失败：$runtimeName"
+                                    importErrorMessage = progressMessage
+                                }
+                            }
+                            showProgressDialog = false
+                            runtimes = RuntimesManager.getRuntimes()
+                        }
+                    }
+                    is FileSelectorResult.Selected -> {
+                        showProgressDialog = true
+                        progressMessage = "准备导入..."
+                        progressValue = 0
+
+                        scope.launch {
+                            val selectedFile = result.path
+                            val rawName = selectedFile.name
+                            if (rawName.isBlank()) {
+                                progressMessage = "导入失败：无法获取文件名"
+                                importErrorMessage = progressMessage
+                            } else if (!isTarXzFileName(rawName)) {
+                                progressMessage = "导入失败：仅支持 .tar.xz 文件"
+                                importErrorMessage = progressMessage
+                            } else {
+                                val runtimeName = normalizeRuntimeName(rawName)
+                                if (runtimeName.isBlank()) {
+                                    progressMessage = "导入失败：文件名无效"
+                                    importErrorMessage = progressMessage
+                                } else {
+                                    RuntimeInstaller.importRuntimeFromFile(
+                                        context = context,
+                                        uri = Uri.fromFile(selectedFile),
+                                        runtimeName = runtimeName,
+                                        onProgress = { progress, message ->
+                                            progressValue = progress
+                                            progressMessage = message
+                                        }
+                                    ).onFailure {
+                                        progressMessage = "导入失败：$runtimeName"
+                                        importErrorMessage = progressMessage
+                                    }
+                                    showProgressDialog = false
+                                    runtimes = RuntimesManager.getRuntimes()
+                                }
+                            }
+                        }
+                    }
+                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
+                }
+                showFileSelector = false
+            }
+        )
     }
 }
 
