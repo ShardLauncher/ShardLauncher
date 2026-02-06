@@ -294,7 +294,10 @@ fun RuntimeManageScreen(
                 when (result) {
                     is FileSelectorResult.MultipleSelected -> {
                         val files = result.paths
-                        if (files.isEmpty()) return@RuntimeManageScreen
+                        if (files.isEmpty()) {
+                            showFileSelector = false
+                            return@onSelection
+                        }
                         showProgressDialog = true
                         progressMessage = "准备导入..."
                         progressValue = 0

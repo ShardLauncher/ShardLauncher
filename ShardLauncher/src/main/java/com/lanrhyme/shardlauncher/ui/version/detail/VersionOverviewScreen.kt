@@ -56,6 +56,7 @@ fun VersionOverviewScreen(
     var iconFileExists by remember { mutableStateOf(VersionsManager.getVersionIconFile(version).exists()) }
 
     var versionsOperation by remember { mutableStateOf<VersionOverviewOperation>(VersionOverviewOperation.None) }
+    var showIconSelector by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -65,8 +66,6 @@ fun VersionOverviewScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 版本信息卡片
-        var showIconSelector by remember { mutableStateOf(false) }
-        
         VersionInfoCard(
             version = version,
             versionSummary = versionSummary,
