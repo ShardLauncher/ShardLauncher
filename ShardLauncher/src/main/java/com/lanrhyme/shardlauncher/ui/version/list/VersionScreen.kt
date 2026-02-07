@@ -613,7 +613,7 @@ fun GameVersionCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("鍒犻櫎") },
+                        text = { Text("删除") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Delete,
@@ -847,7 +847,7 @@ fun VersionsOperation(
             updateVersionsOperation(
                 VersionsOperation.Delete(
                     versionsOperation.version,
-                    "姝ょ増鏈棤鏁堬紝灏嗚鍒犻櫎"
+                    "此版本无效，将被删除"
                 )
             )
         }
@@ -861,7 +861,7 @@ fun VersionsOperation(
                         VersionsManager.deleteVersion(versionsOperation.version)
                         updateVersionsOperation(VersionsOperation.None)
                     } catch (e: Exception) {
-                        onError("鍒犻櫎鐗堟湰澶辫触: ${e.message}")
+                        onError("删除版本失败: ${e.message}")
                         updateVersionsOperation(VersionsOperation.None)
                     }
                 }

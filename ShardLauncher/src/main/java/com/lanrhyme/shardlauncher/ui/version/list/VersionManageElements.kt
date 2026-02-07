@@ -298,12 +298,12 @@ fun VersionItemLayout(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text(text = "鍒犻櫎") }, // TODO: i18n
+                        text = { Text(text = "删除") }, // TODO: i18n
                         leadingIcon = {
                             Icon(
                                 modifier = Modifier.size(20.dp),
                                 imageVector = Icons.Filled.Delete,
-                                contentDescription = "鍒犻櫎" // TODO: i18n
+                                contentDescription = "删除" // TODO: i18n
                             )
                         },
                         onClick = {
