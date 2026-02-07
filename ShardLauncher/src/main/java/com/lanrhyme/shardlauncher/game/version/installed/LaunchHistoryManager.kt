@@ -86,7 +86,9 @@ object LaunchHistoryManager {
                 val jsonText = historyFile.readText()
                 val data = GSON.fromJson(jsonText, HistoryData::class.java)
                 data?.let {
-                    historyMap.putAll(it.versionHistory)
+                    it.versionHistory.forEach { (key, value) ->
+                        historyMap[key] = value.toMutableList()
+                    }
                     allHistory.addAll(it.allHistory)
                 }
                 Logger.i("LaunchHistoryManager", "Loaded ${allHistory.size} launch history records")
@@ -192,6 +194,7 @@ object LaunchHistoryManager {
             .groupBy { it.versionName }
             .mapValues { (_, records) -> records.maxByOrNull { it.launchTime } }
             .values
+            .filterNotNull()
             .sortedByDescending { it.launchTime }
             .take(limit)
             .map { it.versionName }

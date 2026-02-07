@@ -279,9 +279,9 @@ private fun LeftMenu(
                         onClick = {
                             if (!isRefreshing) {
                                 if (pathItem.id == GamePathManager.DEFAULT_ID) {
-                                    GamePathManager.selectPath(GamePathManager.DEFAULT_ID)
+                                    GamePathManager.selectPath(context, GamePathManager.DEFAULT_ID)
                                 } else {
-                                    GamePathManager.selectPath(pathItem.id)
+                                    GamePathManager.selectPath(context, pathItem.id)
                                 }
                             }
                         },

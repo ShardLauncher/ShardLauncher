@@ -15,6 +15,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
+ * 检查版本是否置顶
+ */
+fun Version.isPinned(): Boolean {
+    return getVersionConfig().pinned
+}
+
+/**
  * 快速操作类型
  */
 enum class QuickAction {
@@ -78,8 +85,7 @@ object VersionQuickActions {
     private fun togglePin(version: Version): QuickActionResult {
         try {
             val newPinnedState = !version.isPinned()
-            version.getVersionConfig().pinned = newPinnedState
-            version.getVersionConfig().save()
+            version.getVersionConfig().setPinnedAndSave(newPinnedState) {}
 
             Logger.i("VersionQuickActions", "Version ${version.getVersionName()} ${if (newPinnedState) "pinned" else "unpinned"}")
 

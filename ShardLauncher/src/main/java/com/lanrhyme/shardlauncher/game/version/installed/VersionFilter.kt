@@ -6,6 +6,7 @@
 package com.lanrhyme.shardlauncher.game.version.installed
 
 import com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader as ModLoaderType
+import java.io.File
 
 /**
  * 版本分类
@@ -67,7 +68,7 @@ data class VersionFilter(
 /**
  * 版本搜索和过滤工具
  */
-object VersionFilter {
+object VersionFilterHelper {
     /**
      * 过滤版本列表
      * @param versions 所有版本

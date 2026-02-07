@@ -18,6 +18,17 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 /**
+ * 获取版本类型
+ */
+fun Version.getVersionType(): VersionType {
+    return if (getVersionInfo()?.loaderInfo != null) {
+        VersionType.MODLOADERS
+    } else {
+        VersionType.VANILLA
+    }
+}
+
+/**
  * 导出结果
  */
 data class ExportResult(
@@ -276,7 +287,7 @@ object VersionImporterExporter {
         return try {
             com.lanrhyme.shardlauncher.utils.GSON.fromJson(metadataJson, VersionMetadata::class.java)
         } catch (e: Exception) {
-            Logger.w("VersionImporter", "Failed to parse metadata", e)
+            Logger.w("VersionImporter", "Failed to parse metadata: ${e.message}")
             null
         }
     }

@@ -49,6 +49,52 @@ object VersionValidator {
     private const val MIN_JAR_SIZE = 1024L
 
     /**
+     * 从JSON文件解析VersionInfo
+     */
+    private fun parseJsonToVersionInfo(jsonFile: File): VersionInfo? {
+        return try {
+            val jsonText = jsonFile.readText()
+            val jsonElement = JsonParser.parseString(jsonText)
+            
+            // 提取基本信息
+            val id = jsonElement.asJsonObject.get("id")?.asString ?: return null
+            val mcVersion = jsonElement.asJsonObject.get("inheritsFrom")?.asString 
+                ?: jsonElement.asJsonObject.get("id")?.asString 
+                ?: ""
+            
+            // 尝试提取loader信息（如果有）
+            val loaderInfo = try {
+                val loaderTypeStr = jsonElement.asJsonObject.get("loaderType")?.asString
+                val loaderVersion = jsonElement.asJsonObject.get("loaderVersion")?.asString ?: ""
+                
+                if (loaderTypeStr != null) {
+                    val loaderType = when (loaderTypeStr.lowercase()) {
+                        "fabric" -> com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader.FABRIC
+                        "forge" -> com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader.FORGE
+                        "neoforge" -> com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader.NEOFORGE
+                        "quilt" -> com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader.QUILT
+                        else -> com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader.FORGE
+                    }
+                    VersionInfo.LoaderInfo(loaderType, loaderVersion)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
+            }
+            
+            VersionInfo(
+                minecraftVersion = mcVersion,
+                quickPlay = VersionInfo.QuickPlay("", ""),
+                loaderInfo = loaderInfo
+            )
+        } catch (e: Exception) {
+            Logger.e("VersionValidator", "Failed to parse VersionInfo from JSON", e)
+            null
+        }
+    }
+
+    /**
      * 验证版本完整性
      * @param versionPath 版本文件夹路径
      * @return 验证结果

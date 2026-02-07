@@ -698,7 +698,7 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                GamePathManager.selectPath(path.id)
+                                GamePathManager.selectPath(context, path.id)
                                 onDismissRequest()
                             },
                         shape = RoundedCornerShape(12.dp),
