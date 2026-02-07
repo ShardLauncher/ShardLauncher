@@ -87,6 +87,7 @@ fun HomeScreen(
     val selectedAccount by accountViewModel.selectedAccount.collectAsState()
     val cardLayoutConfig = LocalCardLayoutConfig.current
     val coroutineScope = rememberCoroutineScope()
+    val currentGamePath by remember { com.lanrhyme.shardlauncher.game.path.GamePathManager.currentPath }
     
     // Get installed versions and current version
     val installedVersions = VersionsManager.versions
@@ -98,6 +99,12 @@ fun HomeScreen(
         if (selectedVersionForLaunch == null) {
             selectedVersionForLaunch = currentVersion
         }
+    }
+    
+    // Refresh versions when game path changes
+    LaunchedEffect(currentGamePath) {
+        VersionsManager.refresh("HomeScreen_GamePathChanged")
+    }
     }
 
     val animatedSpeed by
