@@ -5,7 +5,7 @@
 
 package com.lanrhyme.shardlauncher.game.version.installed
 
-import com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader
+import com.lanrhyme.shardlauncher.game.addons.modloader.ModLoader as ModLoaderType
 
 /**
  * 版本分类
@@ -39,7 +39,7 @@ enum class VersionSortOrder {
 data class VersionFilter(
     val category: VersionCategory = VersionCategory.ALL,
     val keyword: String = "",
-    val modLoader: ModLoader? = null,
+    val modLoader: ModLoaderType? = null,
     val minMcVersion: String = "",
     val maxMcVersion: String = "",
     val onlyValid: Boolean = true,
@@ -234,7 +234,7 @@ object VersionFilter {
     /**
      * 检查版本是否匹配模组加载器
      */
-    private fun matchesModLoader(version: Version, modLoader: ModLoader): Boolean {
+    private fun matchesModLoader(version: Version, modLoader: ModLoaderType): Boolean {
         return version.getVersionInfo()?.loaderInfo?.loader == modLoader
     }
 
