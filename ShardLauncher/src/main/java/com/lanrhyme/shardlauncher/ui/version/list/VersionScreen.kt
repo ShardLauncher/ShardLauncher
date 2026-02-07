@@ -822,12 +822,11 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
     // 权限错误提示对话框
     if (showPermissionErrorDialog) {
         ShardAlertDialog(
-            visible = true,
-            onDismissRequest = { showPermissionErrorDialog = false },
             title = "需要权限",
-            message = permissionError ?: "操作失败",
-            confirmButtonText = "确定",
-            onConfirm = { showPermissionErrorDialog = false }
+            text = permissionError ?: "操作失败",
+            onDismiss = { showPermissionErrorDialog = false },
+            onConfirm = { showPermissionErrorDialog = false },
+            onDismissRequest = { showPermissionErrorDialog = false }
         )
     }
 }

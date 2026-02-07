@@ -171,7 +171,7 @@ class MainActivity : ComponentActivity() {
                     manageStoragePermissionLauncher.launch(intent)
                     Logger.i(tag, "Requesting MANAGE_EXTERNAL_STORAGE permission")
                 } catch (e: Exception) {
-                    Logger.w(tag, "Failed to request MANAGE_EXTERNAL_STORAGE permission", e)
+                    Logger.w(tag, "Failed to request MANAGE_EXTERNAL_STORAGE permission: ${e.message}")
                     // 某些设备可能不支持此intent，尝试传统方式
                     storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
