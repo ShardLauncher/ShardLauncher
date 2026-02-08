@@ -28,9 +28,20 @@ import com.lanrhyme.shardlauncher.ui.components.basic.TitleAndSummary
 import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
 import com.lanrhyme.shardlauncher.utils.logging.LogCollector
 import kotlinx.coroutines.delay
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import java.io.File
+import java.io.FileWriter
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun LogViewerScreen(navController: NavController) {
+    val context = LocalContext.current
     val cardLayoutConfig = LocalCardLayoutConfig.current
     val isCardBlurEnabled = cardLayoutConfig.isCardBlurEnabled
     val cardAlpha = cardLayoutConfig.cardAlpha
@@ -38,6 +49,8 @@ fun LogViewerScreen(navController: NavController) {
     
     // 日志级别过滤
     var selectedLevel by remember { mutableStateOf<LogCollector.LogLevel?>(null) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    var exportMessage by remember { mutableStateOf<String?>(null) }
     
     // 自动刷新日志
     var autoRefresh by remember { mutableStateOf(true) }
@@ -162,7 +175,10 @@ fun LogViewerScreen(navController: NavController) {
                     // 导出日志
                     ScalingActionButton(
                         onClick = { 
-                            // TODO: 实现导出到文件
+                            exportLogs(context) { message ->
+                                exportMessage = message
+                                showExportDialog = true
+                            }
                         },
                         modifier = Modifier.weight(1f),
                         text = "导出日志",
@@ -220,14 +236,28 @@ fun LogViewerScreen(navController: NavController) {
             }
         }
     }
+
+    // 导出成功对话框
+    if (showExportDialog && exportMessage != null) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            title = { Text("导出结果") },
+            text = { Text(exportMessage!!) },
+            confirmButton = {
+                TextButton(onClick = { showExportDialog = false }) {
+                    Text("确定")
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun LogItem(log: LogCollector.LogEntry) {
+fun LogItem(log: LogCollector.LogEntry) {
     val backgroundColor = when (log.level) {
-        LogCollector.LogLevel.DEBUG -> Color(0xFF37474F)
-        LogCollector.LogLevel.INFO -> Color(0xFF0D47A1)
-        LogCollector.LogLevel.WARNING -> Color(0xFFF57C00)
+        LogCollector.LogLevel.DEBUG -> Color(0xFF4CAF50)
+        LogCollector.LogLevel.INFO -> Color(0xFF2196F3)
+        LogCollector.LogLevel.WARNING -> Color(0xFFFF9800)
         LogCollector.LogLevel.ERROR -> Color(0xFFB71C1C)
     }
     
@@ -260,25 +290,47 @@ private fun LogItem(log: LogCollector.LogEntry) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
-        Spacer(modifier = Modifier.height(2.dp))
+    }
+}
 
-        Text(
-            text = log.message,
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
-            lineHeight = 16.sp
-        )
-        
-        log.throwable?.let { throwable ->
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = throwable.stackTraceToString(),
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.error,
-                lineHeight = 14.sp
-            )
+private fun exportLogs(context: Context, onResult: (String) -> Unit) {
+    try {
+        val logs = LogCollector.getAllLogs()
+        if (logs.isEmpty()) {
+            onResult("没有可导出的日志")
+            return
         }
+        
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "ShardLauncher_Log_$timestamp.txt"
+        val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
+            android.os.Environment.DIRECTORY_DOWNLOADS
+        )
+        val outputFile = File(downloadsDir, fileName)
+        
+        FileWriter(outputFile).use { writer ->
+            writer.write("ShardLauncher 日志导出\n")
+            writer.write("导出时间: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}\n")
+            writer.write("日志数量: ${logs.size}\n")
+            writer.write("==================================================\n\n")
+            
+            val dateFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
+            logs.forEach { log ->
+                writer.write("[${dateFormat.format(log.timestamp)}] [${log.level.name}] [${log.tag}] ${log.message}\n")
+                log.throwable?.let { throwable ->
+                    writer.write("异常: ${throwable.stackTraceToString()}\n")
+                }
+                writer.write("\n")
+            }
+        }
+        
+        // 通知系统文件已创建
+        val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+        intent.data = Uri.fromFile(outputFile)
+        context.sendBroadcast(intent)
+        
+        onResult("日志已导出到: ${outputFile.absolutePath}")
+    } catch (e: Exception) {
+        onResult("导出失败: ${e.message}")
     }
 }

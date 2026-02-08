@@ -1,6 +1,11 @@
 package com.lanrhyme.shardlauncher.game.path
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Environment
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -55,6 +60,28 @@ object GamePathManager {
     }
 
     /**
+     * 检查存储权限
+     * @return true 如果有存储权限，否则 false
+     */
+    fun hasStoragePermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ 需要检查 MANAGE_EXTERNAL_STORAGE 权限
+            Environment.isExternalStorageManager()
+        } else {
+            // Android 10 及以下检查 READ_EXTERNAL_STORAGE 和 WRITE_EXTERNAL_STORAGE
+            val readPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+            val writePermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+            readPermission && writePermission
+        }
+    }
+
+    /**
      * 重新从数据库加载所有路径
      */
     fun reloadPaths() {
@@ -88,8 +115,22 @@ object GamePathManager {
 
     /**
      * 切换当前选中的路径
+     * @param context 上下文，用于权限检查
+     * @param id 路径ID
+     * @throws IllegalStateException 如果没有存储权限
+     * @throws IllegalArgumentException 如果路径ID不存在
      */
-    fun selectPath(id: String) {
+    fun selectPath(context: Context, id: String) {
+        // 检查存储权限
+        if (!hasStoragePermission(context)) {
+            throw IllegalStateException("未授予存储/管理所有文件权限")
+        }
+
+        // 检查路径是否存在
+        if (!_gamePathData.value.any { it.id == id }) {
+            throw IllegalArgumentException("未找到匹配的路径ID: $id")
+        }
+
         settingsRepository.setCurrentGamePathId(id)
         refreshCurrentPath()
     }

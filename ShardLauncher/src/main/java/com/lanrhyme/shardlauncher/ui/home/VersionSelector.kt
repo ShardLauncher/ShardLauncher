@@ -279,7 +279,7 @@ private fun VersionListItem(
                 }
             }
 
-            // 閫変腑鎸囩ず鍣?
+            // 展开指示器
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowDropDown,

@@ -1,8 +1,6 @@
 package com.lanrhyme.shardlauncher.ui.version.detail
 
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +21,10 @@ import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.game.version.installed.Version
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorScreen
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorMode
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorResult
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardEditDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTaskDialog
@@ -54,6 +56,7 @@ fun VersionOverviewScreen(
     var iconFileExists by remember { mutableStateOf(VersionsManager.getVersionIconFile(version).exists()) }
 
     var versionsOperation by remember { mutableStateOf<VersionOverviewOperation>(VersionOverviewOperation.None) }
+    var showIconSelector by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -73,6 +76,7 @@ fun VersionOverviewScreen(
                 iconFileExists = VersionsManager.getVersionIconFile(version).exists()
             },
             onResetIcon = { versionsOperation = VersionOverviewOperation.ResetIconAlert },
+            onShowIconSelector = { showIconSelector = true },
             onError = onError,
             isCardBlurEnabled = isCardBlurEnabled,
             cardAlpha = cardAlpha,
@@ -118,6 +122,47 @@ fun VersionOverviewScreen(
             versionSummary = version.getVersionSummary()
         }
     )
+    
+    // 显示文件选择器
+    if (showIconSelector) {
+        FileSelectorScreen(
+            visible = showIconSelector,
+            config = FileSelectorConfig(
+                initialPath = android.os.Environment.getExternalStorageDirectory(),
+                mode = FileSelectorMode.FILE_ONLY,
+                showHiddenFiles = true,
+                allowCreateDirectory = false,
+                fileFilter = { file ->
+                    file.isFile && file.extension.lowercase() in listOf("png", "jpg", "jpeg", "webp", "gif")
+                }
+            ),
+            onDismissRequest = { showIconSelector = false },
+            onSelection = { result ->
+                when (result) {
+                    is FileSelectorResult.Selected -> {
+                        val iconFile = VersionsManager.getVersionIconFile(version)
+                        try {
+                            val sourceFile = result.path
+                            sourceFile.inputStream().use { input ->
+                                iconFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            refreshVersionIcon++
+                            iconFileExists = iconFile.exists()
+                        } catch (e: Exception) {
+                            lError("Failed to import icon!", e)
+                            FileUtils.deleteQuietly(iconFile)
+                            onError("导入图标失败: ${e.message}")
+                        }
+                    }
+                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
+                    is FileSelectorResult.MultipleSelected -> { /* 不支持多选 */ }
+                }
+                showIconSelector = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -128,6 +173,7 @@ private fun VersionInfoCard(
     refreshKey: Any?,
     onIconPicked: () -> Unit,
     onResetIcon: () -> Unit,
+    onShowIconSelector: () -> Unit,
     onError: (String) -> Unit,
     isCardBlurEnabled: Boolean,
     cardAlpha: Float,
@@ -136,26 +182,6 @@ private fun VersionInfoCard(
     val context = LocalContext.current
     val iconFile = remember { VersionsManager.getVersionIconFile(version) }
     val cardShape = RoundedCornerShape(16.dp)
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let { selectedUri ->
-            try {
-                val inputStream = context.contentResolver.openInputStream(selectedUri)
-                inputStream?.use { input ->
-                    iconFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                onIconPicked()
-            } catch (e: Exception) {
-                lError("Failed to import icon!", e)
-                FileUtils.deleteQuietly(iconFile)
-                onError("导入图标失败: ${e.message}")
-            }
-        }
-    }
 
     Card(
         modifier = Modifier
@@ -228,7 +254,7 @@ private fun VersionInfoCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
-                    onClick = { launcher.launch("image/*") }
+                    onClick = onShowIconSelector
                 ) {
                     Icon(Icons.Outlined.Image, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))

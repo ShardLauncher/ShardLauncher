@@ -1,6 +1,7 @@
 ﻿package com.lanrhyme.shardlauncher.ui.settings
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -275,6 +276,44 @@ internal fun LauncherSettingsContent(
     val prefs = remember { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
     val gson = remember { Gson() }
 
+    fun addBackground(uri: String, isVideo: Boolean) {
+        val newItem = BackgroundItem(uri, isVideo)
+        backgroundItems = backgroundItems + newItem
+        selectedBackground = newItem
+    }
+
+    fun removeBackground(item: BackgroundItem) {
+        backgroundItems = backgroundItems.filter { it.uri != item.uri }
+        if (selectedBackground?.uri == item.uri) {
+            selectedBackground = backgroundItems.firstOrNull()
+        }
+    }
+
+    // Document Provider launchers for selecting images and videos
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            addBackground(it.toString(), false)
+        }
+    }
+
+    val videoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            addBackground(it.toString(), true)
+        }
+    }
+
     LaunchedEffect(Unit) {
         val json = prefs.getString(KEY_BACKGROUND_ITEMS, null)
         if (json != null) {
@@ -306,75 +345,6 @@ internal fun LauncherSettingsContent(
             tempParallaxMagnitude = parallaxMagnitude
         }
     }
-
-    fun addBackground(uri: String, isVideo: Boolean) {
-        val newItem = BackgroundItem(uri, isVideo)
-        backgroundItems = backgroundItems + newItem
-        selectedBackground = newItem
-    }
-
-    fun removeBackground(item: BackgroundItem) {
-        backgroundItems = backgroundItems.filter { it.uri != item.uri }
-        if (selectedBackground?.uri == item.uri) {
-            selectedBackground = backgroundItems.firstOrNull()
-        }
-    }
-
-    val imagePicker =
-            rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.GetContent(),
-                    onResult = { uri: Uri? ->
-                        uri?.let { uri ->
-                            val backgroundsDir =
-                                    File(
-                                            context.getExternalFilesDir(null),
-                                            ".shardlauncher/backgrounds"
-                                    )
-                            if (!backgroundsDir.exists()) {
-                                backgroundsDir.mkdirs()
-                            }
-                            val destinationFile = File(backgroundsDir, "${UUID.randomUUID()}.jpg")
-                            try {
-                                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                                    FileOutputStream(destinationFile).use { outputStream ->
-                                        inputStream.copyTo(outputStream)
-                                    }
-                                }
-                                addBackground(Uri.fromFile(destinationFile).toString(), false)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                    }
-            )
-
-    val videoPicker =
-            rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.GetContent(),
-                    onResult = { uri: Uri? ->
-                        uri?.let { uri ->
-                            val backgroundsDir =
-                                    File(
-                                            context.getExternalFilesDir(null),
-                                            ".shardlauncher/backgrounds"
-                                    )
-                            if (!backgroundsDir.exists()) {
-                                backgroundsDir.mkdirs()
-                            }
-                            val destinationFile = File(backgroundsDir, "${UUID.randomUUID()}.mp4")
-                            try {
-                                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                                    FileOutputStream(destinationFile).use { outputStream ->
-                                        inputStream.copyTo(outputStream)
-                                    }
-                                }
-                                addBackground(Uri.fromFile(destinationFile).toString(), true)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                    }
-            )
 
     ShardDialog(
             visible = showBackgroundDialog,
@@ -521,16 +491,20 @@ internal fun LauncherSettingsContent(
                             onDismissRequest = { showAddBackgroundMenu = false }
                     ) {
                         DropdownMenuItem(
-                                text = { Text("娣诲姞鍥剧墖") },
+                                text = { Text("添加图片") },
                                 onClick = {
-                                    imagePicker.launch("image/*")
+                                    imagePickerLauncher.launch(
+                                        arrayOf("image/jpeg", "image/png", "image/gif", "image/webp")
+                                    )
                                     showAddBackgroundMenu = false
                                 }
                         )
                         DropdownMenuItem(
-                                text = { Text("娣诲姞瑙嗛") },
+                                text = { Text("添加视频") },
                                 onClick = {
-                                    videoPicker.launch("video/*")
+                                    videoPickerLauncher.launch(
+                                        arrayOf("video/mp4", "video/webm", "video/x-matroska")
+                                    )
                                     showAddBackgroundMenu = false
                                 }
                         )
@@ -1000,7 +974,8 @@ internal fun LauncherSettingsContent(
         }
         item { Spacer(modifier = Modifier.height(45.dp)) }
     }
-        ScrollIndicator(
+    
+    ScrollIndicator(
             listState = listState,
             modifier = Modifier.align(Alignment.CenterEnd)
         )

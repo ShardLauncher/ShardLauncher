@@ -242,6 +242,7 @@ private fun LeftMenu(
     isRefreshing: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val cardLayoutConfig = LocalCardLayoutConfig.current
     val isCardBlurEnabled = cardLayoutConfig.isCardBlurEnabled
     val cardAlpha = cardLayoutConfig.cardAlpha
@@ -279,9 +280,9 @@ private fun LeftMenu(
                         onClick = {
                             if (!isRefreshing) {
                                 if (pathItem.id == GamePathManager.DEFAULT_ID) {
-                                    GamePathManager.selectPath(GamePathManager.DEFAULT_ID)
+                                    GamePathManager.selectPath(context, GamePathManager.DEFAULT_ID)
                                 } else {
-                                    GamePathManager.selectPath(pathItem.id)
+                                    GamePathManager.selectPath(context, pathItem.id)
                                 }
                             }
                         },

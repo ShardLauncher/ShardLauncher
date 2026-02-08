@@ -1,8 +1,6 @@
 package com.lanrhyme.shardlauncher.ui.version.management
 
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +18,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.game.version.installed.Version
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorScreen
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorMode
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorResult
 import com.lanrhyme.shardlauncher.utils.file.FolderUtils
 import dev.chrisbanes.haze.hazeEffect
 import java.io.File
@@ -36,29 +38,7 @@ fun ResourcePacksManagementScreen(
     val context = LocalContext.current
 
     // 文件选择器
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let { selectedUri ->
-            try {
-                val fileName = getFileName(context, selectedUri) ?: "resourcepack_${System.currentTimeMillis()}.zip"
-                val targetFile = File(resourcePacksFolder, fileName)
-                
-                if (!resourcePacksFolder.exists()) {
-                    resourcePacksFolder.mkdirs()
-                }
-                
-                context.contentResolver.openInputStream(selectedUri)?.use { input ->
-                    targetFile.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                refreshTrigger++
-            } catch (e: Exception) {
-                // TODO: 显示错误信息
-            }
-        }
-    }
+    var showFileSelector by remember { mutableStateOf(false) }
 
     // 刷新资源包列表
     LaunchedEffect(refreshTrigger) {
@@ -131,7 +111,7 @@ fun ResourcePacksManagementScreen(
                     
                     Button(
                         onClick = {
-                            filePickerLauncher.launch("*/*")
+                            showFileSelector = true
                         }
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -216,13 +196,58 @@ fun ResourcePacksManagementScreen(
                         hazeState = hazeState
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ResourcePackItem(
+                            }
+                        }
+                    }
+                    
+                    // 显示文件选择器
+                    if (showFileSelector) {
+                        FileSelectorScreen(
+                            visible = showFileSelector,
+                            config = FileSelectorConfig(
+                                initialPath = android.os.Environment.getExternalStorageDirectory(),
+                                mode = FileSelectorMode.FILE_ONLY,
+                                showHiddenFiles = true,
+                                allowCreateDirectory = false,
+                                fileFilter = { file ->
+                                    file.isFile && file.extension == "zip"
+                                }
+                            ),
+                            onDismissRequest = { showFileSelector = false },
+                            onSelection = { result ->
+                                when (result) {
+                                    is FileSelectorResult.Selected -> {
+                                        try {
+                                            val sourceFile = result.path
+                                            val fileName = sourceFile.name
+                                            val targetFile = File(resourcePacksFolder, fileName)
+                                            
+                                            if (!resourcePacksFolder.exists()) {
+                                                resourcePacksFolder.mkdirs()
+                                            }
+                                            
+                                            sourceFile.inputStream().use { input ->
+                                                targetFile.outputStream().use { output ->
+                                                    input.copyTo(output)
+                                                }
+                                            }
+                                            refreshTrigger++
+                                        } catch (e: Exception) {
+                                            // TODO: 显示错误信息
+                                        }
+                                    }
+                                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
+                                    is FileSelectorResult.MultipleSelected -> { /* 不支持多选 */ }
+                                }
+                                showFileSelector = false
+                            }
+                        )
+                    }
+                }
+                
+                
+                @Composable
+                private fun ResourcePackItem(
     resourcePackFile: File,
     onDelete: () -> Unit,
     isCardBlurEnabled: Boolean,
@@ -313,18 +338,5 @@ private fun ResourcePackItem(
                 }
             }
         )
-    }
-}
-
-// 获取文件名的辅助函数
-private fun getFileName(context: android.content.Context, uri: android.net.Uri): String? {
-    return try {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            cursor.moveToFirst()
-            cursor.getString(nameIndex)
-        }
-    } catch (e: Exception) {
-        null
     }
 }

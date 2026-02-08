@@ -38,7 +38,7 @@ internal fun OtherSettingsContent(navController: NavController) {
         ) {
         item {
             Text(
-                text = "楂樼骇",
+                text = "高级",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -46,11 +46,11 @@ internal fun OtherSettingsContent(navController: NavController) {
         }
         item {
             SimpleListLayoutCard(
-                    title = "寮€鍙戣€呴€夐」",
+                    title = "开发者选项",
                     items = listOf(Unit),
                     selectedItem = Unit,
                     onValueChange = { navController.navigate(Screen.DeveloperOptions.route) },
-                    getItemText = { "鐐瑰嚮杩涘叆寮€鍙戣€呴€夐」" }
+                    getItemText = { "点击进入开发者选项" }
             )
         }
         item { Spacer(modifier = Modifier.height(45.dp)) }

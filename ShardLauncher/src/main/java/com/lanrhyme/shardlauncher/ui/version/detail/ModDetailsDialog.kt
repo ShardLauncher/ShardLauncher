@@ -111,7 +111,7 @@ private fun ModDetailsContent(remoteMod: RemoteMod) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 鍥炬爣
+        // 图标
         Box(
             modifier = Modifier.size(64.dp)
         ) {

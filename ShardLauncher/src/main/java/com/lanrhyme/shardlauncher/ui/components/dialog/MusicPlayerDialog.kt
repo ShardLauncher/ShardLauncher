@@ -8,10 +8,9 @@ import com.lanrhyme.shardlauncher.ui.components.basic.glow
 import com.lanrhyme.shardlauncher.ui.components.basic.selectableCard
 import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutCard
 import android.net.Uri
+import android.content.Intent
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
 import com.lanrhyme.shardlauncher.ui.components.business.MusicCard
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -76,6 +75,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -189,12 +190,20 @@ fun MusicListPage(musicPlayerViewModel: MusicPlayerViewModel) {
 
         onDispose { mediaController?.removeListener(listener) }
     }
-
-    val pickAudioLauncher =
-            rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.GetContent(),
-                    onResult = { uri: Uri? -> uri?.let { musicPlayerViewModel.addMusicFile(it) } }
+    
+    // Document Provider launcher for selecting audio files
+    val context = LocalContext.current
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
+            musicPlayerViewModel.addMusicFile(it)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         val searchQuery by musicPlayerViewModel.searchQuery.collectAsState()
@@ -257,7 +266,11 @@ fun MusicListPage(musicPlayerViewModel: MusicPlayerViewModel) {
                 }
             }
             IconButton(
-                    onClick = { pickAudioLauncher.launch("audio/flac,audio/wav,audio/ogg,audio/*") }
+                    onClick = {
+                        audioPickerLauncher.launch(
+                            arrayOf("audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-m4a")
+                        )
+                    }
             ) { Icon(Icons.Default.Add, contentDescription = "添加音乐") }
         }
         // 音乐列表

@@ -47,6 +47,8 @@ import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import com.lanrhyme.shardlauncher.ui.components.basic.SearchTextField
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardEditDialog
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardInputField
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.components.basic.selectableCard
 import com.lanrhyme.shardlauncher.utils.file.PathHelper
@@ -62,6 +64,10 @@ import com.lanrhyme.shardlauncher.ui.version.management.ModsManagementScreen
 import com.lanrhyme.shardlauncher.ui.version.management.ResourcePacksManagementScreen
 import com.lanrhyme.shardlauncher.ui.version.management.SavesManagementScreen
 import com.lanrhyme.shardlauncher.ui.version.management.ShaderPacksManagementScreen
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorScreen
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorConfig
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorMode
+import com.lanrhyme.shardlauncher.ui.components.filemanager.FileSelectorResult
 
 enum class VersionDetailPane(val title: String, val icon: ImageVector) {
     Overview("版本概览", Icons.Default.Info),
@@ -95,12 +101,14 @@ fun VersionScreen(navController: NavController, animationSpeed: Float) {
     // 版本分类状态
     var versionCategory by remember { mutableStateOf(VersionCategory.ALL) }
     
-    // 过滤版本
-    val filteredVersions = remember(versions, versionCategory) {
-        when (versionCategory) {
-            VersionCategory.ALL -> versions
-            VersionCategory.VANILLA -> versions.filter { it.versionType == VersionType.VANILLA }
-            VersionCategory.MODLOADER -> versions.filter { it.versionType == VersionType.MODLOADERS }
+    // 过滤版本（使用 derivedStateOf 确保 versions 变化时能响应更新）
+    val filteredVersions by remember(versionCategory, isRefreshing) {
+        derivedStateOf {
+            when (versionCategory) {
+                VersionCategory.ALL -> versions
+                VersionCategory.VANILLA -> versions.filter { it.versionType == VersionType.VANILLA }
+                VersionCategory.MODLOADER -> versions.filter { it.versionType == VersionType.MODLOADERS }
+            }
         }
     }
 
@@ -607,7 +615,7 @@ fun GameVersionCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("鍒犻櫎") },
+                        text = { Text("删除") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Delete,
@@ -626,24 +634,46 @@ fun GameVersionCard(
     }
 }
 
+
+@Composable
+fun GamePathNameDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var name by remember { mutableStateOf("自定义目录") }
+
+    ShardEditDialog(
+        title = "命名游戏目录",
+        value = name,
+        onValueChange = { name = it },
+        label = "目录名称",
+        isError = name.isEmpty(),
+        supportingText = {
+            if (name.isEmpty()) {
+                Text(text = "目录名称不能为空")
+            }
+        },
+        singleLine = true,
+        onDismissRequest = onDismissRequest,
+        onConfirm = {
+            if (name.isNotEmpty()) {
+                onConfirm(name)
+            }
+        }
+    )
+}
 @Composable
 fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
     val context = LocalContext.current
     val gamePaths by GamePathManager.gamePathData.collectAsState()
+
     val currentPathId = GamePathManager.currentPathId
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let {
-            val path = PathHelper.getPathFromUri(context, it)
-            if (path != null) {
-                // TODO: 最好弹出一个对话框让用户输入名称，这里暂且用目录名
-                val title = it.pathSegments.lastOrNull() ?: "新目录" // TODO: i18n
-                GamePathManager.addNewPath(title, path)
-            }
-        }
-    }
+    var showFileSelector by remember { mutableStateOf(false) }
+    var showGamePathNameDialog by remember { mutableStateOf(false) }
+    var pendingGamePath by remember { mutableStateOf<String?>(null) }
+    var showPermissionErrorDialog by remember { mutableStateOf(false) }
+    var permissionError by remember { mutableStateOf<String?>(null) }
 
     PopupContainer(
         visible = true,
@@ -670,8 +700,19 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                GamePathManager.selectPath(path.id)
-                                onDismissRequest()
+                                // 检查存储权限
+                                if (!GamePathManager.hasStoragePermission(context)) {
+                                    permissionError = "未授予存储权限，无法切换游戏目录"
+                                    showPermissionErrorDialog = true
+                                    return@clickable
+                                }
+                                try {
+                                    GamePathManager.selectPath(context, path.id)
+                                    onDismissRequest()
+                                } catch (e: Exception) {
+                                    permissionError = e.message ?: "切换游戏目录失败"
+                                    showPermissionErrorDialog = true
+                                }
                             },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
@@ -714,7 +755,7 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
 
                 item {
                     OutlinedButton(
-                        onClick = { launcher.launch(null) },
+                        onClick = { showFileSelector = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -725,6 +766,68 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
                 }
             }
         }
+    }
+
+    // 自定义文件选择器
+    if (showFileSelector) {
+        FileSelectorScreen(
+            visible = showFileSelector,
+            config = FileSelectorConfig(
+                initialPath = android.os.Environment.getExternalStorageDirectory(),
+                mode = FileSelectorMode.DIRECTORY_ONLY,
+                showHiddenFiles = true,
+                allowCreateDirectory = true
+            ),
+            onDismissRequest = { showFileSelector = false },
+            onSelection = { result ->
+                when (result) {
+                    is FileSelectorResult.Selected -> {
+                        // 检查是否是 FCL 公有目录
+                        if (result.path.absolutePath.contains("/FCL/.minecraft")) {
+                            // FCL公有目录直接添加，不显示命名对话框
+                            GamePathManager.addNewPath("FCL公有目录", result.path.absolutePath)
+                            showFileSelector = false
+                        } else {
+                            // 其他目录显示命名对话框
+                            pendingGamePath = result.path.absolutePath
+                            showGamePathNameDialog = true
+                        }
+                    }
+                    FileSelectorResult.Cancelled -> { /* 用户取消 */ }
+                    is FileSelectorResult.MultipleSelected -> { /* 不支持多选 */ }
+                }
+            }
+        )
+    }
+
+    // 游戏目录命名对话框
+    if (showGamePathNameDialog) {
+        GamePathNameDialog(
+            onDismissRequest = { 
+                showGamePathNameDialog = false
+                pendingGamePath = null
+            },
+            onConfirm = { name ->
+                val path = pendingGamePath
+                if (path != null) {
+                    GamePathManager.addNewPath(name, path)
+                }
+                showGamePathNameDialog = false
+                pendingGamePath = null
+                showFileSelector = false
+            }
+        )
+    }
+
+    // 权限错误提示对话框
+    if (showPermissionErrorDialog) {
+        ShardAlertDialog(
+            title = "需要权限",
+            text = permissionError ?: "操作失败",
+            onDismiss = { showPermissionErrorDialog = false },
+            onConfirm = { showPermissionErrorDialog = false },
+            onDismissRequest = { showPermissionErrorDialog = false }
+        )
     }
 }
 
@@ -770,7 +873,7 @@ fun VersionsOperation(
             updateVersionsOperation(
                 VersionsOperation.Delete(
                     versionsOperation.version,
-                    "姝ょ増鏈棤鏁堬紝灏嗚鍒犻櫎"
+                    "此版本无效，将被删除"
                 )
             )
         }
@@ -784,7 +887,7 @@ fun VersionsOperation(
                         VersionsManager.deleteVersion(versionsOperation.version)
                         updateVersionsOperation(VersionsOperation.None)
                     } catch (e: Exception) {
-                        onError("鍒犻櫎鐗堟湰澶辫触: ${e.message}")
+                        onError("删除版本失败: ${e.message}")
                         updateVersionsOperation(VersionsOperation.None)
                     }
                 }

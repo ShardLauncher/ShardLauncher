@@ -1,10 +1,15 @@
 ﻿package com.lanrhyme.shardlauncher
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
@@ -128,6 +133,57 @@ class MainActivity : ComponentActivity() {
     }
     private val newIntentState = mutableStateOf<Intent?>(null)
 
+    // 权限请求Launcher - Android 11+ 需要请求 MANAGE_EXTERNAL_STORAGE
+    private val storagePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Logger.i(tag, "Storage permission granted")
+        } else {
+            Logger.w(tag, "Storage permission denied")
+        }
+    }
+
+    // 管理所有文件权限Launcher - Android 11+
+    private val manageStoragePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                Logger.i(tag, "Manage external storage permission granted")
+            } else {
+                Logger.w(tag, "Manage external storage permission denied")
+            }
+        }
+    }
+
+    /**
+     * 检查并请求存储权限
+     */
+    private fun checkAndRequestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ 需要请求 MANAGE_EXTERNAL_STORAGE 权限
+            if (!Environment.isExternalStorageManager()) {
+                try {
+                    val intent = android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION.let {
+                        Intent(it, Uri.parse("package:$packageName"))
+                    }
+                    manageStoragePermissionLauncher.launch(intent)
+                    Logger.i(tag, "Requesting MANAGE_EXTERNAL_STORAGE permission")
+                } catch (e: Exception) {
+                    Logger.w(tag, "Failed to request MANAGE_EXTERNAL_STORAGE permission: ${e.message}")
+                    // 某些设备可能不支持此intent，尝试传统方式
+                    storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                }
+            } else {
+                Logger.i(tag, "Already have MANAGE_EXTERNAL_STORAGE permission")
+            }
+        } else {
+            // Android 10 及以下请求传统存储权限
+            storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+    }
+
     /**
      * Check and install required resources automatically on startup
      */
@@ -169,6 +225,9 @@ class MainActivity : ComponentActivity() {
         com.lanrhyme.shardlauncher.game.renderer.Renderers.init()
         
         com.lanrhyme.shardlauncher.game.version.installed.VersionsManager.refresh("MainActivity.onCreate")
+
+        // 请求存储权限
+        checkAndRequestStoragePermission()
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 

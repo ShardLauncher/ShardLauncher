@@ -71,7 +71,7 @@ object VersionsManager {
     /**
      * 当前的游戏信息
      */
-    var currentGameInfo by mutableStateOf<Any?>(null) // TODO: Implement CurrentGameInfo
+    var currentGameInfo: CurrentGameInfo? = null
         private set
 
     private val _currentVersion = MutableStateFlow<Version?>(null)
@@ -139,7 +139,7 @@ object VersionsManager {
         if (versionFile.exists() && versionFile.isDirectory) {
             var isVersion = false
 
-            //通过判断是否存在版本的.json文件，来确定其是否为一个版本
+            // 通过判断是否存在版本的.json文件，来确定其是否为一个版本
             val jsonFile = File(versionFile, "${versionFile.name}.json")
             val versionInfo = if (jsonFile.exists() && jsonFile.isFile) {
                 parseJsonToVersionInfo(jsonFile)?.also {
@@ -151,18 +151,26 @@ object VersionsManager {
 
             val versionConfig = VersionConfig.parseConfig(versionFile)
 
+            // 使用增强的版本验证
+            val validation = VersionValidator.validateVersion(versionFile)
+            if (!validation.isValid && validation.hasErrors) {
+                lWarning("Version ${versionFile.name} validation failed: ${validation.issues.joinToString("; ") { it.message }}")
+                // 仍然添加版本，但标记为无效
+            }
+
             val version = Version(
                 versionFile.name,
                 versionConfig,
                 versionInfo,
-                isVersion,
+                validation.isValid,  // 使用验证结果
                 versionInfo.getVersionType()
             )
 
             lInfo(
                 "Identified and added version: ${version.getVersionName()}, " +
                         "Path: (${version.getVersionPath()}), " +
-                        "Info: ${version.getVersionInfo()?.getInfoString()}"
+                        "Info: ${version.getVersionInfo()?.getInfoString()}, " +
+                        "Status: ${VersionValidator.getStatusDescription(validation)}"
             )
 
             return version
@@ -171,34 +179,38 @@ object VersionsManager {
     }
 
     private fun refreshCurrentVersion() {
-        if (versions.isNotEmpty()) {
-             _currentVersion.value = versions.firstOrNull { it.isValid() }
-        }
-//        currentVersion = run {
-//            if (versions.isEmpty()) return@run null
-//
-//            fun getVersionByFirst(): Version? {
-//                return versions.find { it.isValid() }?.apply {
-//                    //确保版本有效
-//                    saveCurrentVersion(getVersionName(), refresh = false)
-//                }
-//            }
-//
-//            runCatching {
-//                val versionString = currentGameInfo!!.version
-//                getVersion(versionString) ?: run {
-//                    lDebug("Stored version $versionString not found, using the first available version instead.")
-//                    getVersionByFirst()
-//                }
-//            }.onFailure { e ->
-//                lWarning("The current version information has not been initialized yet.", e)
-//            }.getOrElse {
-//                getVersionByFirst()
-//            }
-//        }.also { version ->
-//            lDebug("The current version is: ${version?.getVersionName()}")
-//        }
+    // 确保 currentGameInfo 已初始化
+    if (currentGameInfo == null) {
+        currentGameInfo = refreshCurrentInfo()
     }
+
+    val version = run {
+        if (versions.isEmpty()) return@run null
+
+        fun getVersionByFirst(): Version? {
+            return versions.find { it.isValid() }?.apply {
+                // 确保版本有效
+                saveCurrentVersion(getVersionName(), refresh = false)
+            }
+        }
+
+        runCatching {
+            val versionString = currentGameInfo!!.version
+            getVersion(versionString) ?: run {
+                lDebug("Stored version $versionString not found, using the first available version instead.")
+                getVersionByFirst()
+            }
+        }.onFailure { e ->
+            lWarning("The current version information has not been initialized yet.", e)
+        }.getOrElse {
+            getVersionByFirst()
+        }
+    }.also { version ->
+        lDebug("The current version is: ${version?.getVersionName()}")
+    }
+
+    _currentVersion.value = version
+}
 
     private fun getVersion(name: String?): Version? {
         name?.let { versionName ->
@@ -252,19 +264,24 @@ object VersionsManager {
      * 保存当前选择的版本
      */
     fun saveCurrentVersion(versionName: String, refresh: Boolean = true) {
-        // TODO: Implement Logic
-//        runCatching {
-//            currentGameInfo!!.apply {
-//                version = versionName
-//                saveCurrentInfo()
-//            }
-//            if (refresh) {
-//                lDebug("Current game info file saved, refreshing the current version now.")
-//                refreshCurrentVersion()
-//            }
-//        }.onFailure { e ->
-//            lError("An exception occurred while saving the currently selected version information.", e)
-//        }
+        try {
+            // 确保 currentGameInfo 已初始化
+            if (currentGameInfo == null) {
+                currentGameInfo = refreshCurrentInfo()
+            }
+
+            currentGameInfo!!.apply {
+                version = versionName
+                saveCurrentInfo()
+            }
+
+            if (refresh) {
+                lDebug("CurrentGameInfo saved, refreshing the current version now.")
+                refreshCurrentVersion()
+            }
+        } catch (e: Exception) {
+            lError("An exception occurred while saving the currently selected version information.", e)
+        }
     }
 
     fun validateVersionName(
