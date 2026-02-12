@@ -125,8 +125,6 @@ data class ApiService(
 @Composable
 fun AboutScreen(animationSpeed: Float) {
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
-    val listState = rememberLazyListState()
     var showLicensesDialog by remember { mutableStateOf(false) }
     var expandedSection by remember { mutableStateOf<String?>(null) }
 
@@ -134,66 +132,130 @@ fun AboutScreen(animationSpeed: Float) {
         LicensesDialog { showLicensesDialog = false }
     }
 
-    LazyColumn(
-        state = listState,
+    // 使用 Row 实现左右分栏布局
+    Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            // 底部 padding 避免被导航栏遮挡
+            .padding(bottom = 80.dp)
+    ) {
+        // 左侧区域 - 版本信息、快捷操作等（占比 45%）
+        LeftPanel(
+            modifier = Modifier
+                .weight(0.45f)
+                .fillMaxHeight(),
+            animationSpeed = animationSpeed,
+            showLicensesDialog = showLicensesDialog,
+            onLicensesClick = { showLicensesDialog = true },
+            onGithubClick = {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LanRhyme/ShardLauncher"))
+                )
+            }
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // 右侧区域 - 贡献者、鸣谢、第三方服务等（占比 55%）
+        RightPanel(
+            modifier = Modifier
+                .weight(0.55f)
+                .fillMaxHeight(),
+            animationSpeed = animationSpeed,
+            expandedSection = expandedSection,
+            onToggleSection = { section ->
+                expandedSection = if (expandedSection == section) null else section
+            }
+        )
+    }
+}
+
+// ==================== 左侧面板 ====================
+
+@Composable
+private fun LeftPanel(
+    modifier: Modifier = Modifier,
+    animationSpeed: Float,
+    showLicensesDialog: Boolean,
+    onLicensesClick: () -> Unit,
+    onGithubClick: () -> Unit
+) {
+    val leftListState = rememberLazyListState()
+
+    LazyColumn(
+        state = leftListState,
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ========== 头部区域 - 应用信息大磁贴 ==========
+        // 头部区域 - 应用信息大磁贴
         item {
             AppHeaderTile(animationSpeed = animationSpeed)
         }
 
-        // ========== 快捷操作区域 ==========
+        // 快捷操作区域
         item {
             QuickActionsTile(
                 animationSpeed = animationSpeed,
-                onLicensesClick = { showLicensesDialog = true },
-                onGithubClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LanRhyme/ShardLauncher"))
-                    )
-                }
+                onLicensesClick = onLicensesClick,
+                onGithubClick = onGithubClick
             )
         }
 
-        // ========== 版本信息区域 ==========
+        // 版本信息区域
         item {
             VersionInfoTile(animationSpeed = animationSpeed)
         }
 
-        // ========== 贡献者区域 ==========
+        // 底部留白
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+// ==================== 右侧面板 ====================
+
+@Composable
+private fun RightPanel(
+    modifier: Modifier = Modifier,
+    animationSpeed: Float,
+    expandedSection: String?,
+    onToggleSection: (String) -> Unit
+) {
+    val rightListState = rememberLazyListState()
+
+    LazyColumn(
+        state = rightListState,
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 贡献者区域
         item {
             CreditsSection(
                 animationSpeed = animationSpeed,
                 isExpanded = expandedSection == "credits",
-                onToggle = {
-                    expandedSection = if (expandedSection == "credits") null else "credits"
-                }
+                onToggle = { onToggleSection("credits") }
             )
         }
 
-        // ========== 鸣谢区域 ==========
+        // 鸣谢区域
         item {
             ThanksSection(
                 animationSpeed = animationSpeed,
                 isExpanded = expandedSection == "thanks",
-                onToggle = {
-                    expandedSection = if (expandedSection == "thanks") null else "thanks"
-                }
+                onToggle = { onToggleSection("thanks") }
             )
         }
 
-        // ========== 第三方API区域 ==========
+        // 第三方API区域
         item {
             ApiServicesTile(animationSpeed = animationSpeed)
         }
 
         // 底部留白
         item {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
