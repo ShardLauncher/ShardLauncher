@@ -65,5 +65,9 @@ ShardLauncher/
 
 本项目采用 **GPL-3.0** 许可证开源。详情请参阅 [LICENSE](LICENSE) 文件
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ShardLauncher/ShardLauncher&type=date&legend=top-left)](https://www.star-history.com/#ShardLauncher/ShardLauncher&type=date&legend=top-left)
+
 ---
 *Powered by Kotlin & Jetpack Compose. Inspired by the Minecraft community.*
