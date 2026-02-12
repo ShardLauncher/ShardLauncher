@@ -57,6 +57,7 @@ import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.shape.CircleShape
 
 /**
  * 可折叠卡片组件
@@ -278,17 +279,23 @@ fun ScalingActionButton(
  */
 @Composable
 fun TitleAndSummary(title: String, summary: String?, modifier: Modifier = Modifier) {
-        Column(modifier = modifier.fillMaxWidth()) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall)
-                summary?.let {
-                        Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        summary?.let {
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Medium
+            )
         }
+    }
 }
 
 /**
@@ -305,62 +312,132 @@ fun TitleAndSummary(title: String, summary: String?, modifier: Modifier = Modifi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> SegmentedNavigationBar(
-        modifier: Modifier = Modifier,
-        title: String,
-        selectedPage: T,
-        onPageSelected: (T) -> Unit,
-        pages: List<T>,
-        getTitle: (T) -> String
+    modifier: Modifier = Modifier,
+    title: String,
+    selectedPage: T,
+    onPageSelected: (T) -> Unit,
+    pages: List<T>,
+    getTitle: (T) -> String
 ) {
-        Row(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-        ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier =
-                        Modifier
-                            .glow(
-                                color = MaterialTheme.colorScheme.primary,
-                                cornerRadius = 16.dp
-                            )
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors =
-                                        listOf(
-                                            MaterialTheme.colorScheme
-                                                .primary,
-                                            MaterialTheme.colorScheme
-                                                .tertiary,
-                                        )
-                                )
-                            )
-                            .padding(horizontal = 16.dp, vertical = 4.dp)
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
+    val containerShape = RoundedCornerShape(24.dp)
+    
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .height(56.dp)
+            .then(
+                if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Modifier.clip(containerShape).hazeEffect(state = hazeState)
+                } else Modifier
+            )
+            .background(
+                MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha * 0.5f),
+                containerShape
+            )
+            .border(
+                0.5.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.2f),
+                        Color.Transparent
+                    )
+                ),
+                containerShape
+            )
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Title with a subtle glow
+        Box(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .glow(
+                    color = MaterialTheme.colorScheme.primary,
+                    cornerRadius = 12.dp,
+                    blurRadius = 8.dp
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                PrimaryTabRow(
-                        selectedTabIndex = pages.indexOf(selectedPage),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(16.dp)),
-                        divider = {},
-                ) {
-                        pages.forEach { page ->
-                                Tab(
-                                        modifier = Modifier.height(40.dp),
-                                        selected = selectedPage == page,
-                                        onClick = { onPageSelected(page) },
-                                        text = { Text(text = getTitle(page)) }
-                                )
-                        }
-                }
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.secondary
+                        )
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        // Custom Sliding Tabs
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 6.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    RoundedCornerShape(16.dp)
+                )
+                .padding(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            pages.forEach { page ->
+                val isSelected = selectedPage == page
+                val interactionSource = remember { MutableInteractionSource() }
+                
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = { onPageSelected(page) }
+                        )
+                        .then(
+                            if (isSelected) {
+                                Modifier.background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                )
+                            } else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = getTitle(page),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) 
+                            MaterialTheme.colorScheme.primary 
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    // Selection Dot or Underline? Let's go with a subtle dot or larger background
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 2.dp)
+                                .size(4.dp, 2.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -374,24 +451,52 @@ fun <T> SegmentedNavigationBar(
  */
 @Composable
 fun SubPageNavigationBar(
-        title: String = "返回",
-        description: String? = null,
-        onBack: () -> Unit,
-        modifier: Modifier = Modifier
+    title: String = "返回",
+    description: String? = null,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.fillMaxWidth()) {
-                IconButton(onClick = onBack) {
-                        Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
-                        )
-                }
-            Text(text = title, style = MaterialTheme.typography.titleLarge)
-                if (description != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = description, style = MaterialTheme.typography.bodyMedium)
-                }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .padding(end = 8.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    CircleShape
+                )
+                .size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
         }
+        
+        Column {
+            Text(
+                text = title, 
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (description != null) {
+                Text(
+                    text = description, 
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
 }
 
 

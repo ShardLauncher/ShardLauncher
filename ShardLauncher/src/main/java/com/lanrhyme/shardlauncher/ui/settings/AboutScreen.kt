@@ -3,8 +3,8 @@ package com.lanrhyme.shardlauncher.ui.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -16,39 +16,27 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.HdrWeak
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.Update
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,19 +48,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lanrhyme.shardlauncher.R
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
+import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardSectionHeader
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
-import com.lanrhyme.shardlauncher.ui.components.tiles.ActionTile
 import com.lanrhyme.shardlauncher.ui.components.tiles.TileCard
-import com.lanrhyme.shardlauncher.ui.components.tiles.TileGrid
 import com.lanrhyme.shardlauncher.ui.components.tiles.TileStyle
 
 // ==================== 数据模型 ====================
@@ -97,43 +91,29 @@ data class ApiService(
 // ==================== 主屏幕 ====================
 
 @Composable
-fun AboutScreen(animationSpeed: Float) {
-    val context = LocalContext.current
-    var showLicensesDialog by remember { mutableStateOf(false) }
-
-    if (showLicensesDialog) {
-        LicensesDialog { showLicensesDialog = false }
-    }
-
-
+fun AboutScreen() {
+    val animationSpeed = 1.0f
+    
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 左侧区域 - 版本信息（占比 35%）
+        // Left Panel (32%): Version info & basic identity
         LeftPanel(
             modifier = Modifier
-                .weight(0.35f)
+                .weight(0.32f)
                 .fillMaxHeight(),
             animationSpeed = animationSpeed
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        // 右侧区域 - 应用简介、快捷操作、贡献者、鸣谢、第三方服务等（占比 65%）
+        // Right Panel (68%): Detailed info, credits, licenses
         RightPanel(
             modifier = Modifier
-                .weight(0.65f)
+                .weight(0.68f)
                 .fillMaxHeight(),
-            animationSpeed = animationSpeed,
-            showLicensesDialog = showLicensesDialog,
-            onLicensesClick = { showLicensesDialog = true },
-            onGithubClick = {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LanRhyme/ShardLauncher"))
-                )
-            }
+            animationSpeed = animationSpeed
         )
     }
 }
@@ -145,74 +125,63 @@ private fun LeftPanel(
     modifier: Modifier = Modifier,
     animationSpeed: Float
 ) {
-    val leftScrollState = rememberScrollState()
-
-    // 左侧使用 Column，只显示版本信息
     Column(
-        modifier = modifier.verticalScroll(leftScrollState),
+        modifier = modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 完整版本信息区域
-        Spacer(Modifier.height(14.dp))
         VersionInfoTile(animationSpeed = animationSpeed)
     }
 }
 
-// ==================== 右侧面板 ====================
-
 @Composable
 private fun RightPanel(
     modifier: Modifier = Modifier,
-    animationSpeed: Float,
-    showLicensesDialog: Boolean,
-    onLicensesClick: () -> Unit,
-    onGithubClick: () -> Unit
+    animationSpeed: Float
 ) {
-    val rightListState = rememberLazyListState()
-
+    val context = LocalContext.current
+    var showLicenses by remember { mutableStateOf(false) }
+    
     LazyColumn(
-        state = rightListState,
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        item { Spacer(Modifier.height(14.dp)) }
-        // 头部区域 - 应用信息大磁贴
+        // Item indices for animatedAppearance are used to sequence the entrance
         item {
             AppHeaderTile(animationSpeed = animationSpeed)
         }
 
-        // 快捷操作区域
         item {
             QuickActionsTile(
                 animationSpeed = animationSpeed,
-                onLicensesClick = onLicensesClick,
-                onGithubClick = onGithubClick
+                onLicensesClick = { showLicenses = true },
+                onGithubClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LanRhyme/ShardLauncher"))
+                    )
+                }
             )
         }
 
-        // 贡献者区域
         item {
-            CreditsSection(
-                animationSpeed = animationSpeed
-            )
+            CreditsSection(animationSpeed = animationSpeed)
         }
 
-        // 鸣谢区域
         item {
-            ThanksSection(
-                animationSpeed = animationSpeed
-            )
+            ThanksSection(animationSpeed = animationSpeed)
         }
 
-        // 第三方API区域
         item {
             ApiServicesTile(animationSpeed = animationSpeed)
         }
 
-        // 底部留白
         item {
-            Spacer(modifier = Modifier.height(60.dp))
+            FooterSection(animationSpeed = animationSpeed)
+            Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+    
+    if (showLicenses) {
+        LicensesDialog(onDismiss = { showLicenses = false })
     }
 }
 
@@ -220,82 +189,61 @@ private fun RightPanel(
 
 @Composable
 private fun AppHeaderTile(animationSpeed: Float) {
-    val context = LocalContext.current
-
-    TileCard(
+    ShardGlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
-            .animatedAppearance(0, animationSpeed),
-        style = TileStyle.GLASS
+            .animatedAppearance(0, animationSpeed)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧图标区域
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(20.dp)
-                    ),
-                contentAlignment = Alignment.Center
+            // App Icon with glass background
+            Surface(
+                modifier = Modifier.size(120.dp),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.img_logo),
-                    contentDescription = "App Icon",
-                    modifier = Modifier.size(100.dp),
-                    contentScale = ContentScale.Fit
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_logo),
+                        contentDescription = "App Icon",
+                        modifier = Modifier.size(80.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(24.dp))
 
-            // 右侧文字区域
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // Text Info
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "ShardLauncher",
+                    text = "Shard Launcher",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "一款使用 Kotlin 和 Jetpack Compose 开发的现代化 Android Minecraft: Java Edition 启动器",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2f
+                    text = "现代化 Android Minecraft 启动器",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    ) {
-                        Text(
-                            text = "GPL-3.0",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    ) {
-                        Text(
-                            text = "开源",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+                Text(
+                    text = "基于 Kotlin 与 Jetpack Compose。追求极简与美感的设计，为您带来最纯粹的启动体验。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 22.sp
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShardTag(text = "GPL-3.0", containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.secondary)
+                    ShardTag(text = "Open Source")
                 }
             }
         }
@@ -310,48 +258,73 @@ private fun QuickActionsTile(
     onLicensesClick: () -> Unit,
     onGithubClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.animatedAppearance(1, animationSpeed)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animatedAppearance(1, animationSpeed),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        TileGrid(
-            columns = 4,
-            horizontalSpacing = 10.dp,
-            verticalSpacing = 10.dp
+        QuickActionButton(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.Code,
+            title = "GitHub",
+            subtitle = "查看源代码",
+            onClick = onGithubClick,
+            color = Color(0xFF24292E)
+        )
+        QuickActionButton(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.Description,
+            title = "开源许可",
+            subtitle = "第三方库授权",
+            onClick = onLicensesClick,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun QuickActionButton(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    color: Color
+) {
+    ShardGlassCard(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 文档按钮
-            item(1f) {
-                ActionTile(
-                    title = "文档",
-                    icon = Icons.AutoMirrored.Filled.Article,
-                    onClick = { /* TODO: 打开文档 */ },
-                    style = TileStyle.GLASS
-                )
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = color.copy(alpha = 0.1f),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = color
+                    )
+                }
             }
-            // GitHub按钮
-            item(1f) {
-                ActionTile(
-                    title = "GitHub",
-                    icon = R.drawable.icon_github,
-                    onClick = onGithubClick,
-                    style = TileStyle.GLASS
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
-            }
-            // 许可证按钮
-            item(1f) {
-                ActionTile(
-                    title = "许可",
-                    icon = Icons.Default.Description,
-                    onClick = onLicensesClick,
-                    style = TileStyle.GLASS
-                )
-            }
-            // 检查更新按钮
-            item(1f) {
-                ActionTile(
-                    title = "更新",
-                    icon = Icons.Default.Update,
-                    onClick = { /* TODO: 检查更新 */ },
-                    style = TileStyle.GLASS
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -363,87 +336,79 @@ private fun QuickActionsTile(
 @Composable
 private fun VersionInfoTile(animationSpeed: Float) {
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     val versionName = stringResource(id = R.string.version_name)
     val gitHash = stringResource(id = R.string.git_hash)
     val gitBranch = stringResource(id = R.string.git_branch)
     val buildStatus = stringResource(id = R.string.build_status)
-    val lastUpdateTime = stringResource(id = R.string.last_update_time)
 
-    Column(
+    ShardGlassCard(
         modifier = Modifier.animatedAppearance(0, animationSpeed)
     ) {
-        TileCard(
-            modifier = Modifier.fillMaxWidth(),
-            style = TileStyle.GLASS
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 版本号行
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ShardSectionHeader(title = "编译信息")
+            
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 VersionInfoRow(
-                    icon = painterResource(R.drawable.icon__menu_kebab_horizontal_square_duotone),
-                    label = "版本号",
+                    label = "应用版本",
                     value = versionName,
-                    onCopy = {
-                        clipboardManager.setText(AnnotatedString(versionName))
-                    }
+                    onClick = { clipboardManager.setText(AnnotatedString(versionName)) }
                 )
-
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                )
-
-                // Git Commit行
                 VersionInfoRow(
-                    icon = Icons.Default.Code,
                     label = "Git Commit",
                     value = gitHash,
-                    valueColor = MaterialTheme.colorScheme.primary,
-                    onCopy = {
-                        clipboardManager.setText(AnnotatedString(gitHash))
-                    }
+                    onClick = { clipboardManager.setText(AnnotatedString(gitHash)) }
                 )
-
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                )
-
-                // 分支行
                 VersionInfoRow(
-                    icon = painterResource(R.drawable.icon__badge_duotone),
-                    label = "分支",
+                    label = "构建分支",
                     value = gitBranch,
-                    onCopy = {
-                        clipboardManager.setText(AnnotatedString(gitBranch))
-                    }
+                    onClick = { clipboardManager.setText(AnnotatedString(gitBranch)) }
                 )
-
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                )
-
-                // 构建状态行
                 VersionInfoRow(
-                    icon = painterResource(R.drawable.icon__file_check_duotone),
-                    label = "构建状态",
+                    label = "状态",
                     value = buildStatus,
-                    onCopy = null
-                )
-
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                )
-
-                // 更新时间行
-                VersionInfoRow(
-                    icon = painterResource(R.drawable.icon__history_duotone),
-                    label = "上次更新",
-                    value = lastUpdateTime,
-                    onCopy = null
+                    color = if (buildStatus.contains("release", true)) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun VersionInfoRow(
+    label: String,
+    value: String,
+    color: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: (() -> Unit)? = null
+) {
+    Surface(
+        onClick = onClick ?: {},
+        enabled = onClick != null,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Transparent
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -567,56 +532,29 @@ private fun VersionInfoRowContent(
 // ==================== 贡献者区域 ====================
 
 @Composable
-private fun CreditsSection(
-    animationSpeed: Float
-) {
-    val context = LocalContext.current
-
-    Column(
-        modifier = Modifier.animatedAppearance(3, animationSpeed),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+private fun CreditsSection(animationSpeed: Float) {
+    ShardGlassCard(
+        modifier = Modifier.animatedAppearance(3, animationSpeed)
     ) {
-        // 标题栏
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Groups,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ShardSectionHeader(title = "核心团队")
+            
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CreditPersonTile(
+                    image = R.drawable.img_lanrhyme,
+                    name = "LanRhyme",
+                    role = "Lead Developer & UI Designer",
+                    GithubUrl = "https://github.com/LanRhyme",
+                    WebsiteUrl = "https://lanrhyme.netlify.app"
                 )
-                Text(
-                    text = "贡献者",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                CreditPersonTile(
+                    image = R.drawable.img_herbrine8403,
+                    name = "爱科技的学生党",
+                    role = "联合开发者，项目维护者",
+                    GithubUrl = "https://github.com/herbrine8403"
                 )
             }
         }
-
-        // 主要开发者磁贴
-        CreditPersonTile(
-            image = R.drawable.img_lanrhyme,
-            name = "LanRhyme",
-            role = "项目发起者，主要开发者",
-            GithubUrl = "https://github.com/LanRhyme",
-            BiliBiliUrl = "https://space.bilibili.com/496901387",
-            WebsiteUrl = "https://lanrhyme.netlify.app"
-        )
-        CreditPersonTile(
-            image = R.drawable.img_herbrine8403,
-            name = "爱科技的学生党",
-            role = "联合开发者，项目维护者",
-            GithubUrl = "https://github.com/herbrine8403",
-            BiliBiliUrl = "https://space.bilibili.com/1447116805"
-        )
     }
 }
 
@@ -778,51 +716,20 @@ private fun CreditPersonTile(
 // ==================== 鸣谢区域 ====================
 
 @Composable
-private fun ThanksSection(
-    animationSpeed: Float
-) {
-    val context = LocalContext.current
-
-    Column(
-        modifier = Modifier.animatedAppearance(4, animationSpeed),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+private fun ThanksSection(animationSpeed: Float) {
+    ShardGlassCard(
+        modifier = Modifier.animatedAppearance(4, animationSpeed)
     ) {
-        // 标题栏
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ThumbUp,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = "鸣谢",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ShardSectionHeader(title = "鸣谢")
+            
+            ThanksTile(
+                icon = R.drawable.img_zalithlauncher,
+                name = "ZalithLauncher",
+                description = "参考和引用了 ZalithLauncher 的代码",
+                onClick = { /* Open GitHub */ }
+            )
         }
-
-        // ZalithLauncher磁贴
-        ThanksTile(
-            icon = R.drawable.img_zalithlauncher,
-            name = "ZalithLauncher",
-            description = "参考和引用了 ZalithLauncher 的代码",
-            onClick = {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ZalithLauncher/ZalithLauncher2"))
-                )
-            }
-        )
     }
 }
 
@@ -906,57 +813,72 @@ private fun ThanksTile(
 @Composable
 private fun ApiServicesTile(animationSpeed: Float) {
     val context = LocalContext.current
-
     val apiServices = remember {
         listOf(
-            ApiService(
-                name = "BMCLAPI",
-                description = "提供 Minecraft 版本和资源下载服务",
-                url = "https://bmclapidoc.bangbang93.com/"
-            ),
-            ApiService(
-                name = "新闻主页",
-                description = "启动器主页中的 Minecraft 更新卡片",
-                url = "https://news.bugjump.net/static/"
-            )
+            ApiService("BMCLAPI", "提供 Minecraft 版本和资源下载服务", "https://bmclapidoc.bangbang93.com/"),
+            ApiService("新闻主页", "启动器主页中的 Minecraft 更新卡片", "https://news.bugjump.net/static/")
         )
     }
 
-    Column(
+    ShardGlassCard(
         modifier = Modifier.animatedAppearance(5, animationSpeed)
     ) {
-        Text(
-            text = "第三方服务",
-            style = MaterialTheme.typography.titleSmall,
-            color = Color.Unspecified,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
-
-        TileCard(
-            modifier = Modifier.fillMaxWidth(),
-            style = TileStyle.GLASS
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                apiServices.forEachIndexed { index, service ->
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ShardSectionHeader(title = "第三方服务")
+            
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                apiServices.forEach { service ->
                     ApiServiceRow(
                         service = service,
                         onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(service.url))
-                            )
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(service.url)))
                         }
                     )
-                    if (index < apiServices.size - 1) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
-                        )
-                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FooterSection(animationSpeed: Float) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp)
+            .animatedAppearance(6, animationSpeed),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "© 2024-2025 LanRhyme. All Rights Reserved.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        )
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            SocialButton(Icons.Default.Code) { /* GitHub */ }
+            SocialButton(Icons.Default.Group) { /* Team */ }
+            SocialButton(Icons.Default.Link) { /* Website */ }
+        }
+    }
+}
+
+@Composable
+private fun SocialButton(icon: ImageVector, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.size(44.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -1018,106 +940,83 @@ private fun LicensesDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val libraries = remember {
         listOf(
-            OssLibrary(
-                "Jetpack Compose",
-                "Google",
-                "https://developer.android.com/jetpack/compose",
-                "Apache License 2.0"
-            ),
-            OssLibrary(
-                "AndroidX",
-                "Google",
-                "https://source.android.com/",
-                "Apache License 2.0"
-            ),
-            OssLibrary(
-                "Coil",
-                "Coil Contributors",
-                "https://coil-kt.github.io/coil/",
-                "Apache License 2.0"
-            ),
-            OssLibrary(
-                "Retrofit",
-                "Square, Inc.",
-                "https://square.github.io/retrofit/",
-                "Apache License 2.0"
-            ),
-            OssLibrary(
-                "Gson",
-                "Google",
-                "https://github.com/google/gson",
-                "Apache License 2.0"
-            ),
-            OssLibrary(
-                "PCL2-NewsHomepage",
-                "Light-Beacon",
-                "https://github.com/Light-Beacon/PCL2-NewsHomepage",
-                "MIT License"
-            ),
-            OssLibrary(
-                "ZalithLauncher2",
-                "ZalithLauncher",
-                "https://github.com/ZalithLauncher/ZalithLauncher2",
-                "GNU GPL v3.0"
-            ),
+            OssLibrary("Jetpack Compose", "Google", "https://developer.android.com/jetpack/compose", "Apache 2.0"),
+            OssLibrary("AndroidX", "Google", "https://source.android.com/", "Apache 2.0"),
+            OssLibrary("Coil", "Coil Contributors", "https://coil-kt.github.io/coil/", "Apache 2.0"),
+            OssLibrary("ZalithLauncher2", "ZalithLauncher", "https://github.com/ZalithLauncher/ZalithLauncher2", "GPL v3.0"),
+            OssLibrary("Haze", "Chris Banes", "https://github.com/chrisbanes/haze", "Apache 2.0")
         )
     }
 
-    AlertDialog(
+    PopupContainer(
+        visible = true,
         onDismissRequest = onDismiss,
-        title = {
+        width = 400.dp,
+        height = 600.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+        ) {
+            // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Description,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .padding(8.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
                 Column {
                     Text(
                         text = "开源许可",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Black
                     )
                     Text(
-                        text = "感谢这些优秀的开源项目",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "本应用使用的第三方组件",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-        },
-        text = {
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // List
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.heightIn(max = 400.dp)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(libraries) { lib ->
                     LicenseItem(library = lib) {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse(lib.url))
-                        )
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(lib.url)))
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("关闭")
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            ShardButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                type = ButtonType.FILLED
+            ) {
+                Text("我知道了", fontWeight = FontWeight.Bold)
             }
-        },
-        shape = RoundedCornerShape(20.dp)
-    )
+        }
+    }
 }
 
 @Composable
@@ -1126,53 +1025,40 @@ private fun LicenseItem(
     onClick: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick
-        )
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = library.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "by ${library.author}",
+                    text = library.author,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text(
-                        text = library.license,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+                Spacer(modifier = Modifier.height(6.dp))
+                ShardTag(
+                    text = library.license,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
             }
-
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }

@@ -25,7 +25,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,11 +39,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -52,10 +56,8 @@ import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.model.LatestVersionsResponse
 import com.lanrhyme.shardlauncher.model.VersionInfo
 import com.lanrhyme.shardlauncher.ui.account.AccountViewModel
-import com.lanrhyme.shardlauncher.ui.components.basic.CombinedCard
+import com.lanrhyme.shardlauncher.ui.components.basic.*
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
-import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.xaml.XamlRenderer
 import com.lanrhyme.shardlauncher.ui.xaml.parseXaml
 import com.lanrhyme.shardlauncher.ui.navigation.Screen
@@ -155,45 +157,58 @@ fun HomeScreen(
     }
 
     Row(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(0.7f)) {
+        Box(modifier = Modifier.weight(0.72f)) {
             LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(24.dp)
             ) {
                 item {
-                    CombinedCard(
-                            modifier = Modifier.animatedAppearance(0, animatedSpeed),
-                            title = "主页",
-                            summary = "欢迎回来"
+                    ShardSectionHeader(
+                        title = "欢迎使用 Shard Launcher",
+                        modifier = Modifier.animatedAppearance(0, animatedSpeed)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ShardGlassCard(
+                            modifier = Modifier.animatedAppearance(1, animatedSpeed),
                     ) {
-                        XamlRenderer(nodes = nodes, modifier = Modifier.padding(horizontal = 20.dp))
+                        XamlRenderer(nodes = nodes, modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
                 if (enableVersionCheck) {
                     item {
-                        CombinedCard(
-                                modifier = Modifier.animatedAppearance(1, animatedSpeed),
-                                title = "Minecraft更新",
-                                summary = "查看最近的更新内容"
-                        ) {
-                            when {
-                                errorMessage != null -> {
+                        ShardSectionHeader(
+                            title = "Minecraft 更新动态",
+                            modifier = Modifier.animatedAppearance(2, animatedSpeed)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        when {
+                            errorMessage != null -> {
+                                ShardGlassCard(modifier = Modifier.animatedAppearance(3, animatedSpeed)) {
                                     Text(text = errorMessage!!, modifier = Modifier.padding(16.dp))
                                 }
-                                latestVersions != null -> {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        latestVersions!!.release.let { release ->
-                                            VersionInfoCard(versionInfo = release)
-                                        }
-                                        latestVersions!!.snapshot?.let { snapshot ->
-                                            Spacer(modifier = Modifier.height(16.dp))
-                                            VersionInfoCard(versionInfo = snapshot)
-                                        }
+                            }
+                            latestVersions != null -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    latestVersions!!.release.let { release ->
+                                        VersionInfoCard(
+                                            versionInfo = release,
+                                            modifier = Modifier.animatedAppearance(3, animatedSpeed)
+                                        )
+                                    }
+                                    latestVersions!!.snapshot?.let { snapshot ->
+                                        VersionInfoCard(
+                                            versionInfo = snapshot,
+                                            modifier = Modifier.animatedAppearance(4, animatedSpeed)
+                                        )
                                     }
                                 }
-                                else -> {
-                                    Text(text = "正在获取最新版本信息..", modifier = Modifier.padding(16.dp))
+                            }
+                            else -> {
+                                ShardGlassCard(modifier = Modifier.animatedAppearance(3, animatedSpeed)) {
+                                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator()
+                                    }
                                 }
                             }
                         }
@@ -204,9 +219,9 @@ fun HomeScreen(
 
         VerticalDivider()
 
-        Box(modifier = Modifier.weight(0.3f).fillMaxHeight()) {
+        Box(modifier = Modifier.weight(0.28f).fillMaxHeight()) {
             Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(modifier = Modifier.weight(1f))
@@ -228,47 +243,47 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.animatedAppearance(6, animatedSpeed)
+                ) {
                     // Version Selector
                     VersionSelector(
                         selectedVersion = selectedVersionForLaunch,
                         versions = installedVersions,
                         onVersionSelected = { version ->
                             selectedVersionForLaunch = version
-                            // 可选：同时设置为当前版本
                             VersionsManager.saveCurrentVersion(version.getVersionName())
                         },
-                        modifier = Modifier.fillMaxWidth(1f)
+                        modifier = Modifier.fillMaxWidth()
                     )
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    // Launch Button
+                    // Launch Button - Height increased for prominence
                     ScalingActionButton(
                         onClick = { 
                             selectedVersionForLaunch?.let { version ->
                                 selectedAccount?.let { account ->
                                     coroutineScope.launch {
                                         try {
-                                            Logger.log(context, "HomeScreen", "Starting game launch...")
-                                            val exitCode = GameLaunchManager.launchGame(
+                                            GameLaunchManager.launchGame(
                                                 activity = context as android.app.Activity,
                                                 version = version,
                                                 account = account,
                                                 onExit = { code, isSignal ->
-                                                    Logger.log(context, "HomeScreen", "Game exited with code: $code, signal: $isSignal")
+                                                    Logger.log(context, "HomeScreen", "Game exited with code: $code")
                                                 }
                                             )
-                                            Logger.log(context, "HomeScreen", "Game launch completed with exit code: $exitCode")
                                         } catch (e: Exception) {
-                                            Logger.log(context, "HomeScreen", "Game launch failed: ${e.message}")
+                                            Logger.log(context, "HomeScreen", "Launch failed: ${e.message}")
                                         }
                                     }
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(1f),
-                        text = if (selectedVersionForLaunch != null && selectedAccount != null) "启动游戏" else "无法启动",
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        text = if (selectedVersionForLaunch != null && selectedAccount != null) "启动游戏" else "未准备就绪",
                         enabled = selectedVersionForLaunch != null && selectedAccount != null
                     )
                 }
@@ -278,14 +293,17 @@ fun HomeScreen(
 }
 
 @Composable
-fun VersionInfoCard(versionInfo: VersionInfo) {
+fun VersionInfoCard(versionInfo: VersionInfo, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    Card(modifier = Modifier.fillMaxWidth()) {
+    ShardGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp)
+    ) {
         Column {
             AsyncImage(
                     model = versionInfo.versionImageLink,
                     contentDescription = versionInfo.title,
-                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
                     contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(16.dp)) {
@@ -294,69 +312,59 @@ fun VersionInfoCard(versionInfo: VersionInfo) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Top
                 ) {
-                    Column(Modifier.weight(1f, fill = false).padding(end = 8.dp)) {
-                        Text(text = versionInfo.title, style = MaterialTheme.typography.titleLarge)
+                    Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(
+                            text = versionInfo.title, 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                         versionInfo.intro?.let { intro ->
                             Text(
                                 text = intro,
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
-                    Text(
+                    ShardTag(
                         text = versionInfo.versionType,
-                        style = MaterialTheme.typography.bodyMedium
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                versionInfo.translator?.let {
-                    Text(
-                        text = "翻译：it",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     ScalingActionButton(
                             onClick = {
-                                context.startActivity(
-                                        Intent(
-                                                Intent.ACTION_VIEW,
-                                                Uri.parse(versionInfo.officialLink)
-                                        )
-                                )
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.officialLink)))
                             },
                             icon = Icons.AutoMirrored.Filled.Article,
                             text = "官方日志",
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            contentPadding = PaddingValues(vertical = 8.dp)
                     )
                     ScalingActionButton(
                             onClick = {
-                                context.startActivity(
-                                        Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.wikiLink))
-                                )
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.wikiLink)))
                             },
                             icon = Icons.Default.Book,
                             text = "Wiki",
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            contentPadding = PaddingValues(vertical = 8.dp)
                     )
                     ScalingActionButton(
                             onClick = {
-                                context.startActivity(
-                                        Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.serverJar))
-                                )
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.serverJar)))
                             },
                             icon = Icons.Default.Download,
                             text = "服务端",
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            contentPadding = PaddingValues(vertical = 8.dp)
                     )
                 }
             }

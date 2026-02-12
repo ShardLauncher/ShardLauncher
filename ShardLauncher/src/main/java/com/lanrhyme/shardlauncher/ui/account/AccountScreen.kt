@@ -63,11 +63,13 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.game.account.Account
+import com.lanrhyme.shardlauncher.ui.components.basic.*
+import com.lanrhyme.shardlauncher.game.account.getDisplayName
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFab
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabDirection
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabItem
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
+import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
@@ -87,154 +89,121 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val animatedSpeed = 1.0f
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier =
-                Modifier.fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.navigateUp() }) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-                Text("账户档案", style = MaterialTheme.typography.titleLarge)
-                Spacer(modifier = Modifier.weight(1f))
-            }
+            SubPageNavigationBar(
+                title = "账户管理",
+                onBack = { navController.navigateUp() },
+                modifier = Modifier.animatedAppearance(0, animatedSpeed)
+            )
 
             Row(modifier = Modifier.fillMaxSize()) {
-                // Left side: Large card for the 3D model placeholder
-                val avatarCardShape = RoundedCornerShape(22.dp)
-                Card(
-                    modifier =
-                    Modifier.fillMaxHeight()
-                        .weight(0.3f)
-                        .padding(16.dp)
-                        .then(
-                            if (isCardBlurEnabled &&
-                                Build.VERSION
-                                    .SDK_INT >=
-                                Build.VERSION_CODES
-                                    .S
-                            ) {
-                                Modifier.clip(
-                                    avatarCardShape
-                                )
-                                    .hazeEffect(
-                                        state =
-                                        hazeState
-                                    )
-                            } else Modifier
-                        ),
-                    shape = avatarCardShape,
-                    colors =
-                    CardDefaults.cardColors(
-                        containerColor =
-                        MaterialTheme.colorScheme.surface
-                            .copy(alpha = cardAlpha)
-                    )
+                // Left side: Large card for the skin preview
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(0.35f)
+                        .padding(24.dp)
+                        .animatedAppearance(1, animatedSpeed)
                 ) {
-                    Box(
+                    ShardGlassCard(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        shape = RoundedCornerShape(32.dp)
                     ) {
-                        selectedAccount?.let { account ->
-                            val localSkinFile =
-                                java.io.File(
-                                    LocalContext.current
-                                        .filesDir,
-                                    "skins/${account.profileId}.png"
-                                )
-                            val imageUrl =
-                                if (localSkinFile.exists()) {
-                                    localSkinFile
-                                } else {
-                                    "https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=身体&overlay=true"
-                                }
-
-                            val imageRequest =
-                                ImageRequest.Builder(
-                                    LocalContext.current
-                                )
-                                    .data(imageUrl)
-                                    .crossfade(true)
-                                    .diskCachePolicy(
-                                        CachePolicy.ENABLED
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            selectedAccount?.let { account ->
+                                val localSkinFile =
+                                    java.io.File(
+                                        LocalContext.current.filesDir,
+                                        "skins/${account.profileId}.png"
                                     )
-                                    .memoryCachePolicy(
-                                        CachePolicy.ENABLED
-                                    )
-                                    .build()
-                            SubcomposeAsyncImage(
-                                model = imageRequest,
-                                contentDescription =
-                                "${account.username}'s skin",
-                                modifier =
-                                Modifier.fillMaxSize(0.8f),
-                                loading = {
-                                    Box(
-                                        modifier =
-                                        Modifier.fillMaxSize(),
-                                        contentAlignment =
-                                        Alignment
-                                            .Center
-                                    ) {
-                                        CircularProgressIndicator(
-                                            modifier =
-                                            Modifier.size(
-                                                32.dp
-                                            )
-                                        )
+                                val imageUrl =
+                                    if (localSkinFile.exists()) {
+                                        localSkinFile
+                                    } else {
+                                        "https://api.xingzhige.com/API/get_Minecraft_skins/?name=${account.username}&type=身体&overlay=true"
                                     }
-                                }
-                            )
-                        }
-                            ?: run {
+
+                                val imageRequest =
+                                    ImageRequest.Builder(LocalContext.current)
+                                        .data(imageUrl)
+                                        .crossfade(true)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .build()
+                                SubcomposeAsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = "${account.username}'s skin",
+                                    modifier = Modifier.fillMaxSize(0.8f),
+                                    loading = {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(32.dp)
+                                            )
+                                        }
+                                    }
+                                )
+                            } ?: run {
                                 Text(
                                     text = "未选择账户",
                                     textAlign = TextAlign.Center
                                 )
                             }
+                        }
                     }
                 }
 
                 // Right side: Horizontally scrollable grid of account cards
-                LazyHorizontalGrid(
-                    rows = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxHeight().weight(0.7f),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(0.65f)
+                        .padding(end = 24.dp)
                 ) {
-                    items(accounts) { account ->
-                        AccountCard(
-                            account = account,
-                            isSelected = selectedAccount == account,
-                            onClick = {
-                                accountViewModel.selectAccount(
-                                    account
-                                )
-                            },
-                            onDelete = {
-                                accountViewModel.deleteAccount(it)
-                            },
-                            onEdit = { editingAccount = it },
-                            cardAlpha = cardAlpha
-                        )
+                    LazyHorizontalGrid(
+                        rows = GridCells.Fixed(2),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .animatedAppearance(3, animatedSpeed),
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        items(accounts) { account ->
+                            AccountCard(
+                                account = account,
+                                isSelected = selectedAccount == account,
+                                onClick = {
+                                    accountViewModel.selectAccount(account)
+                                },
+                                onDelete = { acc ->
+                                    accountViewModel.deleteAccount(acc)
+                                },
+                                onEdit = { acc -> editingAccount = acc },
+                                cardAlpha = cardAlpha
+                            )
+                        }
                     }
                 }
             }
         }
 
+        // FluidFab in Box scope so .align works
         FluidFab(
-            modifier =
-            Modifier.align(Alignment.BottomEnd).offset(x = 170.dp, y = 150.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 130.dp, y = 140.dp)
+                .animatedAppearance(4, animatedSpeed),
             direction = FluidFabDirection.TOP_LEFT,
-            items =
-            listOf(
+            items = listOf(
                 FluidFabItem(
                     label = "离线账户",
                     icon = Icons.Default.Person,
@@ -246,190 +215,164 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
                     onClick = { accountViewModel.startMicrosoftLogin() }
                 )
             ),
-            sectorSize = 70f
+            sectorSize = 75f
         )
-    }
 
-    if (showOfflineAccountDialog) {
-        OfflineAccountInputDialog(
-            onDismiss = { showOfflineAccountDialog = false },
-            onAddOfflineAccount = {
-                accountViewModel.addOfflineAccount(it)
-                showOfflineAccountDialog = false
-            }
-        )
-    }
-
-    when (val state = microsoftLoginState) {
-        is MicrosoftLoginState.InProgress -> {
-            val deviceCodeResponse by accountViewModel.deviceCodeData.collectAsState()
-            PopupContainer(
-                visible = true,
-                onDismissRequest = if (deviceCodeResponse != null) {
-                    { accountViewModel.cancelMicrosoftLogin() }
-                } else {
-                    {}
+        if (showOfflineAccountDialog) {
+            OfflineAccountInputDialog(
+                onDismiss = { showOfflineAccountDialog = false },
+                onAddOfflineAccount = { username ->
+                    accountViewModel.addOfflineAccount(username)
+                    showOfflineAccountDialog = false
                 }
-            ) {
-                if (deviceCodeResponse != null) {
-                    val clipboardManager = LocalClipboard.current
-                    LaunchedEffect(deviceCodeResponse) {
-                        deviceCodeResponse?.let {
-                            clipboardManager.setClipEntry(
-                                ClipEntry(
-                                    ClipData.newPlainText(
-                                        "Microsoft Device Code",
-                                        it.userCode
+            )
+        }
+
+        when (val state = microsoftLoginState) {
+            is MicrosoftLoginState.InProgress -> {
+                val deviceCodeResponse by accountViewModel.deviceCodeData.collectAsState()
+                PopupContainer(
+                    visible = true,
+                    onDismissRequest = if (deviceCodeResponse != null) {
+                        { accountViewModel.cancelMicrosoftLogin() }
+                    } else {
+                        {}
+                    }
+                ) {
+                    if (deviceCodeResponse != null) {
+                        val clipboardManager = LocalClipboard.current
+                        LaunchedEffect(deviceCodeResponse) {
+                            deviceCodeResponse?.let { dcrData ->
+                                clipboardManager.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            "Microsoft Device Code",
+                                            dcrData.userCode
+                                        )
                                     )
                                 )
-                            )
-                            android.widget.Toast.makeText(
-                                context,
-                                "代码已复制到剪贴板",
-                                android.widget.Toast.LENGTH_SHORT
-                            )
-                                .show()
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "代码已复制到剪贴板",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
-                    }
 
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Microsoft 登录", style = MaterialTheme.typography.titleLarge)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("请访问以下链接并输入代码：")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            deviceCodeResponse!!
-                                .verificationUri,
-                            style =
-                                MaterialTheme.typography
-                                    .bodyLarge,
-                            color =
-                                MaterialTheme.colorScheme
-                                    .primary,
-                            modifier =
-                                Modifier.clickable {
-                                    val intent =
-                                        Intent(
-                                            Intent.ACTION_VIEW,
-                                            Uri.parse(
-                                                deviceCodeResponse!!
-                                                    .verificationUri
-                                            )
-                                        )
-                                    context.startActivity(
-                                        intent
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Microsoft 登录", style = MaterialTheme.typography.titleLarge)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("请访问以下链接并输入代码：")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                deviceCodeResponse!!.verificationUri,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse(deviceCodeResponse!!.verificationUri)
                                     )
+                                    context.startActivity(intent)
                                 }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "代码 (长按复制)：",
-                            style =
-                                MaterialTheme.typography
-                                    .titleMedium
-                        )
-                        Text(
-                            text =
-                                deviceCodeResponse!!
-                                    .userCode,
-                            style =
-                                MaterialTheme.typography
-                                    .displayMedium,
-                            modifier =
-                                Modifier.combinedClickable(
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "代码 (长按复制)：",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = deviceCodeResponse!!.userCode,
+                                style = MaterialTheme.typography.displayMedium,
+                                modifier = Modifier.combinedClickable(
                                     onClick = {},
                                     onLongClick = {
-                                        scope
-                                            .launch {
-                                                clipboardManager
-                                                    .setClipEntry(
-                                                        ClipEntry(
-                                                            ClipData.newPlainText(
-                                                                "Microsoft Device Code",
-                                                                deviceCodeResponse!!
-                                                                    .userCode
-                                                            )
-                                                        )
+                                        scope.launch {
+                                            clipboardManager.setClipEntry(
+                                                ClipEntry(
+                                                    ClipData.newPlainText(
+                                                        "Microsoft Device Code",
+                                                        deviceCodeResponse!!.userCode
                                                     )
-                                            }
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                "代码已复制到剪贴板",
-                                                Toast
-                                                    .LENGTH_SHORT
+                                                )
                                             )
-                                            .show()
+                                        }
+                                        Toast.makeText(
+                                            context,
+                                            "代码已复制到剪贴板",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 )
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        CircularProgressIndicator(
-                            modifier =
-                            Modifier.align(
-                                Alignment
-                                    .CenterHorizontally
                             )
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            TextButton(
+                                onClick = {
+                                    accountViewModel.cancelMicrosoftLogin()
+                                },
+                                modifier = Modifier.align(Alignment.End)
+                            ) { Text("取消") }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("登录中", style = MaterialTheme.typography.titleLarge)
+                            Spacer(Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) { CircularProgressIndicator() }
+                        }
+                    }
+                }
+            }
+
+            is MicrosoftLoginState.Error -> {
+                PopupContainer(
+                    visible = true,
+                    onDismissRequest = { accountViewModel.resetMicrosoftLoginState() }
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("登录失败", style = MaterialTheme.typography.titleLarge)
+                        Spacer(Modifier.height(8.dp))
+                        Text(state.message)
+                        Spacer(Modifier.height(16.dp))
                         TextButton(
                             onClick = {
-                                accountViewModel
-                                    .cancelMicrosoftLogin()
+                                accountViewModel.resetMicrosoftLoginState()
                             },
                             modifier = Modifier.align(Alignment.End)
-                        ) { Text("取消") }
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("登录中", style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) { CircularProgressIndicator() }
+                        ) { Text("确定") }
                     }
                 }
             }
-        }
-        is MicrosoftLoginState.Error -> {
-            PopupContainer(visible = true, onDismissRequest = { accountViewModel.resetMicrosoftLoginState() }) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("登录失败", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(8.dp))
-                    Text(state.message)
-                    Spacer(Modifier.height(16.dp))
-                    TextButton(
-                        onClick = {
-                            accountViewModel.resetMicrosoftLoginState()
-                        },
-                        modifier = Modifier.align(Alignment.End)
-                    ) { Text("确定") }
-                }
-            }
-        }
-        is MicrosoftLoginState.Success -> {
-            LaunchedEffect(state) {
-                // Should automatically show in list
-                accountViewModel.resetMicrosoftLoginState()
-            }
-        }
-        else -> {}
-    }
 
-    editingAccount?.let {
-        EditAccountDialog(
-            account = it,
-            onDismiss = { editingAccount = null },
-            onConfirm = { newUsername ->
-                accountViewModel.updateOfflineAccount(it, newUsername)
-                editingAccount = null
+            is MicrosoftLoginState.Success -> {
+                LaunchedEffect(state) {
+                    accountViewModel.resetMicrosoftLoginState()
+                }
             }
-        )
+
+            else -> {}
+        }
+
+        editingAccount?.let { acc ->
+            EditAccountDialog(
+                account = acc,
+                onDismiss = { editingAccount = null },
+                onConfirm = { newUsername ->
+                    accountViewModel.updateOfflineAccount(acc, newUsername)
+                    editingAccount = null
+                }
+            )
+        }
     }
 }
 
@@ -449,15 +392,15 @@ fun OfflineAccountInputDialog(onDismiss: () -> Unit, onAddOfflineAccount: (Strin
             )
             Spacer(Modifier.height(16.dp))
             Row(modifier = Modifier.align(Alignment.End)) {
-                        TextButton(onClick = onDismiss) { Text("取消") }
-                        Spacer(Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                onAddOfflineAccount(username)
-                                onDismiss()
-                            }
-                        ) { Text("添加") }
+                TextButton(onClick = onDismiss) { Text("取消") }
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        onAddOfflineAccount(username)
+                        onDismiss()
                     }
+                ) { Text("添加") }
+            }
         }
     }
 }

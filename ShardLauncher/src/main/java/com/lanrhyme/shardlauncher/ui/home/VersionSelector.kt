@@ -1,6 +1,7 @@
 package com.lanrhyme.shardlauncher.ui.home
 
 import android.os.Build
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,8 +25,8 @@ import coil.compose.AsyncImage
 import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.game.version.installed.Version
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import com.lanrhyme.shardlauncher.ui.components.basic.*
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import dev.chrisbanes.haze.hazeEffect
 import java.text.SimpleDateFormat
 import java.util.*
@@ -43,25 +44,16 @@ fun VersionSelector(
     val cardShape = RoundedCornerShape(16.dp)
 
     // 版本选择卡片
-    Card(
+    ShardGlassCard(
         modifier = modifier
-            .clickable { showVersionList = true }
-            .then(
-                if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    Modifier.clip(cardShape).hazeEffect(state = hazeState)
-                } else Modifier
-            ),
-        shape = cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-        )
+            .height(72.dp)
+            .clickable { showVersionList = true },
+        shape = RoundedCornerShape(20.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 版本图标
             AsyncImage(
@@ -70,8 +62,8 @@ fun VersionSelector(
                 placeholder = painterResource(R.drawable.img_minecraft),
                 error = painterResource(R.drawable.img_minecraft),
                 modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Fit
             )
 
@@ -79,42 +71,34 @@ fun VersionSelector(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = selectedVersion?.getVersionName() ?: "未选择版本",
-                    style = MaterialTheme.typography.titleSmall,
+                    text = selectedVersion?.getVersionName() ?: "选择当前运行版本",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                if (selectedVersion != null) {
-                    // 显示上次启动时间
-                    val lastLaunchTime = selectedVersion.getVersionConfig().lastLaunchTime
-                    if (lastLaunchTime > 0) {
-                        Text(
-                            text = "上次启动: ${dateFormat.format(Date(lastLaunchTime))}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        Text(
-                            text = "从未启动",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
+                selectedVersion?.let {
+                    val lastLaunchTime = it.getVersionConfig().lastLaunchTime
                     Text(
-                        text = "点击选择游戏版本",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = if (lastLaunchTime > 0) "上次启动: ${dateFormat.format(Date(lastLaunchTime))}" else "从未启动",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                } ?: run {
+                    Text(
+                        text = "点击展开版本选择列表",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
             }
 
             Icon(
                 imageVector = Icons.Rounded.ArrowDropDown,
-                contentDescription = "",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
             )
         }
     }
@@ -177,30 +161,18 @@ private fun VersionListItem(
 ) {
     val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
     val dateFormat = remember { SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()) }
-    val itemCardShape = RoundedCornerShape(16.dp)
 
-    Card(
+    ShardGlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .then(
-                if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    Modifier.clip(itemCardShape).hazeEffect(state = hazeState)
-                } else Modifier
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = cardAlpha * 0.8f)
-            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = cardAlpha * 0.6f)
-        ),
-        shape = itemCardShape
+            .then(if (isSelected) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp)) else Modifier),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // 版本图标
             AsyncImage(
@@ -209,8 +181,8 @@ private fun VersionListItem(
                 placeholder = painterResource(R.drawable.img_minecraft),
                 error = painterResource(R.drawable.img_minecraft),
                 modifier = Modifier
-                    .size(24.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp)),
                 contentScale = ContentScale.Fit
             )
 
@@ -224,20 +196,19 @@ private fun VersionListItem(
                     Text(
                         text = version.getVersionName(),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                     
-                    // 置顶图标
                     if (version.pinnedState) {
                         Icon(
                             imageVector = Icons.Rounded.Star,
-                            contentDescription = "",
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(16.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -245,45 +216,34 @@ private fun VersionListItem(
                 // 版本详细信息
                 version.getVersionInfo()?.let { info ->
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
+                        ShardTag(
                             text = info.minecraftVersion,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                         )
                         info.loaderInfo?.let { loader ->
-                            Text(
-                                text = "• ${loader.loader.displayName}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ShardTag(
+                                text = loader.loader.displayName,
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
                             )
                         }
                     }
                 }
                 
-                // 上次启动时间
                 val lastLaunchTime = version.getVersionConfig().lastLaunchTime
-                if (lastLaunchTime > 0) {
-                    Text(
-                        text = "上次启动: ${dateFormat.format(Date(lastLaunchTime))}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Text(
-                        text = "从未启动",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = if (lastLaunchTime > 0) "最近运行: ${dateFormat.format(Date(lastLaunchTime))}" else "尚未运行过",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
             }
 
-            // 展开指示器
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Rounded.ArrowDropDown,
-                    contentDescription = "",
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .size(24.dp)

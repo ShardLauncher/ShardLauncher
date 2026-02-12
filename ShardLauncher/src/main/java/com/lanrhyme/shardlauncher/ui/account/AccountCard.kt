@@ -2,6 +2,7 @@ package com.lanrhyme.shardlauncher.ui.account
 
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,8 +51,7 @@ import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_LOCAL
 import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.account.getDisplayName
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
-import com.lanrhyme.shardlauncher.ui.components.basic.selectableCard
+import com.lanrhyme.shardlauncher.ui.components.basic.*
 import dev.chrisbanes.haze.hazeEffect
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -66,60 +67,35 @@ fun AccountCard(
 ) {
         val (isCardBlurEnabled, _, hazeState) = LocalCardLayoutConfig.current
         var showMenu by remember { mutableStateOf(false) }
-        val cardWidth = 120.dp
-        val cardHeight = 160.dp
         val interactionSource = remember { MutableInteractionSource() }
         val isPressed by interactionSource.collectIsPressedAsState()
 
-        val border =
-                if (isSelected) {
-                        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                } else {
-                        null
-                }
-
         Box {
-                Card(
-                        modifier =
-                                Modifier.selectableCard(
-                                                isSelected = isSelected,
-                                                isPressed = isPressed
-                                        )
-                                        .width(cardWidth)
-                                        .height(cardHeight)
-                                        .then(
-                                                if (isCardBlurEnabled &&
-                                                                Build.VERSION.SDK_INT >=
-                                                                        Build.VERSION_CODES.S
-                                                ) {
-                                                        Modifier.clip(RoundedCornerShape(16.dp))
-                                                                .hazeEffect(state = hazeState)
-                                                } else Modifier
-                                        )
-                                        .combinedClickable(
-                                                onClick = onClick,
-                                                onLongClick = {
-                                                        showMenu = true
-                                                        onLongClick()
-                                                },
-                                                interactionSource = interactionSource,
-                                                indication = null
-                                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        colors =
-                                CardDefaults.cardColors(
-                                        containerColor =
-                                                MaterialTheme.colorScheme.surface.copy(
-                                                        alpha = cardAlpha
-                                                )
-                                ),
-                        border = border
+                ShardGlassCard(
+                        modifier = Modifier
+                                .selectableCard(
+                                        isSelected = isSelected,
+                                        isPressed = isPressed
+                                )
+                                .width(130.dp)
+                                .height(175.dp)
+                                .combinedClickable(
+                                        onClick = onClick,
+                                        onLongClick = {
+                                                showMenu = true
+                                                onLongClick()
+                                        },
+                                        interactionSource = interactionSource,
+                                        indication = null
+                                )
+                                .then(if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp)) else Modifier),
+                        shape = RoundedCornerShape(24.dp)
                 ) {
                         Column(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                                // 头像
+                                // Avatar
                                 val context = LocalContext.current
                                 val localSkinFile =
                                         java.io.File(
@@ -146,67 +122,39 @@ fun AccountCard(
                                         model = imageRequest,
                                         contentDescription = "Account Avatar",
                                         contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxWidth().weight(3f),
+                                        modifier = Modifier.fillMaxWidth().weight(3.5f).clip(RoundedCornerShape(16.dp)),
                                         loading = {
                                                 Box(
                                                         modifier = Modifier.fillMaxSize(),
                                                         contentAlignment = Alignment.Center
                                                 ) {
                                                         CircularProgressIndicator(
-                                                                modifier = Modifier.size(32.dp)
+                                                                modifier = Modifier.size(28.dp),
+                                                                strokeWidth = 3.dp
                                                         )
-                                                        if (account.accountType ==
-                                                                        ACCOUNT_TYPE_LOCAL
-                                                        ) {
-                                                                Box(
-                                                                        modifier =
-                                                                                Modifier.background(
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .surfaceContainerHighest,
-                                                                                                RoundedCornerShape(
-                                                                                                        4.dp
-                                                                                                )
-                                                                                        )
-                                                                                        .padding(
-                                                                                                horizontal =
-                                                                                                        6.dp,
-                                                                                                vertical =
-                                                                                                        2.dp
-                                                                                        )
-                                                                )
-                                                        }
                                                 }
                                         }
                                 )
 
                                 // Info Section
                                 Column(
-                                        modifier =
-                                                Modifier.fillMaxWidth()
-                                                        .weight(1f)
-                                                        .padding(
-                                                                horizontal = 2.dp,
-                                                                vertical = 2.dp
-                                                        ),
+                                        modifier = Modifier.fillMaxWidth().weight(1.5f).padding(top = 8.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement =
-                                                Arrangement.SpaceEvenly // Distribute text evenly
+                                        verticalArrangement = Arrangement.Center
                                 ) {
                                         Text(
                                             text = account.username,
                                             style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
                                             maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     Text(
                                         text = account.getDisplayName(),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                         }

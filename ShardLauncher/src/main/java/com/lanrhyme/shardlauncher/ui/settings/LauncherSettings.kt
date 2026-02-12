@@ -35,6 +35,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -75,6 +76,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lanrhyme.shardlauncher.common.SidebarPosition
 import com.lanrhyme.shardlauncher.ui.components.basic.CollapsibleCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
 import com.lanrhyme.shardlauncher.ui.components.layout.IconSwitchLayoutCard
@@ -348,299 +351,350 @@ internal fun LauncherSettingsContent(
 
     ShardDialog(
             visible = showBackgroundDialog,
-            onDismissRequest = { showBackgroundDialog = false }
+            onDismissRequest = { showBackgroundDialog = false },
+            width = 700.dp,
+            height = 450.dp
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(modifier = Modifier.weight(2f).padding(16.dp)) {
+            // ========== Left Panel: Settings ==========
+            LazyColumn(
+                modifier = Modifier.weight(2f).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // -- Background Selection --
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TitleAndSummary(title = "选择背景", summary = "选择自定义背景以使用")
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "自定义背景",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "选择自定义背景以个性化你的启动器",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     LazyRow(
-                            modifier =
-                                    Modifier.border(
-                                                    1.dp,
-                                                    MaterialTheme.colorScheme.outline,
-                                                    RoundedCornerShape(16.dp)
-                                            )
-                                            .padding(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                .border(
+                                    BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                    RoundedCornerShape(16.dp)
+                                )
+                                .padding(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(backgroundItems, key = { it.uri }) { item ->
                             Box {
                                 var isPressed by remember { mutableStateOf(false) }
-                                val scale by
-                                        animateFloatAsState(
-                                                targetValue = if (isPressed) 0.95f else 1f,
-                                                label = ""
-                                        )
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isPressed) 0.95f else 1f,
+                                    label = ""
+                                )
+                                val isSelected = selectedBackground?.uri == item.uri
                                 Box(
-                                        modifier =
-                                                Modifier.scale(scale)
-                                                        .size(160.dp, 90.dp)
-                                                        .clip(RoundedCornerShape(16.dp))
-                                                        .background(
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant
-                                                        )
-                                                        .pointerInput(Unit) {
-                                                            detectTapGestures(
-                                                                    onPress = {
-                                                                        isPressed = true
-                                                                        tryAwaitRelease()
-                                                                        isPressed = false
-                                                                    },
-                                                                    onTap = {
-                                                                        selectedBackground = item
-                                                                    },
-                                                                    onLongPress = {
-                                                                        itemToDelete = item
-                                                                        showDeleteBackgroundMenu =
-                                                                                true
-                                                                    }
-                                                            )
-                                                        }
-                                                        .border(
-                                                                width = 2.dp,
-                                                                color =
-                                                                        if (selectedBackground
-                                                                                        ?.uri ==
-                                                                                        item.uri
-                                                                        )
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary
-                                                                        else Color.Transparent,
-                                                                shape = RoundedCornerShape(16.dp)
-                                                        )
+                                    modifier = Modifier
+                                        .scale(scale)
+                                        .size(160.dp, 90.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .pointerInput(Unit) {
+                                            detectTapGestures(
+                                                onPress = {
+                                                    isPressed = true
+                                                    tryAwaitRelease()
+                                                    isPressed = false
+                                                },
+                                                onTap = { selectedBackground = item },
+                                                onLongPress = {
+                                                    itemToDelete = item
+                                                    showDeleteBackgroundMenu = true
+                                                }
+                                            )
+                                        }
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.5.dp,
+                                            color = if (isSelected)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
                                 ) {
                                     AsyncImage(
-                                            model =
-                                                    ImageRequest.Builder(LocalContext.current)
-                                                            .data(item.uri)
-                                                            .decoderFactory(
-                                                                    VideoFrameDecoder.Factory()
-                                                            )
-                                                            .build(),
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize()
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(item.uri)
+                                            .decoderFactory(VideoFrameDecoder.Factory())
+                                            .build(),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize()
                                     )
                                     if (item.isVideo) {
                                         Text(
                                             "视频",
-                                            modifier =
-                                                Modifier.align(Alignment.BottomStart)
-                                                    .padding(4.dp)
-                                                    .background(
-                                                        Color.Black.copy(
-                                                            alpha = 0.5f
-                                                        ),
-                                                        RoundedCornerShape(4.dp)
-                                                    )
-                                                    .padding(
-                                                        horizontal = 4.dp,
-                                                        vertical = 2.dp
-                                                    ),
+                                            modifier = Modifier
+                                                .align(Alignment.BottomStart)
+                                                .padding(6.dp)
+                                                .background(
+                                                    Color.Black.copy(alpha = 0.6f),
+                                                    RoundedCornerShape(6.dp)
+                                                )
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
                                             color = Color.White,
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     }
+                                    // Selected checkmark overlay
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize()
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                        )
+                                    }
                                 }
                                 ShardDropdownMenu(
-                                        expanded =
-                                                showDeleteBackgroundMenu &&
-                                                        itemToDelete?.uri == item.uri,
-                                        onDismissRequest = { showDeleteBackgroundMenu = false }
+                                    expanded = showDeleteBackgroundMenu && itemToDelete?.uri == item.uri,
+                                    onDismissRequest = { showDeleteBackgroundMenu = false }
                                 ) {
                                     DropdownMenuItem(
-                                            text = { Text("删除") },
-                                            onClick = {
-                                                removeBackground(item)
-                                                showDeleteBackgroundMenu = false
-                                            }
+                                        text = { Text("删除") },
+                                        onClick = {
+                                            removeBackground(item)
+                                            showDeleteBackgroundMenu = false
+                                        }
                                     )
                                 }
                             }
                         }
+                        // Add button
                         item {
                             Box(
-                                    modifier =
-                                            Modifier.size(160.dp, 90.dp)
-                                                    .clip(RoundedCornerShape(16.dp))
-                                                    .border(
-                                                            BorderStroke(
-                                                                    1.dp,
-                                                                    MaterialTheme.colorScheme
-                                                                            .outline
-                                                            ),
-                                                            RoundedCornerShape(16.dp)
-                                                    )
-                                                    .clickable { showAddBackgroundMenu = true },
-                                    contentAlignment = Alignment.Center
+                                modifier = Modifier
+                                    .size(160.dp, 90.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .border(
+                                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                                        RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable { showAddBackgroundMenu = true },
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
                                         imageVector = Icons.Default.Add,
-                                        contentDescription = "Add Background"
-                                )
+                                        contentDescription = "Add Background",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "添加",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
 
                     ShardDropdownMenu(
-                            expanded = showAddBackgroundMenu,
-                            onDismissRequest = { showAddBackgroundMenu = false }
+                        expanded = showAddBackgroundMenu,
+                        onDismissRequest = { showAddBackgroundMenu = false }
                     ) {
                         DropdownMenuItem(
-                                text = { Text("添加图片") },
-                                onClick = {
-                                    imagePickerLauncher.launch(
-                                        arrayOf("image/jpeg", "image/png", "image/gif", "image/webp")
-                                    )
-                                    showAddBackgroundMenu = false
-                                }
+                            text = { Text("添加图片") },
+                            onClick = {
+                                imagePickerLauncher.launch(
+                                    arrayOf("image/jpeg", "image/png", "image/gif", "image/webp")
+                                )
+                                showAddBackgroundMenu = false
+                            }
                         )
                         DropdownMenuItem(
-                                text = { Text("添加视频") },
-                                onClick = {
-                                    videoPickerLauncher.launch(
-                                        arrayOf("video/mp4", "video/webm", "video/x-matroska")
-                                    )
-                                    showAddBackgroundMenu = false
-                                }
+                            text = { Text("添加视频") },
+                            onClick = {
+                                videoPickerLauncher.launch(
+                                    arrayOf("video/mp4", "video/webm", "video/x-matroska")
+                                )
+                                showAddBackgroundMenu = false
+                            }
                         )
                     }
                 }
+
+                // -- Background Adjustments --
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("背景设置", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    SliderLayoutCard(
-                            value = tempBlur,
-                            onValueChange = { tempBlur = it },
-                            valueRange = 0f..25f,
-                            title = "背景模糊",
-                            displayValue = tempBlur,
-                            enabled = selectedBackground != null && !selectedBackground!!.isVideo,
-                            isGlowEffectEnabled = isGlowEffectEnabled
+                    Text(
+                        text = "背景调整",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     SliderLayoutCard(
-                            value = tempBrightness,
-                            onValueChange = { tempBrightness = it },
-                            valueRange = -100f..100f,
-                            title = "背景明度",
-                            displayValue = tempBrightness,
-                            enabled = selectedBackground != null,
-                            isGlowEffectEnabled = isGlowEffectEnabled
+                        value = tempBlur,
+                        onValueChange = { tempBlur = it },
+                        valueRange = 0f..25f,
+                        title = "背景模糊",
+                        displayValue = tempBlur,
+                        enabled = selectedBackground != null && !selectedBackground!!.isVideo,
+                        isGlowEffectEnabled = isGlowEffectEnabled
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    SliderLayoutCard(
+                        value = tempBrightness,
+                        onValueChange = { tempBrightness = it },
+                        valueRange = -100f..100f,
+                        title = "背景明度",
+                        displayValue = tempBrightness,
+                        enabled = selectedBackground != null,
+                        isGlowEffectEnabled = isGlowEffectEnabled
                     )
                 }
+
+                // -- Global Config --
                 item {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text("全局配置", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "全局配置",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
                     SwitchLayoutCard(
-                            checked = randomBackground,
-                            onCheckedChange = { randomBackground = !randomBackground },
-                            title = "启动时随机选择背景"
+                        checked = randomBackground,
+                        onCheckedChange = { randomBackground = !randomBackground },
+                        title = "启动时随机选择背景"
                     )
                     SwitchLayoutCard(
-                            checked = tempEnableParallax,
-                            onCheckedChange = { tempEnableParallax = !tempEnableParallax },
-                            title = "启用背景视差效果"
+                        checked = tempEnableParallax,
+                        onCheckedChange = { tempEnableParallax = !tempEnableParallax },
+                        title = "启用背景视差效果"
                     )
                     if (tempEnableParallax) {
                         SliderLayoutCard(
-                                value = tempParallaxMagnitude,
-                                onValueChange = { tempParallaxMagnitude = it },
-                                valueRange = 1f..40f,
-                                title = "视差幅度",
-                                displayValue = tempParallaxMagnitude,
-                                isGlowEffectEnabled = isGlowEffectEnabled
+                            value = tempParallaxMagnitude,
+                            onValueChange = { tempParallaxMagnitude = it },
+                            valueRange = 1f..40f,
+                            title = "视差幅度",
+                            displayValue = tempParallaxMagnitude,
+                            isGlowEffectEnabled = isGlowEffectEnabled
                         )
                     }
                 }
             }
-            VerticalDivider(
-                    modifier = Modifier.fillMaxHeight(),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-            )
-            Column(modifier = Modifier.weight(1f).padding(16.dp)) {
+
+            // ========== Right Panel: Preview & Actions ==========
+            Column(
+                modifier = Modifier.weight(1f).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "效果预览",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
                 Box(
-                        modifier =
-                                Modifier.fillMaxWidth()
-                                        .aspectRatio(16f / 9f)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .then(
-                                                if (Build.VERSION.SDK_INT >=
-                                                                Build.VERSION_CODES.S &&
-                                                                selectedBackground?.isVideo == false
-                                                ) {
-                                                    Modifier.blur(radius = tempBlur.dp)
-                                                } else {
-                                                    Modifier
-                                                }
-                                        )
-                                        .drawWithContent {
-                                            drawContent()
-                                            if (tempBrightness != 0f) {
-                                                val color =
-                                                        if (tempBrightness > 0) Color.White
-                                                        else Color.Black
-                                                drawRect(color, alpha = abs(tempBrightness) / 100f)
-                                            }
-                                        },
-                        contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .border(
+                            BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .then(
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                                selectedBackground?.isVideo == false
+                            ) {
+                                Modifier.blur(radius = tempBlur.dp)
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .drawWithContent {
+                            drawContent()
+                            if (tempBrightness != 0f) {
+                                val color = if (tempBrightness > 0) Color.White else Color.Black
+                                drawRect(color, alpha = abs(tempBrightness) / 100f)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     if (selectedBackground != null) {
                         val parallaxScale =
-                                if (tempEnableParallax) 1f + (tempParallaxMagnitude - 1f) / 20f
-                                else 1f
+                            if (tempEnableParallax) 1f + (tempParallaxMagnitude - 1f) / 20f
+                            else 1f
                         if (selectedBackground!!.isVideo) {
                             VideoPlayer(
-                                    uri = selectedBackground!!.uri,
-                                    modifier = Modifier.fillMaxSize().scale(parallaxScale)
+                                uri = selectedBackground!!.uri,
+                                modifier = Modifier.fillMaxSize().scale(parallaxScale)
                             )
                         } else {
                             AsyncImage(
-                                    model =
-                                            ImageRequest.Builder(LocalContext.current)
-                                                    .data(selectedBackground!!.uri)
-                                                    .build(),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().scale(parallaxScale)
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(selectedBackground!!.uri)
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().scale(parallaxScale)
                             )
                         }
                     } else {
-                        Text("效果预览")
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "选择背景以预览效果",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
                     }
                 }
+
                 Spacer(modifier = Modifier.weight(1f))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { showBackgroundDialog = false }) { Text("取消") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                            onClick = {
-                                selectedBackground?.let { current ->
-                                    val updatedItem =
-                                            current.copy(
-                                                    blur = tempBlur,
-                                                    brightness = tempBrightness,
-                                            )
-                                    backgroundItems =
-                                            backgroundItems.map {
-                                                if (it.uri == current.uri) updatedItem else it
-                                            }
-                                    onLauncherBackgroundUriChange(updatedItem.uri)
-                                    onLauncherBackgroundBlurChange(updatedItem.blur)
-                                    onLauncherBackgroundBrightnessChange(updatedItem.brightness)
+
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                ) {
+                    ShardButton(
+                        onClick = { showBackgroundDialog = false },
+                        type = ButtonType.TEXT
+                    ) { Text("取消") }
+                    ShardButton(
+                        onClick = {
+                            selectedBackground?.let { current ->
+                                val updatedItem = current.copy(
+                                    blur = tempBlur,
+                                    brightness = tempBrightness,
+                                )
+                                backgroundItems = backgroundItems.map {
+                                    if (it.uri == current.uri) updatedItem else it
                                 }
-                                        ?: run { onLauncherBackgroundUriChange(null) }
-                                onEnableParallaxChange(tempEnableParallax)
-                                onParallaxMagnitudeChange(tempParallaxMagnitude)
-                                showBackgroundDialog = false
-                            }
-                    ) { Text("确认") }
+                                onLauncherBackgroundUriChange(updatedItem.uri)
+                                onLauncherBackgroundBlurChange(updatedItem.blur)
+                                onLauncherBackgroundBrightnessChange(updatedItem.brightness)
+                            } ?: run { onLauncherBackgroundUriChange(null) }
+                            onEnableParallaxChange(tempEnableParallax)
+                            onParallaxMagnitudeChange(tempParallaxMagnitude)
+                            showBackgroundDialog = false
+                        },
+                        type = ButtonType.FILLED
+                    ) { Text("确认", fontWeight = FontWeight.Bold) }
                 }
             }
         }
