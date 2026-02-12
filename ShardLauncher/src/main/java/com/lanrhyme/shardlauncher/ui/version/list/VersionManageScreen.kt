@@ -52,6 +52,7 @@ import com.lanrhyme.shardlauncher.game.version.installed.VersionType
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.version.dialog.VersionOperationState
 import com.lanrhyme.shardlauncher.ui.version.dialog.VersionsOperation
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Dispatchers
@@ -364,7 +365,7 @@ private fun VersionsLayout(
                 CircularProgressIndicator()
             }
         } else {
-            var versionsOperation by remember { mutableStateOf<VersionsOperation>(VersionsOperation.None) }
+            var versionsOperation by remember { mutableStateOf<VersionOperationState>(VersionOperationState.None) }
             VersionsOperation(
                 versionsOperation = versionsOperation,
                 updateVersionsOperation = { versionsOperation = it },
@@ -431,15 +432,15 @@ private fun VersionsLayout(
                                     if (version.isValid() && version != currentVersion) {
                                         VersionsManager.saveCurrentVersion(version.getVersionName())
                                     } else {
-                                        versionsOperation = VersionsOperation.InvalidDelete(version)
+                                        versionsOperation = VersionOperationState.InvalidDelete(version)
                                     }
                                 },
                                 onSettingsClick = {
                                     navigateToVersions(version)
                                 },
-                                onRenameClick = { versionsOperation = VersionsOperation.Rename(version) },
-                                onCopyClick = { versionsOperation = VersionsOperation.Copy(version) },
-                                onDeleteClick = { versionsOperation = VersionsOperation.Delete(version) },
+                                onRenameClick = { versionsOperation = VersionOperationState.Rename(version) },
+                                onCopyClick = { versionsOperation = VersionOperationState.Copy(version) },
+                                onDeleteClick = { versionsOperation = VersionOperationState.Delete(version) },
                                 onPinned = onVersionPinned
                             )
                         }

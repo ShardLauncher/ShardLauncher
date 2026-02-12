@@ -34,9 +34,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -44,7 +44,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -59,6 +58,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -95,14 +95,16 @@ import kotlinx.coroutines.delay
  *
  * @param modifier 应用于卡片容器的修饰符
  * @param enabled 控制卡片是否启用，影响其透明度
- * @param shape 卡片的形状，默认为 16dp 的圆角
+ * @param shape 卡片的形状，默认为 20dp 的圆角
+ * @param border 是否显示边框
  * @param content 卡片内部显示的内容
  */
 @Composable
 fun ShardCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: Shape = RoundedCornerShape(20.dp),
+    border: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
@@ -120,6 +122,7 @@ fun ShardCard(
     Card(
         modifier = cardModifier,
         shape = shape,
+        border = if (border) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)) else null,
         colors =
             CardDefaults.cardColors(
                 containerColor =
@@ -127,6 +130,100 @@ fun ShardCard(
             ),
         content = content
     )
+}
+
+/**
+ * 极其高级的玻璃拟态卡片，带有细微的发光边框和增强的模糊感
+ */
+@Composable
+fun ShardGlassCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    shape: Shape = RoundedCornerShape(24.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
+    
+    val baseModifier = modifier
+        .fillMaxWidth()
+        .then(
+            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+        )
+        .clip(shape)
+
+    val finalModifier = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        baseModifier.hazeEffect(state = hazeState)
+    } else baseModifier
+
+    Surface(
+        modifier = finalModifier,
+        shape = shape,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha),
+        border = BorderStroke(
+            0.5.dp, 
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.2f),
+                    Color.White.copy(alpha = 0.05f)
+                )
+            )
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            content()
+        }
+    }
+}
+
+/**
+ * 高级部分标题，通常用于列表或设置页面的分组
+ */
+@Composable
+fun ShardSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    trailing: @Composable (() -> Unit)? = null
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        trailing?.invoke()
+    }
+}
+
+/**
+ * 高级标签/徽章组件
+ */
+@Composable
+fun ShardTag(
+    text: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
+) {
+    Surface(
+        color = containerColor,
+        contentColor = contentColor,
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }
 
 /**
@@ -141,6 +238,7 @@ enum class ButtonType {
 
 /**
  * 符合 ShardTheme 风格的按钮组件
+ * 带有触觉反馈缩放动画
  *
  * @param onClick 点击回调
  * @param modifier 修饰符
@@ -163,18 +261,34 @@ fun ShardButton(
     content: @Composable RowScope.() -> Unit
 ) {
     val (isCardBlurEnabled, _, hazeState) = LocalCardLayoutConfig.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        label = "ButtonScale"
+    )
 
-    val buttonModifier = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        modifier.clip(shape).hazeEffect(state = hazeState)
-    } else {
-        modifier
+    val buttonModifier = Modifier
+        .graphicsLayer(scaleX = scale, scaleY = scale)
+        .then(
+            if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                modifier.clip(shape).hazeEffect(state = hazeState)
+            } else {
+                modifier
+            }
+        )
+
+    val contentWithWeight: @Composable RowScope.() -> Unit = {
+        content()
     }
 
     when (type) {
         ButtonType.FILLED -> {
-            val defaultColors = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val defaultColors = if (isCardBlurEnabled) {
                 ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
                 ButtonDefaults.buttonColors()
@@ -186,7 +300,8 @@ fun ShardButton(
                 shape = shape,
                 colors = colors ?: defaultColors,
                 contentPadding = contentPadding,
-                content = content
+                interactionSource = interactionSource,
+                content = contentWithWeight
             )
         }
         ButtonType.OUTLINED -> {
@@ -197,7 +312,8 @@ fun ShardButton(
                 shape = shape,
                 colors = colors ?: ButtonDefaults.outlinedButtonColors(),
                 contentPadding = contentPadding,
-                content = content
+                interactionSource = interactionSource,
+                content = contentWithWeight
             )
         }
         ButtonType.TEXT -> {
@@ -208,7 +324,8 @@ fun ShardButton(
                 shape = shape,
                 colors = colors ?: ButtonDefaults.textButtonColors(),
                 contentPadding = contentPadding,
-                content = content
+                interactionSource = interactionSource,
+                content = contentWithWeight
             )
         }
     }

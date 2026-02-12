@@ -168,6 +168,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.compose.foundation)
 
     // Native libraries
     // Bytehook is now provided by SL-GameCore

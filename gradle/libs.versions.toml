@@ -14,6 +14,9 @@ ktor = "3.0.3"
 kotlinxSerialization = "1.7.3"
 material3 = "1.4.0"
 foundationLayoutVersion = "1.10.1"
+uiGraphics = "1.10.2"
+animation = "1.10.2"
+foundation = "1.10.2"
 
 
 [plugins]
@@ -61,4 +64,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version = "4.12.0" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayoutVersion" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 

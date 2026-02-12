@@ -1,17 +1,24 @@
 package com.lanrhyme.shardlauncher.ui.version.list
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -22,7 +29,8 @@ import com.lanrhyme.shardlauncher.game.path.GamePath
 import com.lanrhyme.shardlauncher.game.path.GamePathManager
 import com.lanrhyme.shardlauncher.game.version.installed.Version
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
+import com.lanrhyme.shardlauncher.ui.components.basic.*
+import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.utils.logging.Logger.lError
 import com.lanrhyme.shardlauncher.utils.string.getMessageOrToString
 
@@ -175,140 +183,124 @@ fun VersionItemLayout(
     onPinned: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
 
-    Card(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else MaterialTheme.colorScheme.surface
-        ),
-        border = if (selected) 
-            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) 
-        else null,
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else if (selected) 1.02f else 1f,
+        label = "ItemScale"
+    )
+
+    ShardGlassCard(
+        modifier = modifier
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .selectableCard(isSelected = selected, isPressed = isPressed),
         onClick = {
-            if (selected) return@Card
-            onSelected()
-        }
+            if (!selected) onSelected()
+        },
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(all = 12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RadioButton(
-                selected = selected,
-                onClick = {
-                    if (selected) return@RadioButton
-                    onSelected()
-                }
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (selected) MaterialTheme.colorScheme.primary 
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
             )
+            
+            Spacer(modifier = Modifier.width(16.dp))
             
             CommonVersionInfoLayout(
                 modifier = Modifier.weight(1f),
                 version = version
             )
 
-            // Pin button
-            IconButton(
-                onClick = {
-                    val currentValue = version.pinnedState
-                    runCatching {
-                        version.setPinnedAndSave(!currentValue)
-                    }.onFailure { e ->
-                        lError("Failed to save version config!", e)
-                        submitError("保存版本配置失败: ${e.getMessageOrToString()}") // TODO: i18n
-                    }.onSuccess {
-                        onPinned()
-                    }
-                },
-                enabled = version.isValid()
-            ) {
-                Crossfade(
-                    targetState = version.pinnedState
-                ) { pinned ->
-                    Icon(
-                        modifier = Modifier.rotate(45.0f),
-                        imageVector = if (pinned) Icons.Default.PushPin else Icons.Default.PushPin,
-                        contentDescription = "置顶", // TODO: i18n
-                        tint = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Settings button
-            IconButton(
-                onClick = onSettingsClick,
-                enabled = version.isValid()
-            ) {
-                Icon(
-                    modifier = Modifier.size(24.dp),
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "设置" // TODO: i18n
-                )
-            }
-
-            // More menu
-            Row {
-                var menuExpanded by remember { mutableStateOf(false) }
-
-                IconButton(onClick = { menuExpanded = !menuExpanded }) {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Default.MoreHoriz,
-                        contentDescription = "更多" // TODO: i18n
-                    )
-                }
-
-                ShardDropdownMenu(
-                    expanded = menuExpanded,
-                    shape = MaterialTheme.shapes.large,
-                    onDismissRequest = { menuExpanded = false }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Pin button
+                IconButton(
+                    onClick = {
+                        val currentValue = version.pinnedState
+                        runCatching {
+                            version.setPinnedAndSave(!currentValue)
+                        }.onFailure { e ->
+                            lError("Failed to save version config!", e)
+                            submitError("保存版本配置失败: ${e.getMessageOrToString()}")
+                        }.onSuccess {
+                            onPinned()
+                        }
+                    },
+                    enabled = version.isValid()
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(text = "重命名") }, // TODO: i18n
-                        leadingIcon = {
-                            Icon(
-                                modifier = Modifier.size(20.dp),
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = "重命名" // TODO: i18n
-                            )
-                        },
-                        onClick = {
-                            onRenameClick()
-                            menuExpanded = false
-                        }
+                    Icon(
+                        modifier = Modifier.rotate(if (version.pinnedState) 0f else 45f),
+                        imageVector = if (version.pinnedState) Icons.Default.PushPin else Icons.Default.PushPin,
+                        contentDescription = "置顶",
+                        tint = if (version.pinnedState) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
-                    DropdownMenuItem(
-                        text = { Text(text = "复制") }, // TODO: i18n
-                        leadingIcon = {
-                            Icon(
-                                modifier = Modifier.size(20.dp),
-                                imageVector = Icons.Filled.FileCopy,
-                                contentDescription = "复制" // TODO: i18n
-                            )
-                        },
-                        onClick = {
-                            onCopyClick()
-                            menuExpanded = false
-                        }
+                }
+
+                // Settings button
+                IconButton(
+                    onClick = onSettingsClick,
+                    enabled = version.isValid()
+                ) {
+                    Icon(
+                        modifier = Modifier.size(22.dp),
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "设置",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
-                    DropdownMenuItem(
-                        text = { Text(text = "删除") }, // TODO: i18n
-                        leadingIcon = {
-                            Icon(
-                                modifier = Modifier.size(20.dp),
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = "删除" // TODO: i18n
-                            )
-                        },
-                        onClick = {
-                            onDeleteClick()
-                            menuExpanded = false
-                        }
-                    )
+                }
+
+                // More menu
+                var menuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { menuExpanded = !menuExpanded }) {
+                        Icon(
+                            modifier = Modifier.size(22.dp),
+                            imageVector = Icons.Default.MoreHoriz,
+                            contentDescription = "更多",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
+
+                    ShardDropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(text = "重命名") },
+                            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            onClick = {
+                                onRenameClick()
+                                menuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(text = "复制") },
+                            leadingIcon = { Icon(Icons.Filled.FileCopy, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            onClick = {
+                                onCopyClick()
+                                menuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(text = "删除") },
+                            leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            onClick = {
+                                onDeleteClick()
+                                menuExpanded = false
+                            }
+                        )
+                    }
                 }
             }
         }

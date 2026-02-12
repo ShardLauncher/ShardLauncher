@@ -11,6 +11,7 @@ import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardEditDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardInputField
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardTaskDialog
 
 @Composable
 fun RenameVersionDialog(
@@ -175,12 +176,94 @@ fun DeleteVersionDialog(
     }
 }
 
-sealed interface VersionsOperation {
-    data object None: VersionsOperation
-    data class Rename(val version: Version): VersionsOperation
-    data class Copy(val version: Version): VersionsOperation
-    data class Delete(val version: Version, val text: String? = null): VersionsOperation
-    data class InvalidDelete(val version: Version): VersionsOperation
+sealed interface VersionOperationState {
+    data object None: VersionOperationState
+    data class Rename(val version: Version): VersionOperationState
+    data class Copy(val version: Version): VersionOperationState
+    data class Delete(val version: Version, val text: String? = null): VersionOperationState
+    data class InvalidDelete(val version: Version): VersionOperationState
+    data class RunTask(val title: String, val task: suspend () -> Unit): VersionOperationState
+}
+
+@Composable
+fun VersionsOperation(
+    versionsOperation: VersionOperationState,
+    updateVersionsOperation: (VersionOperationState) -> Unit,
+    onError: (String) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    
+    when (versionsOperation) {
+        is VersionOperationState.None -> {}
+        is VersionOperationState.Rename -> {
+            RenameVersionDialog(
+                version = versionsOperation.version,
+                onDismissRequest = { updateVersionsOperation(VersionOperationState.None) },
+                onConfirm = { newName ->
+                    updateVersionsOperation(
+                        VersionOperationState.RunTask(
+                            title = "重命名版本",
+                            task = {
+                                VersionsManager.renameVersion(versionsOperation.version, newName)
+                            }
+                        )
+                    )
+                }
+            )
+        }
+        is VersionOperationState.Copy -> {
+            CopyVersionDialog(
+                version = versionsOperation.version,
+                onDismissRequest = { updateVersionsOperation(VersionOperationState.None) },
+                onConfirm = { name, copyAll ->
+                    updateVersionsOperation(
+                        VersionOperationState.RunTask(
+                            title = "复制版本",
+                            task = {
+                                VersionsManager.copyVersion(versionsOperation.version, name, copyAll)
+                            }
+                        )
+                    )
+                }
+            )
+        }
+        is VersionOperationState.Delete -> {
+            DeleteVersionDialog(
+                version = versionsOperation.version,
+                message = versionsOperation.text,
+                onDismissRequest = { updateVersionsOperation(VersionOperationState.None) },
+                onConfirm = {
+                    updateVersionsOperation(
+                        VersionOperationState.RunTask(
+                            title = "删除版本",
+                            task = {
+                                VersionsManager.deleteVersion(versionsOperation.version)
+                            }
+                        )
+                    )
+                }
+            )
+        }
+        is VersionOperationState.InvalidDelete -> {
+             ShardAlertDialog(
+                title = "无法删除",
+                text = "版本 ${versionsOperation.version.getVersionName()} 正在运行或状态异常，无法删除。",
+                onConfirm = { updateVersionsOperation(VersionOperationState.None) },
+                onDismiss = { updateVersionsOperation(VersionOperationState.None) }
+            )
+        }
+        is VersionOperationState.RunTask -> {
+            ShardTaskDialog(
+                title = versionsOperation.title,
+                task = versionsOperation.task,
+                context = scope,
+                onDismiss = { updateVersionsOperation(VersionOperationState.None) },
+                onError = { e ->
+                    onError(e.message ?: "处理失败")
+                }
+            )
+        }
+    }
 }
 
 private fun validateVersionName(name: String, originalName: String? = null): String? {

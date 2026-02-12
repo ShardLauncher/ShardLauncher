@@ -3,65 +3,26 @@ package com.lanrhyme.shardlauncher.ui.components.basic
 import android.os.Build
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -69,9 +30,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
@@ -92,6 +55,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 
 /**
  * 可折叠卡片组件
@@ -429,6 +394,26 @@ fun SubPageNavigationBar(
         }
 }
 
+
+
+/**
+ * 为任意 Composable 添加轻微的玻璃化背景修饰符
+ */
+fun Modifier.glassBackground(
+    shape: Shape = RoundedCornerShape(16.dp),
+    alpha: Float = 0.4f
+): Modifier = composed {
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
+    this.then(
+        if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            Modifier.clip(shape).hazeEffect(state = hazeState)
+        } else Modifier
+    ).background(
+        MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha * alpha),
+        shape = shape
+    )
+}
+
 /**
  * 样式化的过滤芯片组件，用于显示可选的标签或选项
  * 选中时使用主色调背景
@@ -537,14 +522,7 @@ fun Modifier.animatedAppearance(index: Int, animationSpeed: Float): Modifier = c
 }
 
 /**
- * 为可选择的卡片提供选择动画效果 带有边框和弹动动画
- *
- * 使用时请在卡片调用处传入以下参数
- * ```
- * border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null
- * ```
- * @param isSelected 卡片是否被选中
- * @param isPressed 卡片是否被按下
+ * 为可选择的卡片提供选择动画效果 带有边框 and 弹动动画
  */
 private enum class SelectableState {
         Pressed,
@@ -571,17 +549,12 @@ fun Modifier.selectableCard(
                 transition.animateFloat(
                         transitionSpec = {
                                 when {
-                                        // 按下
-                                        SelectableState.Idle isTransitioningTo
-                                                SelectableState.Pressed ||
-                                                SelectableState.Selected isTransitioningTo
-                                                        SelectableState.Pressed ->
+                                        SelectableState.Idle isTransitioningTo SelectableState.Pressed ||
+                                                SelectableState.Selected isTransitioningTo SelectableState.Pressed ->
                                                 tween(durationMillis = 100)
-                                        // 弹回
                                         else ->
                                                 spring(
-                                                        dampingRatio =
-                                                                Spring.DampingRatioMediumBouncy,
+                                                        dampingRatio = Spring.DampingRatioMediumBouncy,
                                                         stiffness = Spring.StiffnessLow
                                                 )
                                 }
@@ -602,8 +575,36 @@ fun Modifier.selectableCard(
 }
 
 /**
- * 搜索文本框组件
- *
+ * 极其高级的微光闪烁加载动画效果 (Shimmer)
+ */
+fun Modifier.shimmer(): Modifier = composed {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1200f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerTranslation"
+    )
+
+    val shimmerColors = listOf(
+        Color.White.copy(alpha = 0.0f),
+        Color.White.copy(alpha = 0.2f),
+        Color.White.copy(alpha = 0.0f),
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim, y = translateAnim)
+    )
+
+    this.then(Modifier.background(brush))
+}
+
+/**
  * @param value 当前搜索文本
  * @param onValueChange 文本变更回调
  * @param hint 提示文本
@@ -616,12 +617,21 @@ fun SearchTextField(
         hint: String,
         modifier: Modifier = Modifier,
 ) {
+    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
+    val shape = RoundedCornerShape(22.dp)
+    
         BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = modifier.fillMaxSize(),
+                modifier = modifier
+                    .height(46.dp)
+                    .then(
+                        if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            Modifier.clip(shape).hazeEffect(state = hazeState)
+                        } else Modifier
+                    ),
                 textStyle =
-                        MaterialTheme.typography.bodySmall.copy(
+                        MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onSurface
                         ),
                 singleLine = true,
@@ -631,34 +641,54 @@ fun SearchTextField(
                                         Modifier
                                             .background(
                                                 MaterialTheme.colorScheme.surfaceVariant
-                                                    .copy(alpha = 0.6f),
-                                                RoundedCornerShape(22.dp)
+                                                    .copy(alpha = (cardAlpha * 0.5f).coerceAtLeast(0.2f)),
+                                                shape
                                             )
-                                            .padding(horizontal = 8.dp)
+                                            .border(
+                                                1.dp, 
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                shape
+                                            )
+                                            .padding(horizontal = 14.dp)
                                             .fillMaxSize(),
                                 verticalAlignment = Alignment.CenterVertically
                         ) {
                                 Icon(
                                         Icons.Default.Search,
                                         contentDescription = "Search",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
                                 )
                                 Box(
                                         modifier = Modifier
-                                            .padding(start = 4.dp)
+                                            .padding(start = 10.dp)
                                             .weight(1f),
                                         contentAlignment = Alignment.CenterStart
                                 ) {
                                         if (value.isEmpty()) {
                                             Text(
                                                 hint,
-                                                style = MaterialTheme.typography.bodySmall,
+                                                style = MaterialTheme.typography.bodyMedium,
                                                 color =
                                                     MaterialTheme.colorScheme
                                                         .onSurfaceVariant
+                                                        .copy(alpha = 0.5f)
                                             )
                                         }
                                         innerTextField()
+                                }
+                                if (value.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { onValueChange("") },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Clear",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                         }
                 }
