@@ -3,22 +3,13 @@ package com.lanrhyme.shardlauncher.ui.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -29,13 +20,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -56,8 +43,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,8 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -82,25 +65,14 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
-import com.lanrhyme.shardlauncher.ui.components.basic.TitleAndSummary
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
-import com.lanrhyme.shardlauncher.ui.components.basic.glow
-import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.tiles.ActionTile
-import com.lanrhyme.shardlauncher.ui.components.tiles.ContentTile
-import com.lanrhyme.shardlauncher.ui.components.tiles.InfoTile
 import com.lanrhyme.shardlauncher.ui.components.tiles.TileCard
 import com.lanrhyme.shardlauncher.ui.components.tiles.TileGrid
-import com.lanrhyme.shardlauncher.ui.components.tiles.TileGridScope
 import com.lanrhyme.shardlauncher.ui.components.tiles.TileStyle
 
 // ==================== 数据模型 ====================
@@ -128,19 +100,16 @@ data class ApiService(
 fun AboutScreen(animationSpeed: Float) {
     val context = LocalContext.current
     var showLicensesDialog by remember { mutableStateOf(false) }
-    var expandedSection by remember { mutableStateOf<String?>(null) }
 
     if (showLicensesDialog) {
         LicensesDialog { showLicensesDialog = false }
     }
 
-    // 使用 Row 实现左右分栏布局
+
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            // 底部 padding 避免被导航栏遮挡
-            .padding(bottom = 80.dp)
+            .padding(horizontal = 16.dp)
     ) {
         // 左侧区域 - 版本信息（占比 35%）
         LeftPanel(
@@ -164,10 +133,6 @@ fun AboutScreen(animationSpeed: Float) {
                 context.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LanRhyme/ShardLauncher"))
                 )
-            },
-            expandedSection = expandedSection,
-            onToggleSection = { section ->
-                expandedSection = if (expandedSection == section) null else section
             }
         )
     }
@@ -188,6 +153,7 @@ private fun LeftPanel(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 完整版本信息区域
+        Spacer(Modifier.height(14.dp))
         VersionInfoTile(animationSpeed = animationSpeed)
     }
 }
@@ -200,9 +166,7 @@ private fun RightPanel(
     animationSpeed: Float,
     showLicensesDialog: Boolean,
     onLicensesClick: () -> Unit,
-    onGithubClick: () -> Unit,
-    expandedSection: String?,
-    onToggleSection: (String) -> Unit
+    onGithubClick: () -> Unit
 ) {
     val rightListState = rememberLazyListState()
 
@@ -211,6 +175,7 @@ private fun RightPanel(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item { Spacer(Modifier.height(14.dp)) }
         // 头部区域 - 应用信息大磁贴
         item {
             AppHeaderTile(animationSpeed = animationSpeed)
@@ -228,18 +193,14 @@ private fun RightPanel(
         // 贡献者区域
         item {
             CreditsSection(
-                animationSpeed = animationSpeed,
-                isExpanded = expandedSection == "credits",
-                onToggle = { onToggleSection("credits") }
+                animationSpeed = animationSpeed
             )
         }
 
         // 鸣谢区域
         item {
             ThanksSection(
-                animationSpeed = animationSpeed,
-                isExpanded = expandedSection == "thanks",
-                onToggle = { onToggleSection("thanks") }
+                animationSpeed = animationSpeed
             )
         }
 
@@ -250,7 +211,7 @@ private fun RightPanel(
 
         // 底部留白
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 }
@@ -266,7 +227,7 @@ private fun AppHeaderTile(animationSpeed: Float) {
             .fillMaxWidth()
             .height(180.dp)
             .animatedAppearance(0, animationSpeed),
-        style = TileStyle.GRADIENT
+        style = TileStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -277,13 +238,13 @@ private fun AppHeaderTile(animationSpeed: Float) {
                 modifier = Modifier
                     .size(120.dp)
                     .background(
-                        color = Color.White.copy(alpha = 0.15f),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(20.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.img_kotlin),
+                    painter = painterResource(id = R.drawable.img_logo),
                     contentDescription = "App Icon",
                     modifier = Modifier.size(100.dp),
                     contentScale = ContentScale.Fit
@@ -300,13 +261,13 @@ private fun AppHeaderTile(animationSpeed: Float) {
                     text = "ShardLauncher",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "一款使用 Kotlin 和 Jetpack Compose 开发的现代化 Android Minecraft: Java Edition 启动器",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2f
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -315,24 +276,24 @@ private fun AppHeaderTile(animationSpeed: Float) {
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color.White.copy(alpha = 0.2f)
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                     ) {
                         Text(
                             text = "GPL-3.0",
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color.White.copy(alpha = 0.2f)
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                     ) {
                         Text(
                             text = "开源",
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
@@ -352,13 +313,6 @@ private fun QuickActionsTile(
     Column(
         modifier = Modifier.animatedAppearance(1, animationSpeed)
     ) {
-        Text(
-            text = "快捷操作",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
-
         TileGrid(
             columns = 4,
             horizontalSpacing = 10.dp,
@@ -370,16 +324,16 @@ private fun QuickActionsTile(
                     title = "文档",
                     icon = Icons.AutoMirrored.Filled.Article,
                     onClick = { /* TODO: 打开文档 */ },
-                    style = TileStyle.DEFAULT
+                    style = TileStyle.GLASS
                 )
             }
             // GitHub按钮
             item(1f) {
                 ActionTile(
                     title = "GitHub",
-                    icon = Icons.Default.Code,
+                    icon = R.drawable.icon_github,
                     onClick = onGithubClick,
-                    style = TileStyle.ACCENT
+                    style = TileStyle.GLASS
                 )
             }
             // 许可证按钮
@@ -388,7 +342,7 @@ private fun QuickActionsTile(
                     title = "许可",
                     icon = Icons.Default.Description,
                     onClick = onLicensesClick,
-                    style = TileStyle.DEFAULT
+                    style = TileStyle.GLASS
                 )
             }
             // 检查更新按钮
@@ -397,7 +351,7 @@ private fun QuickActionsTile(
                     title = "更新",
                     icon = Icons.Default.Update,
                     onClick = { /* TODO: 检查更新 */ },
-                    style = TileStyle.DEFAULT
+                    style = TileStyle.GLASS
                 )
             }
         }
@@ -419,15 +373,9 @@ private fun VersionInfoTile(animationSpeed: Float) {
     Column(
         modifier = Modifier.animatedAppearance(0, animationSpeed)
     ) {
-        Text(
-            text = "版本信息",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
-
         TileCard(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            style = TileStyle.GLASS
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -435,7 +383,7 @@ private fun VersionInfoTile(animationSpeed: Float) {
             ) {
                 // 版本号行
                 VersionInfoRow(
-                    icon = Icons.Default.Info,
+                    icon = painterResource(R.drawable.icon__menu_kebab_horizontal_square_duotone),
                     label = "版本号",
                     value = versionName,
                     onCopy = {
@@ -464,7 +412,7 @@ private fun VersionInfoTile(animationSpeed: Float) {
 
                 // 分支行
                 VersionInfoRow(
-                    icon = Icons.Default.HdrWeak,
+                    icon = painterResource(R.drawable.icon__badge_duotone),
                     label = "分支",
                     value = gitBranch,
                     onCopy = {
@@ -478,7 +426,7 @@ private fun VersionInfoTile(animationSpeed: Float) {
 
                 // 构建状态行
                 VersionInfoRow(
-                    icon = Icons.Default.Settings,
+                    icon = painterResource(R.drawable.icon__file_check_duotone),
                     label = "构建状态",
                     value = buildStatus,
                     onCopy = null
@@ -490,7 +438,7 @@ private fun VersionInfoTile(animationSpeed: Float) {
 
                 // 更新时间行
                 VersionInfoRow(
-                    icon = Icons.Default.Schedule,
+                    icon = painterResource(R.drawable.icon__history_duotone),
                     label = "上次更新",
                     value = lastUpdateTime,
                     onCopy = null
@@ -509,6 +457,58 @@ private fun VersionInfoRow(
     valueColor: Color = MaterialTheme.colorScheme.onSurface,
     onCopy: (() -> Unit)?
 ) {
+    VersionInfoRowContent(
+        iconProvider = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            )
+        },
+        label = label,
+        value = value,
+        modifier = modifier,
+        valueColor = valueColor,
+        onCopy = onCopy
+    )
+}
+
+@Composable
+private fun VersionInfoRow(
+    icon: androidx.compose.ui.graphics.painter.Painter,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    onCopy: (() -> Unit)?
+) {
+    VersionInfoRowContent(
+        iconProvider = {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            )
+        },
+        label = label,
+        value = value,
+        modifier = modifier,
+        valueColor = valueColor,
+        onCopy = onCopy
+    )
+}
+
+@Composable
+private fun VersionInfoRowContent(
+    iconProvider: @Composable () -> Unit,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    onCopy: (() -> Unit)?
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -520,12 +520,7 @@ private fun VersionInfoRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-            )
+            iconProvider()
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
@@ -549,7 +544,11 @@ private fun VersionInfoRow(
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.clickable(onClick = onCopy)
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onCopy
+                    )
                 ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
@@ -569,20 +568,18 @@ private fun VersionInfoRow(
 
 @Composable
 private fun CreditsSection(
-    animationSpeed: Float,
-    isExpanded: Boolean,
-    onToggle: () -> Unit
+    animationSpeed: Float
 ) {
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier.animatedAppearance(3, animationSpeed)
+        modifier = Modifier.animatedAppearance(3, animationSpeed),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // 标题栏
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onToggle)
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -594,8 +591,7 @@ private fun CreditsSection(
                 Icon(
                     imageVector = Icons.Default.Groups,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = "贡献者",
@@ -603,52 +599,24 @@ private fun CreditsSection(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-
-            val rotation by animateFloatAsState(
-                targetValue = if (isExpanded) 180f else 0f,
-                label = "expand_rotation"
-            )
-            Icon(
-                imageVector = Icons.Default.Update,
-                contentDescription = if (isExpanded) "收起" else "展开",
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            // 主要开发者磁贴
-            CreditPersonTile(
-                image = R.drawable.img_lanrhyme,
-                name = "LanRhyme",
-                role = "项目发起者，主要开发者",
-                onGithubClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/LanRhyme"))
-                    )
-                },
-                onWebsiteClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://lanrhyme.netlify.app/"))
-                    )
-                }
-            )
-        }
-
-        if (!isExpanded) {
-            // 收起状态显示预览
-            CreditPersonPreview(
-                image = R.drawable.img_lanrhyme,
-                name = "LanRhyme",
-                role = "项目发起者，主要开发者"
-            )
-        }
+        // 主要开发者磁贴
+        CreditPersonTile(
+            image = R.drawable.img_lanrhyme,
+            name = "LanRhyme",
+            role = "项目发起者，主要开发者",
+            GithubUrl = "https://github.com/LanRhyme",
+            BiliBiliUrl = "https://space.bilibili.com/496901387",
+            WebsiteUrl = "https://lanrhyme.netlify.app"
+        )
+        CreditPersonTile(
+            image = R.drawable.img_herbrine8403,
+            name = "爱科技的学生党",
+            role = "联合开发者，项目维护者",
+            GithubUrl = "https://github.com/herbrine8403",
+            BiliBiliUrl = "https://space.bilibili.com/1447116805"
+        )
     }
 }
 
@@ -657,9 +625,11 @@ private fun CreditPersonTile(
     @DrawableRes image: Int,
     name: String,
     role: String,
-    onGithubClick: () -> Unit,
-    onWebsiteClick: () -> Unit
+    GithubUrl : String? = null,
+    BiliBiliUrl: String? = null,
+    WebsiteUrl: String? = null
 ) {
+    val context = LocalContext.current
     TileCard(
         modifier = Modifier.fillMaxWidth(),
         style = TileStyle.GLASS
@@ -673,7 +643,7 @@ private fun CreditPersonTile(
                 painter = painterResource(id = image),
                 contentDescription = name,
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(48.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
@@ -699,105 +669,108 @@ private fun CreditPersonTile(
 
             // 操作按钮
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    modifier = Modifier.clickable(onClick = onGithubClick)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                if (GithubUrl != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(GithubUrl))
+                                )
+                            }
+                        )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Code,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "GitHub",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.icon_github),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "GitHub",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
-
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
-                    modifier = Modifier.clickable(onClick = onWebsiteClick)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                if (BiliBiliUrl != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(BiliBiliUrl))
+                                )
+                            }
+                        )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Computer,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.secondary
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.icon_bilibili),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "BiliBili",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+                if (WebsiteUrl != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(WebsiteUrl))
+                                )
+                            }
                         )
-                        Text(
-                            text = "网站",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Computer,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Text(
+                                text = "网站",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CreditPersonPreview(
-    @DrawableRes image: Int,
-    name: String,
-    role: String
-) {
-    TileCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = image),
-                contentDescription = name,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = role,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
         }
     }
 }
@@ -806,20 +779,18 @@ private fun CreditPersonPreview(
 
 @Composable
 private fun ThanksSection(
-    animationSpeed: Float,
-    isExpanded: Boolean,
-    onToggle: () -> Unit
+    animationSpeed: Float
 ) {
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier.animatedAppearance(4, animationSpeed)
+        modifier = Modifier.animatedAppearance(4, animationSpeed),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // 标题栏
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onToggle)
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -831,8 +802,7 @@ private fun ThanksSection(
                 Icon(
                     imageVector = Icons.Default.ThumbUp,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = "鸣谢",
@@ -842,12 +812,11 @@ private fun ThanksSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
         // ZalithLauncher磁贴
         ThanksTile(
-            name = "ZalithLauncher2",
-            description = "参考和引用了 ZalithLauncher2 的部分代码",
+            icon = R.drawable.img_zalithlauncher,
+            name = "ZalithLauncher",
+            description = "参考和引用了 ZalithLauncher 的代码",
             onClick = {
                 context.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ZalithLauncher/ZalithLauncher2"))
@@ -861,6 +830,7 @@ private fun ThanksSection(
 private fun ThanksTile(
     name: String,
     description: String,
+    @DrawableRes icon: Int? = null,
     onClick: () -> Unit
 ) {
     TileCard(
@@ -873,6 +843,16 @@ private fun ThanksTile(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 项目图标
+            if (icon != null) {
+                Image(
+                    painter = painterResource(id = icon),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(shape = RoundedCornerShape(12.dp)),
+                )
+            }
+           else {
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -882,24 +862,26 @@ private fun ThanksTile(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Code,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                        Icon(
+                            imageVector = Icons.Default.Code,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // 项目信息
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -913,7 +895,7 @@ private fun ThanksTile(
                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }
     }
@@ -936,16 +918,6 @@ private fun ApiServicesTile(animationSpeed: Float) {
                 name = "新闻主页",
                 description = "启动器主页中的 Minecraft 更新卡片",
                 url = "https://news.bugjump.net/static/"
-            ),
-            ApiService(
-                name = "星之阁 API",
-                description = "提供皮肤模型图的获取服务",
-                url = "https://api.xingzhige.com/doc/35"
-            ),
-            ApiService(
-                name = "crafatar.com",
-                description = "用于皮肤和头像的获取服务",
-                url = "https://crafatar.com/"
             )
         )
     }
@@ -956,12 +928,13 @@ private fun ApiServicesTile(animationSpeed: Float) {
         Text(
             text = "第三方服务",
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.Unspecified,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
         )
 
         TileCard(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            style = TileStyle.GLASS
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -996,7 +969,11 @@ private fun ApiServiceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -1151,7 +1128,11 @@ private fun LicenseItem(
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onClick
+        )
     ) {
         Row(
             modifier = Modifier

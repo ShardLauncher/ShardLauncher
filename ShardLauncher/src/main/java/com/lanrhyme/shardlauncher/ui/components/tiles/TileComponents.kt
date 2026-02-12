@@ -1,6 +1,7 @@
 package com.lanrhyme.shardlauncher.ui.components.tiles
 
 import android.os.Build
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -39,6 +40,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -266,7 +269,7 @@ fun InfoTile(
  * 操作磁贴组件 - 用于显示可点击的操作按钮
  *
  * @param title 标题
- * @param icon 图标
+ * @param icon 图标 (ImageVector)
  * @param onClick 点击回调
  * @param modifier 修饰符
  * @param subtitle 副标题
@@ -276,6 +279,68 @@ fun InfoTile(
 fun ActionTile(
     title: String,
     icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    style: TileStyle = TileStyle.DEFAULT
+) {
+    ActionTileContent(
+        title = title,
+        iconProvider = { color ->
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = color
+            )
+        },
+        onClick = onClick,
+        modifier = modifier,
+        subtitle = subtitle,
+        style = style
+    )
+}
+
+/**
+ * 操作磁贴组件 - 用于显示可点击的操作按钮 (支持图片资源)
+ *
+ * @param title 标题
+ * @param icon 图标 (DrawableRes)
+ * @param onClick 点击回调
+ * @param modifier 修饰符
+ * @param subtitle 副标题
+ * @param style 磁贴样式
+ */
+@Composable
+fun ActionTile(
+    title: String,
+    @DrawableRes icon: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    style: TileStyle = TileStyle.DEFAULT
+) {
+    ActionTileContent(
+        title = title,
+        iconProvider = { color ->
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = color
+            )
+        },
+        onClick = onClick,
+        modifier = modifier,
+        subtitle = subtitle,
+        style = style
+    )
+}
+
+@Composable
+private fun ActionTileContent(
+    title: String,
+    iconProvider: @Composable (Color) -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
@@ -296,11 +361,8 @@ fun ActionTile(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = if (style == TileStyle.DEFAULT) {
+            iconProvider(
+                if (style == TileStyle.DEFAULT) {
                     MaterialTheme.colorScheme.primary
                 } else contentColor
             )
