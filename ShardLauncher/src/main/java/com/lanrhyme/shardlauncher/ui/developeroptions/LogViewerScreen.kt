@@ -260,11 +260,11 @@ fun LogItem(log: LogCollector.LogEntry) {
         LogCollector.LogLevel.WARNING -> Color(0xFFFF9800)
         LogCollector.LogLevel.ERROR -> Color(0xFFB71C1C)
     }
-    
+
     val timeStr = remember(log.timestamp) {
         java.text.SimpleDateFormat("HH:mm:ss").format(log.timestamp)
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -288,6 +288,26 @@ fun LogItem(log: LogCollector.LogEntry) {
                 text = timeStr,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // 显示日志消息内容
+        Text(
+            text = log.message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        // 显示异常信息（如果有）
+        log.throwable?.let { throwable ->
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = throwable.stackTraceToString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = backgroundColor,
+                fontFamily = FontFamily.Monospace
             )
         }
     }
