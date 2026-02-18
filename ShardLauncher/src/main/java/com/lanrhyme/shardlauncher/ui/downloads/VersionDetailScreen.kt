@@ -88,266 +88,257 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
     val isFabricApiSelected by viewModel.isFabricApiSelected.collectAsState()
     val downloadTask by viewModel.downloadTask.collectAsState()
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .padding(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        SubPageNavigationBar(
-            title = "安装游戏",
-            description = "配置并安装 Minecraft",
-            onBack = { navController.popBackStack() },
-            modifier = Modifier.animatedAppearance(0, animatedSpeed)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        // Left Pane: Hero, Input, Action
+        Column(
+            modifier = Modifier
+                .weight(0.4f)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Left Pane: Hero, Input, Action
-            Column(
-                modifier = Modifier
-                    .weight(0.4f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+            SubPageNavigationBar(
+                title = "安装游戏",
+                description = "配置并安装 Minecraft",
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.animatedAppearance(0, animatedSpeed)
+            )
+
+            // Hero Section
+            ShardGlassCard(
+                modifier = Modifier.animatedAppearance(1, animatedSpeed)
             ) {
-                // Hero Section
-                ShardGlassCard(
-                    modifier = Modifier.animatedAppearance(1, animatedSpeed)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        modifier = Modifier.size(72.dp)
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.img_minecraft),
-                                    contentDescription = "Minecraft Logo",
-                                    modifier = Modifier.size(48.dp)
-                                )
-                            }
+                        Box(contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = painterResource(id = R.drawable.img_minecraft),
+                                contentDescription = "Minecraft Logo",
+                                modifier = Modifier.size(48.dp)
+                            )
                         }
-                        Column(modifier = Modifier.weight(1f)) {
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Minecraft",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = versionId,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+
+            CapsuleTextField(
+                value = versionName,
+                onValueChange = { viewModel.setVersionName(it) },
+                label = "版本名称",
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Download Button Area
+            Box(
+                modifier = Modifier
+                    .animatedAppearance(3, animatedSpeed)
+                    .fillMaxWidth()
+            ) {
+                ScalingActionButton(
+                    onClick = { viewModel.download() },
+                    icon = androidx.compose.material.icons.Icons.Default.Download,
+                    text = if (downloadTask?.taskState == TaskState.RUNNING) "正在准备下载..." else "开始下载游戏",
+                    enabled = downloadTask == null || downloadTask?.taskState == TaskState.COMPLETED,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                )
+            }
+        }
+
+        // 右窗格：配置（可滚动）
+        Column(
+            modifier = Modifier
+                .weight(0.6f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Spacer(Modifier.height(44.dp))
+            // Mod Loader Section
+            CombinedCard(
+                title = "模组加载器", 
+                summary = "选择您喜欢的模组加载框架",
+                modifier = Modifier.animatedAppearance(4, animatedSpeed)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        LoaderSelectionCard(
+                            title = "Fabric",
+                            iconRes = R.drawable.img_loader_fabric,
+                            isSelected = selectedModLoader == ModLoader.Fabric,
+                            onClick = { viewModel.selectModLoader(ModLoader.Fabric) }
+                        )
+                        LoaderSelectionCard(
+                            title = "Forge",
+                            iconRes = R.drawable.img_anvil,
+                            isSelected = selectedModLoader == ModLoader.Forge,
+                            onClick = { viewModel.selectModLoader(ModLoader.Forge) }
+                        )
+                        LoaderSelectionCard(
+                            title = "NeoForge",
+                            iconRes = R.drawable.img_loader_neoforge,
+                            isSelected = selectedModLoader == ModLoader.NeoForge,
+                            onClick = { viewModel.selectModLoader(ModLoader.NeoForge) }
+                        )
+                        LoaderSelectionCard(
+                            title = "Quilt",
+                            iconRes = R.drawable.img_loader_quilt,
+                            isSelected = selectedModLoader == ModLoader.Quilt,
+                            onClick = { viewModel.selectModLoader(ModLoader.Quilt) }
+                        )
+                    }
+
+                    // Versions Dropdowns
+                    AnimatedVisibility(visible = selectedModLoader != ModLoader.None) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Text(
-                                text = "Minecraft",
+                                text = "选择加载器版本",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                text = versionId,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                }
-
-                ShardGlassCard(
-                    modifier = Modifier.animatedAppearance(2, animatedSpeed)
-                ) {
-                    CapsuleTextField(
-                        value = versionName,
-                        onValueChange = { viewModel.setVersionName(it) },
-                        label = "版本名称",
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Download Button Area
-                Box(
-                    modifier = Modifier
-                        .animatedAppearance(3, animatedSpeed)
-                        .fillMaxWidth()
-                ) {
-                    ScalingActionButton(
-                        onClick = { viewModel.download() },
-                        icon = androidx.compose.material.icons.Icons.Default.Download,
-                        text = if (downloadTask?.taskState == TaskState.RUNNING) "正在准备下载..." else "开始下载游戏",
-                        enabled = downloadTask == null || downloadTask?.taskState == TaskState.COMPLETED,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                    )
-                }
-            }
-
-            // Right Pane: Configuration (Scrollable)
-            Column(
-                modifier = Modifier
-                    .weight(0.6f)
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                // Mod Loader Section
-                CombinedCard(
-                    title = "模组加载器", 
-                    summary = "选择您喜欢的模组加载框架",
-                    modifier = Modifier.animatedAppearance(4, animatedSpeed)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            LoaderSelectionCard(
-                                title = "Fabric",
-                                iconRes = R.drawable.img_loader_fabric,
-                                isSelected = selectedModLoader == ModLoader.Fabric,
-                                onClick = { viewModel.selectModLoader(ModLoader.Fabric) }
-                            )
-                            LoaderSelectionCard(
-                                title = "Forge",
-                                iconRes = R.drawable.img_anvil,
-                                isSelected = selectedModLoader == ModLoader.Forge,
-                                onClick = { viewModel.selectModLoader(ModLoader.Forge) }
-                            )
-                            LoaderSelectionCard(
-                                title = "NeoForge",
-                                iconRes = R.drawable.img_loader_neoforge,
-                                isSelected = selectedModLoader == ModLoader.NeoForge,
-                                onClick = { viewModel.selectModLoader(ModLoader.NeoForge) }
-                            )
-                            LoaderSelectionCard(
-                                title = "Quilt",
-                                iconRes = R.drawable.img_loader_quilt,
-                                isSelected = selectedModLoader == ModLoader.Quilt,
-                                onClick = { viewModel.selectModLoader(ModLoader.Quilt) }
-                            )
-                        }
-
-                        // Versions Dropdowns
-                        AnimatedVisibility(visible = selectedModLoader != ModLoader.None) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                        RoundedCornerShape(12.dp)
-                                    )
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "选择加载器版本",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                
-                                when (selectedModLoader) {
-                                    ModLoader.Fabric -> {
-                                        val fabricVersions by viewModel.fabricVersions.collectAsState()
-                                        val selectedVersion by viewModel.selectedFabricVersion.collectAsState()
-                                        LoaderVersionDropdown(
-                                            versions = fabricVersions,
-                                            selectedVersion = selectedVersion,
-                                            onVersionSelected = {
-                                                viewModel.selectFabricVersion(it as FabricLoaderVersion)
-                                            }
-                                        )
-                                    }
-                                    ModLoader.Forge -> {
-                                        val forgeVersions by viewModel.forgeVersions.collectAsState()
-                                        val selectedVersion by viewModel.selectedForgeVersion.collectAsState()
-                                        LoaderVersionDropdown(
-                                            versions = forgeVersions,
-                                            selectedVersion = selectedVersion,
-                                            onVersionSelected = {
-                                                viewModel.selectForgeVersion(it as LoaderVersion)
-                                            }
-                                        )
-                                    }
-                                    ModLoader.NeoForge -> {
-                                        val neoForgeVersions by viewModel.neoForgeVersions.collectAsState()
-                                        val selectedVersion by viewModel.selectedNeoForgeVersion.collectAsState()
-                                        LoaderVersionDropdown(
-                                            versions = neoForgeVersions,
-                                            selectedVersion = selectedVersion,
-                                            onVersionSelected = {
-                                                viewModel.selectNeoForgeVersion(it as LoaderVersion)
-                                            }
-                                        )
-                                    }
-                                    ModLoader.Quilt -> {
-                                        val quiltVersions by viewModel.quiltVersions.collectAsState()
-                                        val selectedVersion by viewModel.selectedQuiltVersion.collectAsState()
-                                        LoaderVersionDropdown(
-                                            versions = quiltVersions,
-                                            selectedVersion = selectedVersion,
-                                            onVersionSelected = {
-                                                viewModel.selectQuiltVersion(it as LoaderVersion)
-                                            }
-                                        )
-                                    }
-                                    else -> {}
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Addons Section
-                CombinedCard(
-                    title = "附加组件", 
-                    summary = "自动下载并安装常用的优化件或 API",
-                    modifier = Modifier.animatedAppearance(5, animatedSpeed)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        // Fabric API
-                        AnimatedVisibility(visible = selectedModLoader == ModLoader.Fabric) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                StyledFilterChip(
-                                    selected = isFabricApiSelected,
-                                    onClick = { viewModel.toggleFabricApi(!isFabricApiSelected) },
-                                    label = { Text("Fabric API") }
-                                )
-
-                                AnimatedVisibility(visible = isFabricApiSelected) {
-                                    val fabricApiVersions by viewModel.fabricApiVersions.collectAsState()
-                                    val selectedApiVersion by viewModel.selectedFabricApiVersion.collectAsState()
+                            
+                            when (selectedModLoader) {
+                                ModLoader.Fabric -> {
+                                    val fabricVersions by viewModel.fabricVersions.collectAsState()
+                                    val selectedVersion by viewModel.selectedFabricVersion.collectAsState()
                                     LoaderVersionDropdown(
-                                        versions = fabricApiVersions,
-                                        selectedVersion = selectedApiVersion,
+                                        versions = fabricVersions,
+                                        selectedVersion = selectedVersion,
                                         onVersionSelected = {
-                                            viewModel.selectFabricApiVersion(it as ModrinthVersion)
+                                            viewModel.selectFabricVersion(it as FabricLoaderVersion)
                                         }
                                     )
                                 }
+                                ModLoader.Forge -> {
+                                    val forgeVersions by viewModel.forgeVersions.collectAsState()
+                                    val selectedVersion by viewModel.selectedForgeVersion.collectAsState()
+                                    LoaderVersionDropdown(
+                                        versions = forgeVersions,
+                                        selectedVersion = selectedVersion,
+                                        onVersionSelected = {
+                                            viewModel.selectForgeVersion(it as LoaderVersion)
+                                        }
+                                    )
+                                }
+                                ModLoader.NeoForge -> {
+                                    val neoForgeVersions by viewModel.neoForgeVersions.collectAsState()
+                                    val selectedVersion by viewModel.selectedNeoForgeVersion.collectAsState()
+                                    LoaderVersionDropdown(
+                                        versions = neoForgeVersions,
+                                        selectedVersion = selectedVersion,
+                                        onVersionSelected = {
+                                            viewModel.selectNeoForgeVersion(it as LoaderVersion)
+                                        }
+                                    )
+                                }
+                                ModLoader.Quilt -> {
+                                    val quiltVersions by viewModel.quiltVersions.collectAsState()
+                                    val selectedVersion by viewModel.selectedQuiltVersion.collectAsState()
+                                    LoaderVersionDropdown(
+                                        versions = quiltVersions,
+                                        selectedVersion = selectedVersion,
+                                        onVersionSelected = {
+                                            viewModel.selectQuiltVersion(it as LoaderVersion)
+                                        }
+                                    )
+                                }
+                                else -> {}
                             }
                         }
+                    }
+                }
+            }
 
-                        // Optifine
+            // Addons Section
+            CombinedCard(
+                title = "附加组件", 
+                summary = "自动下载并安装常用的优化件或 API",
+                modifier = Modifier.animatedAppearance(5, animatedSpeed)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Fabric API
+                    AnimatedVisibility(visible = selectedModLoader == ModLoader.Fabric) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             StyledFilterChip(
-                                selected = isOptifineSelected,
-                                onClick = { viewModel.toggleOptifine(!isOptifineSelected) },
-                                label = { Text("Optifine (高清修复)") }
+                                selected = isFabricApiSelected,
+                                onClick = { viewModel.toggleFabricApi(!isFabricApiSelected) },
+                                label = { Text("Fabric API") }
                             )
-                            AnimatedVisibility(visible = isOptifineSelected) {
-                                val optifineVersions by viewModel.optifineVersions.collectAsState()
-                                val selectedVersion by viewModel.selectedOptifineVersion.collectAsState()
+
+                            AnimatedVisibility(visible = isFabricApiSelected) {
+                                val fabricApiVersions by viewModel.fabricApiVersions.collectAsState()
+                                val selectedApiVersion by viewModel.selectedFabricApiVersion.collectAsState()
                                 LoaderVersionDropdown(
-                                    versions = optifineVersions,
-                                    selectedVersion = selectedVersion,
+                                    versions = fabricApiVersions,
+                                    selectedVersion = selectedApiVersion,
                                     onVersionSelected = {
-                                        viewModel.selectOptifineVersion(it as LoaderVersion)
+                                        viewModel.selectFabricApiVersion(it as ModrinthVersion)
                                     }
                                 )
                             }
+                        }
+                    }
+
+                    // Optifine
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StyledFilterChip(
+                            selected = isOptifineSelected,
+                            onClick = { viewModel.toggleOptifine(!isOptifineSelected) },
+                            label = { Text("Optifine (高清修复)") }
+                        )
+                        AnimatedVisibility(visible = isOptifineSelected) {
+                            val optifineVersions by viewModel.optifineVersions.collectAsState()
+                            val selectedVersion by viewModel.selectedOptifineVersion.collectAsState()
+                            LoaderVersionDropdown(
+                                versions = optifineVersions,
+                                selectedVersion = selectedVersion,
+                                onVersionSelected = {
+                                    viewModel.selectOptifineVersion(it as LoaderVersion)
+                                }
+                            )
                         }
                     }
                 }
@@ -385,16 +376,23 @@ private fun LoaderSelectionCard(
             .height(110.dp)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                brush = if (isSelected) 
-                    Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))
-                    else SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                brush = if (isSelected)
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                else SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 shape = RoundedCornerShape(20.dp)
             ),
         shape = RoundedCornerShape(20.dp),
         color = containerColor
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -421,5 +419,3 @@ private fun LoaderSelectionCard(
         }
     }
 }
-
-

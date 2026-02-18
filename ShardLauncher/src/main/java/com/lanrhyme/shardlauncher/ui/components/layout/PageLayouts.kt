@@ -64,7 +64,7 @@ fun PageLazyColumn(
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(16.dp),
-    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(12.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(8.dp),
     showScrollIndicator: Boolean = true,
     content: LazyListScope.() -> Unit
 ) {

@@ -88,7 +88,9 @@ import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
 import com.lanrhyme.shardlauncher.ui.components.layout.SimpleListLayoutCard
 import com.lanrhyme.shardlauncher.ui.components.layout.SliderLayoutCard
+import com.lanrhyme.shardlauncher.ui.components.layout.SliderLayoutItem
 import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutCard
+import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutItem
 import com.lanrhyme.shardlauncher.ui.music.MusicPlayerViewModel
 import com.lanrhyme.shardlauncher.ui.theme.ColorPalettes
 import com.lanrhyme.shardlauncher.ui.theme.ThemeColor
@@ -528,7 +530,7 @@ internal fun LauncherSettingsContent(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    SliderLayoutCard(
+                    SliderLayoutItem(
                         value = tempBlur,
                         onValueChange = { tempBlur = it },
                         valueRange = 0f..25f,
@@ -538,7 +540,7 @@ internal fun LauncherSettingsContent(
                         isGlowEffectEnabled = isGlowEffectEnabled
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    SliderLayoutCard(
+                    SliderLayoutItem(
                         value = tempBrightness,
                         onValueChange = { tempBrightness = it },
                         valueRange = -100f..100f,
@@ -559,18 +561,18 @@ internal fun LauncherSettingsContent(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    SwitchLayoutCard(
+                    SwitchLayoutItem(
                         checked = randomBackground,
                         onCheckedChange = { randomBackground = !randomBackground },
                         title = "启动时随机选择背景"
                     )
-                    SwitchLayoutCard(
+                    SwitchLayoutItem(
                         checked = tempEnableParallax,
                         onCheckedChange = { tempEnableParallax = !tempEnableParallax },
                         title = "启用背景视差效果"
                     )
                     if (tempEnableParallax) {
-                        SliderLayoutCard(
+                        SliderLayoutItem(
                             value = tempParallaxMagnitude,
                             onValueChange = { tempParallaxMagnitude = it },
                             valueRange = 1f..40f,
@@ -748,10 +750,10 @@ internal fun LauncherSettingsContent(
     ) {
         item {
             Text(
-                text = "显示设置",
+                text = "主题设置", //TODO:i18n
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                color = Color.Unspecified,
                 modifier = Modifier.animatedAppearance(0, animationSpeed)
             )
         }

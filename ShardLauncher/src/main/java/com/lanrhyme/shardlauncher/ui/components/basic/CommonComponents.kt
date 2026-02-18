@@ -741,7 +741,7 @@ fun CapsuleTextField(
             )
             .background(
                 MaterialTheme.colorScheme.surfaceVariant.copy(
-                    alpha = (cardAlpha * 0.4f).coerceAtLeast(0.1f)
+                    alpha = (cardAlpha * 0.9f).coerceAtLeast(0.3f)
                 )
             ),
         verticalAlignment = Alignment.CenterVertically
@@ -763,7 +763,7 @@ fun CapsuleTextField(
                 .fillMaxHeight()
                 .background(
                     MaterialTheme.colorScheme.surface.copy(
-                        alpha = (cardAlpha * 0.9f).coerceAtLeast(0.3f)
+                        alpha = (cardAlpha * 0.4f).coerceAtLeast(0.1f)
                     )
                 )
                 .onFocusChanged { isFocused = it.isFocused }

@@ -1,6 +1,7 @@
 package com.lanrhyme.shardlauncher.ui.components.basic
 
 import android.os.Build
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -105,7 +106,7 @@ fun ShardButton(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = tween(durationMillis = 100),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "button_scale"
     )
 
@@ -117,17 +118,22 @@ fun ShardButton(
     }
     val padding = contentPadding ?: defaultPadding
 
-    // 基础修饰符
+    // 基础修饰符，处理缩放和最小高度
     val baseModifier = modifier
         .scale(scale)
         .defaultMinSize(minHeight = minHeight)
+
+    // 应用 Haze 效果（如果启用）
+    val contentModifier = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        baseModifier.clip(shape).hazeEffect(state = hazeState)
+    } else baseModifier
 
     // 根据类型渲染
     when (type) {
         ButtonType.GRADIENT -> {
             GradientButton(
                 onClick = onClick,
-                modifier = baseModifier,
+                modifier = contentModifier,
                 enabled = enabled,
                 shape = shape,
                 contentPadding = padding,
@@ -138,7 +144,7 @@ fun ShardButton(
         ButtonType.GLASS -> {
             GlassButton(
                 onClick = onClick,
-                modifier = baseModifier,
+                modifier = contentModifier,
                 enabled = enabled,
                 shape = shape,
                 contentPadding = padding,
@@ -146,60 +152,48 @@ fun ShardButton(
                 content = content
             )
         }
-        else -> {
-            // 标准 Material 按钮
-            val buttonModifier = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                baseModifier.clip(shape).hazeEffect(state = hazeState)
-            } else baseModifier
+        ButtonType.FILLED -> {
+            val defaultColors = if (isCardBlurEnabled) {
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            } else ButtonDefaults.buttonColors()
 
-            val contentWithWeight: @Composable RowScope.() -> Unit = { content() }
-
-            when (type) {
-                ButtonType.FILLED -> {
-                    val defaultColors = if (isCardBlurEnabled) {
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else ButtonDefaults.buttonColors()
-
-                    Button(
-                        onClick = onClick,
-                        modifier = buttonModifier,
-                        enabled = enabled,
-                        shape = shape,
-                        colors = colors ?: defaultColors,
-                        contentPadding = padding,
-                        interactionSource = interactionSource,
-                        content = contentWithWeight
-                    )
-                }
-                ButtonType.OUTLINED -> {
-                    OutlinedButton(
-                        onClick = onClick,
-                        modifier = buttonModifier,
-                        enabled = enabled,
-                        shape = shape,
-                        colors = colors ?: ButtonDefaults.outlinedButtonColors(),
-                        contentPadding = padding,
-                        interactionSource = interactionSource,
-                        content = contentWithWeight
-                    )
-                }
-                ButtonType.TEXT -> {
-                    TextButton(
-                        onClick = onClick,
-                        modifier = buttonModifier,
-                        enabled = enabled,
-                        shape = shape,
-                        colors = colors ?: ButtonDefaults.textButtonColors(),
-                        contentPadding = padding,
-                        interactionSource = interactionSource,
-                        content = contentWithWeight
-                    )
-                }
-                else -> {} // GRADIENT 和 GLASS 已在上面处理
-            }
+            Button(
+                onClick = onClick,
+                modifier = contentModifier,
+                enabled = enabled,
+                shape = shape,
+                colors = colors ?: defaultColors,
+                contentPadding = padding,
+                interactionSource = interactionSource,
+                content = content
+            )
+        }
+        ButtonType.OUTLINED -> {
+            OutlinedButton(
+                onClick = onClick,
+                modifier = contentModifier,
+                enabled = enabled,
+                shape = shape,
+                colors = colors ?: ButtonDefaults.outlinedButtonColors(),
+                contentPadding = padding,
+                interactionSource = interactionSource,
+                content = content
+            )
+        }
+        ButtonType.TEXT -> {
+            TextButton(
+                onClick = onClick,
+                modifier = contentModifier,
+                enabled = enabled,
+                shape = shape,
+                colors = colors ?: ButtonDefaults.textButtonColors(),
+                contentPadding = padding,
+                interactionSource = interactionSource,
+                content = content
+            )
         }
     }
 }
@@ -218,14 +212,15 @@ private fun GradientButton(
     content: @Composable RowScope.() -> Unit
 ) {
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        label = "gradient_button_scale"
-    )
-
+    
     Surface(
         onClick = onClick,
-        modifier = modifier.scale(scale),
+        modifier = modifier.glow(
+            color = MaterialTheme.colorScheme.primary,
+            cornerRadius = 16.dp, // 默认对应 RoundedCornerShape(16.dp)
+            blurRadius = if (isPressed) 16.dp else 0.dp,
+            enabled = true
+        ),
         enabled = enabled,
         shape = shape,
         color = Color.Transparent,
@@ -235,10 +230,10 @@ private fun GradientButton(
         Box(
             modifier = Modifier
                 .background(
-                    brush = Brush.horizontalGradient(
+                    brush = Brush.linearGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.tertiary
+                            MaterialTheme.colorScheme.secondary
                         )
                     ),
                     shape = shape
@@ -269,31 +264,15 @@ private fun GlassButton(
     interactionSource: MutableInteractionSource,
     content: @Composable RowScope.() -> Unit
 ) {
-    val (isCardBlurEnabled, _, hazeState) = LocalCardLayoutConfig.current
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        label = "glass_button_scale"
-    )
-
-    val baseModifier = modifier
-        .scale(scale)
-        .clip(shape)
-
-    val finalModifier = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        baseModifier.hazeEffect(state = hazeState)
-    } else baseModifier
-
     Surface(
         onClick = onClick,
-        modifier = finalModifier,
+        modifier = modifier,
         enabled = enabled,
         shape = shape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
         border = BorderStroke(
             0.5.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
         ),
         interactionSource = interactionSource
     ) {
@@ -327,35 +306,45 @@ fun ShardIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     size: Dp = 40.dp,
-    containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+    containerColor: Color = Color.Transparent, // 默认透明以便显示发光
     contentColor: Color = MaterialTheme.colorScheme.primary
 ) {
+    val (isCardBlurEnabled, _, hazeState) = LocalCardLayoutConfig.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.9f else 1f,
-        animationSpec = spring(stiffness = 400f),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "icon_button_scale"
     )
 
+    val shape = RoundedCornerShape(size / 2)
+    
+    val baseModifier = modifier
+        .size(size)
+        .scale(scale)
+        .glow(
+            color = contentColor,
+            cornerRadius = size / 2,
+            blurRadius = if (isPressed) 12.dp else 6.dp,
+            enabled = true
+        )
+
+    val finalModifier = if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        baseModifier.clip(shape).hazeEffect(state = hazeState)
+    } else baseModifier
+
     Surface(
-        modifier = modifier
-            .size(size)
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            )
-            .glow(
-                color = contentColor,
-                cornerRadius = size / 2,
-                blurRadius = 8.dp,
-                enabled = isPressed
-            ),
-        shape = RoundedCornerShape(size / 2),
-        color = containerColor
+        modifier = finalModifier.clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            enabled = enabled,
+            onClick = onClick
+        ),
+        shape = shape,
+        color = if (containerColor == Color.Transparent && isCardBlurEnabled) {
+             MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+        } else containerColor
     ) {
         Box(
             modifier = Modifier.fillMaxWidth(),

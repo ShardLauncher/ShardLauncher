@@ -310,20 +310,7 @@ private fun ModsList(
             }
         } else {
             // 空状态
-            val emptyCardShape = RoundedCornerShape(16.dp)
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            Modifier.clip(emptyCardShape).hazeEffect(state = hazeState)
-                        } else Modifier
-                    ),
-                shape = emptyCardShape,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-                )
-            ) {
+            Column{
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

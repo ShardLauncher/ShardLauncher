@@ -17,6 +17,7 @@ foundationLayoutVersion = "1.10.1"
 uiGraphics = "1.10.2"
 animation = "1.10.2"
 foundation = "1.10.2"
+androidxFoundationLayout = "1.10.3"
 
 
 [plugins]
@@ -67,4 +68,5 @@ androidx-foundation-layout = { group = "androidx.compose.foundation", name = "fo
 androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "androidxFoundationLayout" }
 

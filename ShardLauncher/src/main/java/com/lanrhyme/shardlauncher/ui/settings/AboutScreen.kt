@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -266,11 +267,11 @@ private fun QuickActionsTile(
     ) {
         QuickActionButton(
             modifier = Modifier.weight(1f),
-            icon = Icons.Default.Code,
+            icon = R.drawable.icon_github,
             title = "GitHub",
             subtitle = "查看源代码",
             onClick = onGithubClick,
-            color = Color(0xFF24292E)
+            color = MaterialTheme.colorScheme.primary
         )
         QuickActionButton(
             modifier = Modifier.weight(1f),
@@ -282,6 +283,8 @@ private fun QuickActionsTile(
         )
     }
 }
+
+
 
 @Composable
 private fun QuickActionButton(
@@ -331,6 +334,53 @@ private fun QuickActionButton(
     }
 }
 
+@Composable
+private fun QuickActionButton(
+    modifier: Modifier = Modifier,
+    icon: Int,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    color: Color
+) {
+    ShardGlassCard(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = color.copy(alpha = 0.1f),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = color
+                    )
+                }
+            }
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
 // ==================== 版本信息磁贴 ====================
 
 @Composable
@@ -545,12 +595,14 @@ private fun CreditsSection(animationSpeed: Float) {
                     name = "LanRhyme",
                     role = "Lead Developer & UI Designer",
                     GithubUrl = "https://github.com/LanRhyme",
+                    BiliBiliUrl = "https://space.bilibili.com/496901387",
                     WebsiteUrl = "https://lanrhyme.netlify.app"
                 )
                 CreditPersonTile(
                     image = R.drawable.img_herbrine8403,
                     name = "爱科技的学生党",
                     role = "联合开发者，项目维护者",
+                    BiliBiliUrl = "https://space.bilibili.com/1447116805",
                     GithubUrl = "https://github.com/herbrine8403"
                 )
             }

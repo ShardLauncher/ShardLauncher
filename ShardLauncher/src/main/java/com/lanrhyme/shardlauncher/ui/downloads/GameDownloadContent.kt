@@ -54,8 +54,6 @@ fun GameDownloadContent(navController: NavController) {
         ) {
             // Filter Section
             item {
-                PageSection(title = "版本筛选") {
-                    Spacer(modifier = Modifier.height(8.dp))
                     FilterBar(
                         selectedVersionTypes = selectedVersionTypes.toList(),
                         searchQuery = searchQuery,
@@ -64,7 +62,6 @@ fun GameDownloadContent(navController: NavController) {
                         onRefresh = { viewModel.loadVersions(forceRefresh = true) },
                         animatedSpeed = animatedSpeed
                     )
-                }
             }
 
             // Version List
@@ -99,8 +96,8 @@ private fun FilterBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
-                .padding(horizontal = 12.dp),
+                .height(30.dp)
+                .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {

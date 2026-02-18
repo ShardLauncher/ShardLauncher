@@ -389,7 +389,7 @@ private fun VersionsLayout(
                         IconButton(onClick = onInstall) {
                             Icon(Icons.Filled.Download, contentDescription = "安装新版本") // TODO: i18n
                         }
-                        
+
                         // Version category tabs
                         VersionCategoryItem(
                             value = VersionCategory.ALL,

@@ -208,7 +208,7 @@ fun LeftNavigationPane(
             horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "实例管理",
+            selectedVersion?.getVersionName() ?: "",
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 1.sp
@@ -229,16 +229,6 @@ fun LeftNavigationPane(
                     .fillMaxWidth()
                     .padding(bottom = 24.dp)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .glow(
-                            color = MaterialTheme.colorScheme.primary,
-                            cornerRadius = 40.dp,
-                            blurRadius = 16.dp
-                        )
-                ) {
                     AsyncImage(
                         model = selectedVersion?.let { VersionsManager.getVersionIconFile(it) },
                         contentDescription = null,
@@ -246,21 +236,9 @@ fun LeftNavigationPane(
                         error = painterResource(id = R.drawable.img_minecraft),
                         modifier = Modifier
                             .size(72.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface)
                     )
-                }
                 
                 Spacer(modifier = Modifier.height(12.dp))
-                
-                Text(
-                    text = selectedVersion?.getVersionName() ?: "",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
 
@@ -306,13 +284,6 @@ fun LeftNavigationPane(
                 }
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "Shard Launcher v1.0",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-        )
     }
 }
 
@@ -357,7 +328,6 @@ fun GameVersionListContent(
             IconButton(
                 onClick = { VersionsManager.refresh("Manual") },
                 colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -366,7 +336,6 @@ fun GameVersionListContent(
             IconButton(
                 onClick = onShowDirectoryPopup,
                  colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             ) {
                 Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -500,7 +469,6 @@ fun AdvancedVersionCard(
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         shape = shape,
         border = when {
-            isCurrent -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
             isSelected -> BorderStroke(2.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
             else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
         },

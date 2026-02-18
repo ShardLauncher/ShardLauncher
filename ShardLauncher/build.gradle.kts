@@ -164,6 +164,7 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("dev.chrisbanes.haze:haze:1.7.1")
     implementation("dev.chrisbanes.haze:haze-materials:1.7.1")
+    implementation(libs.foundation.layout)
 
     // Native libraries
     // Bytehook is now provided by SL-GameCore

@@ -3,7 +3,6 @@ package com.lanrhyme.shardlauncher.ui.account
 import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -26,15 +25,10 @@ import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -49,7 +43,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -64,14 +57,13 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.ui.components.basic.*
-import com.lanrhyme.shardlauncher.game.account.getDisplayName
+import com.lanrhyme.shardlauncher.ui.components.basic.DialogSize
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFab
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabDirection
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabItem
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
-import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -104,7 +96,7 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .weight(0.35f)
+                        .weight(0.2f)
                         .padding(24.dp)
                         .animatedAppearance(1, animatedSpeed)
                 ) {
@@ -231,107 +223,110 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
         when (val state = microsoftLoginState) {
             is MicrosoftLoginState.InProgress -> {
                 val deviceCodeResponse by accountViewModel.deviceCodeData.collectAsState()
-                PopupContainer(
+                ShardDialog(
                     visible = true,
                     onDismissRequest = if (deviceCodeResponse != null) {
                         { accountViewModel.cancelMicrosoftLogin() }
                     } else {
                         {}
-                    }
-                ) {
-                    if (deviceCodeResponse != null) {
-                        val clipboardManager = LocalClipboard.current
-                        LaunchedEffect(deviceCodeResponse) {
-                            deviceCodeResponse?.let { dcrData ->
-                                clipboardManager.setClipEntry(
-                                    ClipEntry(
-                                        ClipData.newPlainText(
-                                            "Microsoft Device Code",
-                                            dcrData.userCode
+                    },
+                    size = DialogSize.SMALL,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false,
+                    content = {
+                        if (deviceCodeResponse != null) {
+                            val clipboardManager = LocalClipboard.current
+                            LaunchedEffect(deviceCodeResponse) {
+                                deviceCodeResponse?.let { dcrData ->
+                                    clipboardManager.setClipEntry(
+                                        ClipEntry(
+                                            ClipData.newPlainText(
+                                                "Microsoft Device Code",
+                                                dcrData.userCode
+                                            )
                                         )
                                     )
-                                )
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "代码已复制到剪贴板",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Microsoft 登录", style = MaterialTheme.typography.titleLarge)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("请访问以下链接并输入代码：")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                deviceCodeResponse!!.verificationUri,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable {
-                                    val intent = Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse(deviceCodeResponse!!.verificationUri)
-                                    )
-                                    context.startActivity(intent)
+                                    Toast.makeText(
+                                        context,
+                                        "代码已复制到剪贴板",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "代码 (长按复制)：",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = deviceCodeResponse!!.userCode,
-                                style = MaterialTheme.typography.displayMedium,
-                                modifier = Modifier.combinedClickable(
-                                    onClick = {},
-                                    onLongClick = {
-                                        scope.launch {
-                                            clipboardManager.setClipEntry(
-                                                ClipEntry(
-                                                    ClipData.newPlainText(
-                                                        "Microsoft Device Code",
-                                                        deviceCodeResponse!!.userCode
-                                                    )
-                                                )
-                                            )
-                                        }
-                                        Toast.makeText(
-                                            context,
-                                            "代码已复制到剪贴板",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                            }
+
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Microsoft 登录", style = MaterialTheme.typography.titleLarge)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("请访问以下链接并输入代码：")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    deviceCodeResponse!!.verificationUri,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        val intent = Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse(deviceCodeResponse!!.verificationUri)
+                                        )
+                                        context.startActivity(intent)
                                     }
                                 )
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            TextButton(
-                                onClick = {
-                                    accountViewModel.cancelMicrosoftLogin()
-                                },
-                                modifier = Modifier.align(Alignment.End)
-                            ) { Text("取消") }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "代码 (长按复制)：",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = deviceCodeResponse!!.userCode,
+                                    style = MaterialTheme.typography.displayMedium,
+                                    modifier = Modifier.combinedClickable(
+                                        onClick = {},
+                                        onLongClick = {
+                                            scope.launch {
+                                                clipboardManager.setClipEntry(
+                                                    ClipEntry(
+                                                        ClipData.newPlainText(
+                                                            "Microsoft Device Code",
+                                                            deviceCodeResponse!!.userCode
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                            Toast.makeText(
+                                                context,
+                                                "代码已复制到剪贴板",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                CircularProgressIndicator(
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                TextButton(
+                                    onClick = {
+                                        accountViewModel.cancelMicrosoftLogin()
+                                    },
+                                    modifier = Modifier.align(Alignment.End)
+                                ) { Text("取消") }
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("登录中", style = MaterialTheme.typography.titleLarge)
+                                Spacer(Modifier.height(16.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) { CircularProgressIndicator() }
+                            }
                         }
-                    } else {
-                        Column(
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("登录中", style = MaterialTheme.typography.titleLarge)
-                            Spacer(Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) { CircularProgressIndicator() }
-                        }
-                    }
-                }
+                    })
             }
 
             is MicrosoftLoginState.Error -> {

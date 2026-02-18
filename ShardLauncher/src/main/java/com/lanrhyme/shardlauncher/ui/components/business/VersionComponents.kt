@@ -46,7 +46,7 @@ fun VersionListItem(
         shape = RoundedCornerShape(20.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -59,7 +59,7 @@ fun VersionListItem(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Minecraft ${version.id}",
+                    text = "${version.id}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
