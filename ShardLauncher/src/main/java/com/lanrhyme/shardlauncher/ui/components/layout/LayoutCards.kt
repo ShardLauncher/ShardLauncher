@@ -307,7 +307,6 @@ fun <E> SimpleListLayoutCard(
  * @param title 标题文本
  * @param summary 摘要文本（可选）
  * @param valueRange 值范围
- * @param steps 步数
  * @param enabled 是否启用
  * @param shape 卡片形状
  * @param displayValue 显示值（可能与实际值不同）
@@ -322,7 +321,6 @@ fun SliderLayoutCard(
     title: String,
     summary: String? = null,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
-    steps: Int = 0,
     enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(16.dp),
     displayValue: Float = value,
@@ -354,7 +352,6 @@ fun SliderLayoutCard(
                     onValueChange = onValueChange,
                     modifier = Modifier.weight(1f),
                     valueRange = valueRange,
-                    steps = steps,
                     enabled = enabled,
                     interactionSource = interactionSource,
                     thumb = {

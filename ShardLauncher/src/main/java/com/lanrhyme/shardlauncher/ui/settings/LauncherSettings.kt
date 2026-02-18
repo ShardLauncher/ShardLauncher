@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,7 +45,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -75,29 +73,25 @@ import coil.request.ImageRequest
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lanrhyme.shardlauncher.common.SidebarPosition
-import com.lanrhyme.shardlauncher.ui.components.basic.CollapsibleCard
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
 import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
-import com.lanrhyme.shardlauncher.ui.components.layout.IconSwitchLayoutCard
-import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.dialog.MusicPlayerDialog
+import com.lanrhyme.shardlauncher.ui.components.basic.CollapsibleCard
 import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import com.lanrhyme.shardlauncher.ui.components.basic.ScrollIndicator
-import com.lanrhyme.shardlauncher.ui.components.layout.SimpleListLayoutCard
-import com.lanrhyme.shardlauncher.ui.components.layout.SliderLayoutCard
-import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutCard
-import com.lanrhyme.shardlauncher.ui.components.basic.TitleAndSummary
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.components.color.HsvColorPicker
 import com.lanrhyme.shardlauncher.ui.components.color.ThemeColorEditor
+import com.lanrhyme.shardlauncher.ui.components.dialog.MusicPlayerDialog
+import com.lanrhyme.shardlauncher.ui.components.layout.IconSwitchLayoutCard
+import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.components.layout.SimpleListLayoutCard
+import com.lanrhyme.shardlauncher.ui.components.layout.SliderLayoutCard
+import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutCard
 import com.lanrhyme.shardlauncher.ui.music.MusicPlayerViewModel
 import com.lanrhyme.shardlauncher.ui.theme.ColorPalettes
 import com.lanrhyme.shardlauncher.ui.theme.ThemeColor
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
 import kotlin.math.abs
 
 data class BackgroundItem(
@@ -888,7 +882,6 @@ internal fun LauncherSettingsContent(
                     value = cardAlpha,
                     onValueChange = onCardAlphaChange,
                     valueRange = 0f..1f,
-                    steps = 19,
                     title = "卡片背景不透明度",
                     summary = "调整卡片背景的不透明度",
                     displayValue = cardAlpha,
@@ -912,7 +905,6 @@ internal fun LauncherSettingsContent(
                         value = lightEffectAnimationSpeed,
                         onValueChange = onLightEffectAnimationSpeedChange,
                         valueRange = 0.5f..2f,
-                        steps = 14,
                         title = "光效运动速度",
                         summary = "控制背景光效的运动速度",
                         displayValue = lightEffectAnimationSpeed,
@@ -1006,7 +998,6 @@ internal fun LauncherSettingsContent(
                     value = animationSpeed,
                     onValueChange = onAnimationSpeedChange,
                     valueRange = 0.5f..2f,
-                    steps = 14,
                     title = "动画速率",
                     summary = "控制 UI 动画的播放速度",
                     displayValue = animatedSpeed,
@@ -1019,7 +1010,6 @@ internal fun LauncherSettingsContent(
                     value = uiScale,
                     onValueChange = onUiScaleChange,
                     valueRange = 0.7f..1.1f,
-                    steps = 13,
                     title = "UI 缩放",
                     summary = "调整启动器整体界面的大小",
                     displayValue = uiScale,

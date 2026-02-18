@@ -503,7 +503,6 @@ fun MusicPlayerSettingsPage(musicPlayerViewModel: MusicPlayerViewModel) {
                     title = "音乐音量", // TODO:i18n
                     summary = "调整播放器音量", // TODO:i18n
                     valueRange = 0f..1f,
-                    steps = 0,
                     enabled = true,
                     isGlowEffectEnabled = true
             )

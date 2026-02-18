@@ -109,6 +109,17 @@ ui/components/
 - **`TextInputLayoutCard`** - 文本输入卡片
 - **`ButtonLayoutCard`** - 带按钮的卡片
 
+### LayoutItems.kt - 布局项（无卡片包装）
+
+- **`SwitchLayoutItem`** - 带开关的布局项
+- **`IconSwitchLayoutItem`** - 带图标和开关的布局项
+- **`SimpleListLayoutItem`** - 列表选择布局项
+- **`SliderLayoutItem`** - 滑块布局项
+- **`TextInputLayoutItem`** - 文本输入布局项
+- **`ButtonLayoutItem`** - 带按钮的布局项
+- **`InfoLayoutItem`** - 信息展示布局项
+- **`ClickableInfoLayoutItem`** - 可点击信息布局项
+
 ### LocalLayoutConfig.kt - 布局配置
 
 - **`CardLayoutConfig`** - 卡片布局配置数据类
