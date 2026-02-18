@@ -78,7 +78,7 @@ JNIEXPORT jint JNICALL Java_android_os_OpenJDKNativeRegister_nativeRegisterNativ
 	return (jint) result;
 }
 
-JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_setLdLibraryPath(JNIEnv *env, jclass clazz, jstring ldLibraryPath) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setLdLibraryPath(JNIEnv *env, jclass clazz, jstring ldLibraryPath) {
 	// jclass exception_cls = (*env)->FindClass(env, "java/lang/UnsatisfiedLinkError");
 	
 	android_update_LD_LIBRARY_PATH_t android_update_LD_LIBRARY_PATH;
@@ -100,7 +100,7 @@ JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_setLdLibr
 	(*env)->ReleaseStringUTFChars(env, ldLibraryPath, ldLibPathUtf);
 }
 
-JNIEXPORT jboolean JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_dlopen(JNIEnv *env, jclass clazz, jstring name) {
+JNIEXPORT jboolean JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_dlopen(JNIEnv *env, jclass clazz, jstring name) {
 	const char *nameUtf = (*env)->GetStringUTFChars(env, name, 0);
 	void* handle = dlopen(nameUtf, RTLD_GLOBAL | RTLD_LAZY);
 	if (!handle) {
@@ -112,7 +112,7 @@ JNIEXPORT jboolean JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_dlope
 	return handle != NULL;
 }
 
-JNIEXPORT jint JNICALL Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_chdir(JNIEnv *env, jclass clazz, jstring nameStr) {
+JNIEXPORT jint JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_chdir(JNIEnv *env, jclass clazz, jstring nameStr) {
 	const char *name = (*env)->GetStringUTFChars(env, nameStr, NULL);
 	int retval = chdir(name);
 	(*env)->ReleaseStringUTFChars(env, nameStr, name);

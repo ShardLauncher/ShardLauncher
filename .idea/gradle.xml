@@ -10,6 +10,7 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/LWJGL" />
             <option value="$PROJECT_DIR$/SL-GameCore" />
             <option value="$PROJECT_DIR$/ShardLauncher" />
           </set>

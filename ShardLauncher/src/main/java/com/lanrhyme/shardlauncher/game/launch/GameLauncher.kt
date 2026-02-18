@@ -8,17 +8,14 @@ package com.lanrhyme.shardlauncher.game.launch
 import android.app.Activity
 import android.opengl.EGL14
 import android.opengl.EGLConfig
-import android.os.Build
 import androidx.compose.ui.unit.IntSize
 import com.lanrhyme.shardlauncher.BuildConfig
 import com.lanrhyme.shardlauncher.bridge.LoggerBridge
-import com.lanrhyme.shardlauncher.bridge.ZLBridge
-import com.lanrhyme.shardlauncher.bridge.ZLNativeInvoker
+import com.lanrhyme.shardlauncher.bridge.SLBridge
 import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.account.AccountType
 import com.lanrhyme.shardlauncher.game.account.AccountsManager
 import com.lanrhyme.shardlauncher.game.account.offline.OfflineYggdrasilServer
-import com.lanrhyme.shardlauncher.game.multirt.Runtime
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
 import com.lanrhyme.shardlauncher.game.plugin.driver.DriverPluginManager
 import com.lanrhyme.shardlauncher.game.plugin.renderer.RendererPluginManager
@@ -31,7 +28,6 @@ import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.device.Architecture
 import com.lanrhyme.shardlauncher.game.account.isLocalAccount
 import com.lanrhyme.shardlauncher.utils.logging.Logger
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class GameLauncher(
@@ -232,7 +228,7 @@ class GameLauncher(
         // Load renderer plugin libraries
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->
             renderer.dlopen.forEach { lib ->
-                ZLBridge.dlopen("${renderer.path}/$lib")
+                SLBridge.dlopen("${renderer.path}/$lib")
             }
         }
 
@@ -246,12 +242,12 @@ class GameLauncher(
             
             // Try to restore renderer library loading - this is critical for graphics
             try {
-                var success = ZLBridge.dlopen(rendererLib)
+                var success = SLBridge.dlopen(rendererLib)
                 if (!success) {
                     // Try to find in LD_LIBRARY_PATH if direct loading fails
                     val pathLib = findInLdLibPath(rendererLib)
                     if (pathLib != null) {
-                        success = ZLBridge.dlopen(pathLib)
+                        success = SLBridge.dlopen(pathLib)
                     }
                 }
                 

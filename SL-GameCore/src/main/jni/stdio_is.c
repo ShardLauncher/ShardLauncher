@@ -169,10 +169,10 @@ Java_com_lanrhyme_shardlauncher_bridge_LoggerBridge_setListener(JNIEnv *env, __a
 }
 
 JNIEXPORT void JNICALL
-Java_com_lanrhyme_shardlauncher_bridge_ZLBridge_setupExitMethod(JNIEnv *env, jclass clazz,
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setupExitMethod(JNIEnv *env, jclass clazz,
                                                         jobject context) {
     exitTrap_ctx = (*env)->NewGlobalRef(env,context);
     (*env)->GetJavaVM(env,&exitTrap_jvm);
-    exitTrap_exitClass = (*env)->NewGlobalRef(env,(*env)->FindClass(env,"com/lanrhyme/shardlauncher/bridge/ZLNativeInvoker"));
+    exitTrap_exitClass = (*env)->NewGlobalRef(env,(*env)->FindClass(env,"com/lanrhyme/shardlauncher/bridge/SLNativeInvoker"));
     exitTrap_exitMethod = (*env)->GetStaticMethodID(env, exitTrap_exitClass, "jvmExit", "(IZ)V");
 }

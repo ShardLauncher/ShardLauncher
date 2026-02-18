@@ -1,7 +1,7 @@
 package org.lwjgl.glfw;
 
-import static com.lanrhyme.shardlauncher.bridge.ZLBridgeStatesKt.CURSOR_DISABLED;
-import static com.lanrhyme.shardlauncher.bridge.ZLBridgeStatesKt.CURSOR_ENABLED;
+import static com.lanrhyme.shardlauncher.bridge.SLBridgeStatesKt.CURSOR_DISABLED;
+import static com.lanrhyme.shardlauncher.bridge.SLBridgeStatesKt.CURSOR_ENABLED;
 
 import android.content.ClipData;
 import android.content.ClipDescription;
@@ -14,7 +14,7 @@ import androidx.annotation.Nullable;
 
 import com.lanrhyme.shardlauncher.bridge.CursorShape;
 import com.lanrhyme.shardlauncher.bridge.ZLBridgeStates;
-import com.lanrhyme.shardlauncher.bridge.ZLNativeInvoker;
+import com.lanrhyme.shardlauncher.bridge.SLNativeInvoker;
 import com.lanrhyme.shardlauncher.game.keycodes.LwjglGlfwKeycode;
 
 import java.util.function.Consumer;
@@ -168,7 +168,7 @@ public class CallbackBridge {
                     return "";
                 }
             case CLIPBOARD_OPEN:
-                ZLNativeInvoker.openLink(copy);
+                SLNativeInvoker.openLink(copy);
             default:
                 return null;
         }

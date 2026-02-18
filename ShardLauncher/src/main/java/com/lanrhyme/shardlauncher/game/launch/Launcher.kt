@@ -3,8 +3,7 @@ package com.lanrhyme.shardlauncher.game.launch
 import android.content.Context
 import android.os.Build
 import androidx.compose.ui.unit.IntSize
-import com.lanrhyme.shardlauncher.bridge.LoggerBridge
-import com.lanrhyme.shardlauncher.bridge.ZLBridge
+import com.lanrhyme.shardlauncher.bridge.SLBridge
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
 import com.lanrhyme.shardlauncher.game.multirt.Runtime
 import com.lanrhyme.shardlauncher.info.InfoDistributor
@@ -13,7 +12,7 @@ import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.logging.Logger
 import com.lanrhyme.shardlauncher.utils.platform.getDisplayFriendlyRes
-import com.lanrhyme.shardlauncher.bridge.ZLNativeInvoker
+import com.lanrhyme.shardlauncher.bridge.SLNativeInvoker
 import com.oracle.dalvik.VMLauncher
 import java.io.File
 import java.util.Locale
@@ -80,7 +79,7 @@ abstract class Launcher(
         userArgs: String,
         getWindowSize: () -> IntSize
     ): Int {
-        ZLNativeInvoker.staticLauncher = this
+        SLNativeInvoker.staticLauncher = this
 
         val runtimeLibraryPath = getRuntimeLibraryPath()
         // ZLBridge.setLdLibraryPath(runtimeLibraryPath)  // Temporarily disabled due to JNI issues
@@ -88,7 +87,7 @@ abstract class Launcher(
         
         // Try to restore setLdLibraryPath - this is critical for library loading
         try {
-            ZLBridge.setLdLibraryPath(runtimeLibraryPath)
+            SLBridge.setLdLibraryPath(runtimeLibraryPath)
             Logger.lInfo("Successfully set LD_LIBRARY_PATH: $runtimeLibraryPath")
         } catch (e: UnsatisfiedLinkError) {
             Logger.lWarning("Failed to set LD_LIBRARY_PATH, continuing without it: ${e.message}")
@@ -133,7 +132,7 @@ abstract class Launcher(
         
         // Try to restore chdir - this is important for correct working directory
         try {
-            ZLBridge.chdir(chdir())
+            SLBridge.chdir(chdir())
             Logger.lInfo("Successfully changed directory to: ${chdir()}")
         } catch (e: UnsatisfiedLinkError) {
             Logger.lWarning("Failed to change directory, continuing without it: ${e.message}")
@@ -188,7 +187,7 @@ abstract class Launcher(
                 
                 // Try to restore dlopen for Java runtime libraries - these are critical
                 try {
-                    val success = ZLBridge.dlopen(path)
+                    val success = SLBridge.dlopen(path)
                     if (success) {
                         Logger.lInfo("Successfully loaded Java runtime library: $path")
                     } else {
@@ -230,7 +229,7 @@ abstract class Launcher(
             
             // Try to restore OpenAL dlopen - this is important for audio
             try {
-                val success = ZLBridge.dlopen(openal.absolutePath)
+                val success = SLBridge.dlopen(openal.absolutePath)
                 if (success) {
                     Logger.lInfo("Successfully loaded OpenAL library: ${openal.absolutePath}")
                 } else {
