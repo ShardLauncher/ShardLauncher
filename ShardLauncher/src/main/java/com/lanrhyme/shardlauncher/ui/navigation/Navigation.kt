@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -18,6 +19,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Settings : Screen("settings", "设置", Icons.Filled.Settings)
     object DeveloperOptions : Screen("developer_options", "开发者选项", Icons.Filled.DeveloperMode)
     object Account : Screen("account", "账户", Icons.Filled.AccountCircle)
+    object Game : Screen("game/{versionName}", "游戏", Icons.Filled.PlayArrow)
 }
 
 val navigationItems = listOf(
@@ -33,7 +35,8 @@ val routeHierarchy = mapOf(
     "component_demo" to Screen.DeveloperOptions.route,
     "log_viewer" to Screen.DeveloperOptions.route,
     "version_detail/{versionId}" to Screen.Download.route,
-    Screen.Account.route to Screen.Home.route
+    Screen.Account.route to Screen.Home.route,
+    "game/{versionName}" to Screen.Home.route
 )
 
 fun getRootRoute(route: String?): String? {

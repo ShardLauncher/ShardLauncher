@@ -11,7 +11,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -103,6 +102,7 @@ import com.lanrhyme.shardlauncher.ui.developeroptions.DeveloperOptionsScreen
 import com.lanrhyme.shardlauncher.ui.downloads.DownloadScreen
 import com.lanrhyme.shardlauncher.ui.downloads.VersionDetailScreen
 import com.lanrhyme.shardlauncher.ui.home.HomeScreen
+import com.lanrhyme.shardlauncher.ui.launch.GameScreen
 import com.lanrhyme.shardlauncher.ui.music.MusicPlayerViewModel
 import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.ui.navigation.getRootRoute
@@ -816,7 +816,7 @@ fun MainScreen(
 
                 NotificationPopupHost()
 
-                // 鍏ㄥ眬涓嬭浇杩涘害瀵硅瘽妗?
+                // 鍏ㄥ眬涓嬭浇杩涘害瀵硅妗?
                 val downloadTasks by com.lanrhyme.shardlauncher.game.download.DownloadManager.tasksFlow.collectAsState()
                 val showDownloadDialog by com.lanrhyme.shardlauncher.game.download.DownloadManager.showDialog.collectAsState()
                 val downloadTask by com.lanrhyme.shardlauncher.game.download.DownloadManager.downloadTask.collectAsState()
@@ -1128,6 +1128,16 @@ fun MainContent(
                 }
                 composable("log_viewer") { LogViewerScreen(navController = navController) }
                 composable("component_demo") { ComponentDemoScreen() }
+                composable(
+                    Screen.Game.route,
+                    arguments = listOf(navArgument("versionName") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val versionName = backStackEntry.arguments?.getString("versionName") ?: ""
+                    GameScreen(
+                        versionName = versionName,
+                        onExit = { navController.popBackStack() }
+                    )
+                }
             }
         }
 

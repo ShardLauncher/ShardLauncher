@@ -176,22 +176,7 @@ fun HomeScreen(
                 },
                 onLaunchGame = {
                     selectedVersionForLaunch?.let { version ->
-                        selectedAccount?.let { account ->
-                            coroutineScope.launch {
-                                try {
-                                    GameLaunchManager.launchGame(
-                                        activity = context as android.app.Activity,
-                                        version = version,
-                                        account = account,
-                                        onExit = { code, isSignal ->
-                                            Logger.log(context, "HomeScreen", "Game exited with code: $code")
-                                        }
-                                    )
-                                } catch (e: Exception) {
-                                    Logger.log(context, "HomeScreen", "Launch failed: ${e.message}")
-                                }
-                            }
-                        }
+                        navController.navigate("game/${version.getVersionName()}")
                     }
                 },
                 animatedSpeed = animatedSpeed
