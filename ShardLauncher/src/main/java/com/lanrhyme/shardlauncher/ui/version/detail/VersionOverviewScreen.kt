@@ -735,7 +735,6 @@ private fun VersionOverviewOperations(
             ShardTaskDialog(
                 title = operation.title,
                 task = operation.task,
-                context = scope,
                 onDismiss = { updateOperation(VersionOverviewOperation.None) },
                 onError = { e ->
                     lError("Failed to run task.", e)

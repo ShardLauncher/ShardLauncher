@@ -281,20 +281,19 @@ fun VersionConfigScreen(
         )
     }
 
-    if (showSaveDialog) {
-        ShardAlertDialog(
-            title = "保存配置",
-            text = { Text("确定要保存版本配置吗？") },
-            onDismiss = { showSaveDialog = false },
-            onConfirm = {
-                try {
-                    onSave()
-                    showSaveDialog = false
-                } catch (e: Exception) {
-                    onError("保存配置失败: ${e.message}")
-                    showSaveDialog = false
-                }
+    ShardAlertDialog(
+        visible = showSaveDialog,
+        title = "保存配置",
+        text = "确定要保存版本配置吗？",
+        onDismiss = { showSaveDialog = false },
+        onConfirm = {
+            try {
+                onSave()
+                showSaveDialog = false
+            } catch (e: Exception) {
+                onError("保存配置失败: ${e.message}")
+                showSaveDialog = false
             }
-        )
-    }
+        }
+    )
 }

@@ -149,30 +149,31 @@ fun DeleteVersionDialog(
 ) {
     if (message != null) {
         ShardAlertDialog(
+            visible = true,
             title = "删除版本",
-            text = {Text(message)},
+            text = message,
             onDismiss = onDismissRequest,
             onConfirm = onConfirm
         )
     } else {
         ShardAlertDialog(
+            visible = true,
             title = "删除版本",
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(text = "确定要删除版本 ${version.getVersionName()} 吗？")
-                    Text(text = "此操作将删除版本文件夹及其所有内容")
-                    Text(text = "包括存档、模组、资源包等所有数据")
-                    Text(
-                        text = "此操作不可撤销！",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            },
             onDismiss = onDismissRequest,
             onConfirm = onConfirm,
             onCancel = onDismissRequest
-        )
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = "确定要删除版本 ${version.getVersionName()} 吗？")
+                Text(text = "此操作将删除版本文件夹及其所有内容")
+                Text(text = "包括存档、模组、资源包等所有数据")
+                Text(
+                    text = "此操作不可撤销！",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
     }
 }
 
@@ -256,7 +257,6 @@ fun VersionsOperation(
             ShardTaskDialog(
                 title = versionsOperation.title,
                 task = versionsOperation.task,
-                context = scope,
                 onDismiss = { updateVersionsOperation(VersionOperationState.None) },
                 onError = { e ->
                     onError(e.message ?: "处理失败")

@@ -229,13 +229,12 @@ fun VersionManageScreen(
     }
 
     // Error dialog
-    errorMessage?.let { message ->
-        ShardAlertDialog(
-            title = "错误", // TODO: i18n
-            text = { Text(message) },
-            onDismiss = { errorMessage = null }
-        )
-    }
+    ShardAlertDialog(
+        visible = errorMessage != null,
+        title = "错误", // TODO: i18n
+        text = errorMessage ?: "",
+        onDismiss = { errorMessage = null }
+    )
 }
 
 @Composable

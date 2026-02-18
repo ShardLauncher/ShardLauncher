@@ -1,34 +1,70 @@
 package com.lanrhyme.shardlauncher.ui.components.basic
 
 import android.os.Build
-import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -40,35 +76,22 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.shape.CircleShape
+
+// 注意：CollapsibleCard 已移动到 Cards.kt，使用 ExpandableCard 替代
 
 /**
- * 可折叠卡片组件
- *
- * @param modifier 应用于卡片的修饰符
- * @param title 卡片标题
- * @param summary 卡片摘要（可选）
- * @param animationSpeed 展开/收起动画速度
- * @param content 卡片展开时显示的内容
+ * @deprecated 使用 [ExpandableCard] 替代，位于 Cards.kt
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@Deprecated("使用 ExpandableCard 替代", ReplaceWith("ExpandableCard(title, summary, null, null, modifier, true, RoundedCornerShape(16.dp), CardStyle.DEFAULT, animationSpeed, null) { content() }"))
 @Composable
 fun CollapsibleCard(
         modifier: Modifier = Modifier,
@@ -77,131 +100,27 @@ fun CollapsibleCard(
         animationSpeed: Float = 1.0f,
         content: @Composable () -> Unit
 ) {
-        val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
-        var isExpanded by remember { mutableStateOf(false) }
-        val animationDuration = (300 / animationSpeed).toInt()
-        val cardShape = RoundedCornerShape(16.dp)
-
-        val cardModifier =
-                if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        modifier
-                            .fillMaxWidth()
-                            .clip(cardShape)
-                            .hazeEffect(state = hazeState)
-                } else {
-                        modifier.fillMaxWidth()
-                }
-
-        Card(
-                modifier = cardModifier,
-                shape = cardShape,
-                colors =
-                        CardDefaults.cardColors(
-                                containerColor =
-                                        MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-                        ),
-        ) {
-                Column {
-                        Row(
-                                modifier =
-                                        Modifier
-                                            .clickable { isExpanded = !isExpanded }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                                TitleAndSummary(
-                                        modifier = Modifier.weight(1f),
-                                        title = title,
-                                        summary = summary
-                                )
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
-                        }
-                        AnimatedVisibility(
-                                visible = isExpanded,
-                                enter =
-                                        expandVertically(
-                                                animationSpec =
-                                                        tween(
-                                                                animationDuration,
-                                                                easing = FastOutSlowInEasing
-                                                        )
-                                        ) + fadeIn(animationSpec = tween(animationDuration)),
-                                exit =
-                                        shrinkVertically(
-                                                animationSpec =
-                                                        tween(
-                                                                animationDuration,
-                                                                easing = FastOutSlowInEasing
-                                                        )
-                                        ) + fadeOut(animationSpec = tween(animationDuration))
-                        ) {
-                                Column(
-                                        modifier =
-                                                Modifier.padding(
-                                                        start = 16.dp,
-                                                        end = 16.dp,
-                                                        bottom = 12.dp
-                                                )
-                                ) { content() }
-                        }
-                }
-        }
+    // 转发到新的实现
+    ExpandableCard(
+        title = title,
+        summary = summary,
+        expanded = null,
+        onExpandedChange = null,
+        modifier = modifier,
+        animationSpeed = animationSpeed
+    ) {
+        content()
+    }
 }
 
-/**
- * 一个组合卡片组件，包含标题、可选摘要和常驻内容区域
- * 支持卡片模糊效果配置
- *
- * @param modifier 应用于卡片的修饰符
- * @param title 卡片标题
- * @param summary 卡片摘要（可选）
- * @param content 卡片内容
- */
-@Composable
-fun CombinedCard(
-        modifier: Modifier = Modifier,
-        title: String,
-        summary: String? = null,
-        content: @Composable () -> Unit
-) {
-        val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
-        val cardShape = RoundedCornerShape(16.dp)
-        val cardModifier =
-                if (isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        modifier
-                            .fillMaxWidth()
-                            .clip(cardShape)
-                            .hazeEffect(state = hazeState)
-                } else {
-                        modifier.fillMaxWidth()
-                }
-        Card(
-                modifier = cardModifier,
-                shape = cardShape,
-                colors =
-                        CardDefaults.cardColors(
-                                containerColor =
-                                        MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-                        ),
-        ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                        TitleAndSummary(title = title, summary = summary)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        content()
-                }
-        }
-}
+// 注意：CombinedCard 已移动到 Cards.kt，请直接从那里导入
+
+// 注意：ScalingActionButton 已移动到 Buttons.kt
 
 /**
- * 一个带动画的按钮，在按下时会缩放以提供触觉反馈，并带有默认的渐变背景
- *
- * @param onClick 当按钮被点击时执行的操作
- * @param modifier 应用于按钮的修饰符
- * @param icon 在按钮中显示的图标
- * @param text 在按钮中显示的文本
- * @param enabled 控制按钮的启用状态 当为 `false` 时，此按钮将不可点击，并向用户显示为禁用状态
- * @param animationSpeed 缩放动画的速度
+ * @deprecated 使用 [ShardButton] 配合 [ButtonType.GRADIENT] 替代，位于 Buttons.kt
  */
+@Deprecated("使用 ShardButton 替代", ReplaceWith("ShardButton(onClick, modifier, ButtonType.GRADIENT, ButtonSize.MEDIUM, enabled, RoundedCornerShape(100.dp), null, contentPadding) { content() }"))
 @Composable
 fun ScalingActionButton(
         onClick: () -> Unit,
@@ -215,59 +134,30 @@ fun ScalingActionButton(
         val interactionSource = remember { MutableInteractionSource() }
         val isPressed by interactionSource.collectIsPressedAsState()
         val animationDuration = (150 / animationSpeed).toInt()
-        val scale by
-                animateFloatAsState(
-                        targetValue = if (isPressed) 0.95f else 1f,
-                        label = "buttonScale",
-                        animationSpec = tween(durationMillis = animationDuration)
+    // 转发到新的实现
+    ShardButton(
+        onClick = onClick,
+        modifier = modifier,
+        type = ButtonType.GRADIENT,
+        size = ButtonSize.MEDIUM,
+        enabled = enabled,
+        shape = RoundedCornerShape(100.dp),
+        contentPadding = contentPadding
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
                 )
-
-        val backgroundBrush =
-                Brush.horizontalGradient(
-                        colors =
-                                listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.tertiary,
-                                )
-                )
-        val buttonShape = RoundedCornerShape(100.dp)
-
-        val buttonModifier = modifier
-            .scale(scale)
-            .background(backgroundBrush, shape = buttonShape)
-
-        Button(
-                onClick = onClick,
-                modifier = buttonModifier,
-                enabled = enabled,
-                interactionSource = interactionSource,
-                contentPadding = contentPadding,
-                colors =
-                        ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                elevation =
-                        ButtonDefaults.buttonElevation(
-                                defaultElevation = 0.dp,
-                                pressedElevation = 0.dp
-                        ),
-                shape = buttonShape
-        ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                        icon?.let {
-                                Icon(
-                                        imageVector = it,
-                                        contentDescription = null, // Decorative icon
-                                        modifier = Modifier.size(24.dp)
-                                )
-                                if (text != null) {
-                                        Spacer(Modifier.size(8.dp))
-                                }
-                        }
-                        text?.let { Text(it) }
+                if (text != null) {
+                    Spacer(Modifier.size(8.dp))
                 }
+            }
+            text?.let { Text(it) }
         }
+    }
 }
 
 /**
@@ -1007,110 +897,7 @@ fun TitledDivider(title: String, modifier: Modifier = Modifier) {
         }
 }
 
-/**
- * 一个弹出式的容器卡片组件
- *
- * 该组件提供了一个可动画的弹出式卡片，支持模糊效果（如果 [LocalCardLayoutConfig.isCardBlurEnabled] 为 true 且 Android 版本 >= S），
- * 并且在显示/隐藏时带有弹簧动画效果
- *
- * @param visible 控制弹出卡片的可见性
- * @param onDismissRequest 当用户请求关闭弹出卡片时调用的回调
- * @param modifier 应用于弹出卡片内容的修饰符
- * @param alignment 弹出卡片在屏幕上的对齐方式
- * @param content 弹出卡片内部显示的内容
- */
-@Composable
-fun PopupContainer(
-    visible: Boolean,
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
-    width: Dp = 300.dp,
-    height: Dp = 300.dp,
-    alignment: Alignment = Alignment.Center,
-    content: @Composable () -> Unit
-) {
-    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
-    val visibleState = remember { MutableTransitionState(false) }
-
-    LaunchedEffect(visible) { visibleState.targetState = visible }
-
-    if (visibleState.currentState || visibleState.targetState) {
-        Popup(
-            onDismissRequest = onDismissRequest,
-            properties = PopupProperties(focusable = true),
-            alignment = alignment
-        ) {
-            AnimatedVisibility(
-                visibleState = visibleState,
-                enter =
-                    fadeIn(
-                        animationSpec =
-                            spring(
-                                stiffness =
-                                    Spring.StiffnessMediumLow
-                            )
-                    ) +
-                            scaleIn(
-                                animationSpec =
-                                    spring(
-                                        dampingRatio =
-                                            Spring.DampingRatioMediumBouncy,
-                                        stiffness =
-                                            Spring.StiffnessLow
-                                    ),
-                                initialScale = 0.8f
-                            ),
-                exit =
-                    fadeOut(
-                        animationSpec =
-                            spring(
-                                stiffness =
-                                    Spring.StiffnessMediumLow
-                            )
-                    ) +
-                            scaleOut(
-                                animationSpec =
-                                    spring(
-                                        stiffness =
-                                            Spring.StiffnessMediumLow
-                                    ),
-                                targetScale = 0.8f
-                            )
-            ) {
-                val popupShape = RoundedCornerShape(16.dp)
-                Card(
-                    modifier =
-                        modifier.width(width).height(height)
-                            .then(
-                            if (isCardBlurEnabled &&
-                                Build.VERSION
-                                    .SDK_INT >=
-                                Build.VERSION_CODES
-                                    .S
-                            ) {
-                                Modifier
-                                    .clip(popupShape)
-                                    .hazeEffect(
-                                        state =
-                                            hazeState
-                                    )
-                            } else Modifier
-                        ),
-                    shape = popupShape,
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = if (isCardBlurEnabled) {
-                                MaterialTheme.colorScheme.surface
-                                    .copy(alpha = 0.8f)
-                            } else {
-                                MaterialTheme.colorScheme.surface
-                            }
-                        )
-                ) { content() }
-            }
-        }
-    }
-}
+// 注意：PopupContainer 已移动到 Dialogs.kt，请直接从那里导入
 
 /**
  * 一个滚动条指示器，用于在可滑动列表中指示当前位置

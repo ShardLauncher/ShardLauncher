@@ -1,6 +1,5 @@
 ﻿package com.lanrhyme.shardlauncher.ui.home
 
-import android.R
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -20,15 +19,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,9 +37,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -54,25 +56,30 @@ import coil.compose.AsyncImage
 import com.lanrhyme.shardlauncher.api.ApiClient
 import com.lanrhyme.shardlauncher.data.SettingsRepository
 import com.lanrhyme.shardlauncher.game.account.Account
+import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
+import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.model.LatestVersionsResponse
 import com.lanrhyme.shardlauncher.model.VersionInfo
 import com.lanrhyme.shardlauncher.ui.account.AccountViewModel
-import com.lanrhyme.shardlauncher.ui.components.basic.*
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonSize
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
+import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.ui.xaml.XamlRenderer
 import com.lanrhyme.shardlauncher.ui.xaml.parseXaml
-import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.utils.Logger
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
-import kotlinx.coroutines.delay
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.draw.alpha
-import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
-import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -270,7 +277,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     // Launch Button - Height increased for prominence
-                    ScalingActionButton(
+                    ShardButton(
                         onClick = { 
                             selectedVersionForLaunch?.let { version ->
                                 selectedAccount?.let { account ->
@@ -292,9 +299,16 @@ fun HomeScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        text = if (selectedVersionForLaunch != null && selectedAccount != null) "启动游戏" else "未准备就绪",
+                        type = ButtonType.GRADIENT,
+                        size = ButtonSize.LARGE,
                         enabled = selectedVersionForLaunch != null && selectedAccount != null
-                    )
+                    ) {
+                        Text(
+                            text = if (selectedVersionForLaunch != null && selectedAccount != null) "启动游戏" else "未准备就绪",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -304,25 +318,28 @@ fun HomeScreen(
 @Composable
 fun VersionInfoCard(versionInfo: VersionInfo, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    ShardGlassCard(
+    ShardCard(
         modifier = modifier.fillMaxWidth().alpha(0.5f),
-        shape = RoundedCornerShape(24.dp)
-    ) {
+        shape = RoundedCornerShape(24.dp),
+        style = CardStyle.GLASS,
+        border = true,
+        content = {
             AsyncImage(
-                    model = versionInfo.versionImageLink,
-                    contentDescription = versionInfo.title,
-                    modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
-                    contentScale = ContentScale.Crop
+                model = versionInfo.versionImageLink,
+                contentDescription = versionInfo.title,
+                modifier = Modifier.fillMaxWidth().height(160.dp)
+                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
+                contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
                     Column(Modifier.weight(1f).padding(end = 8.dp)) {
                         Text(
-                            text = versionInfo.title, 
+                            text = versionInfo.title,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -340,44 +357,83 @@ fun VersionInfoCard(versionInfo: VersionInfo, modifier: Modifier = Modifier) {
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ScalingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.officialLink)))
-                            },
-                            icon = Icons.AutoMirrored.Filled.Article,
+                    ShardButton(
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(versionInfo.officialLink)
+                                )
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        type = ButtonType.GRADIENT,
+                        size = ButtonSize.SMALL,
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Article, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
                             text = "官方日志",
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 8.dp)
-                    )
-                    ScalingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.wikiLink)))
-                            },
-                            icon = Icons.Default.Book,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    ShardButton(
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(versionInfo.wikiLink)
+                                )
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        type = ButtonType.GRADIENT,
+                        size = ButtonSize.SMALL,
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Book, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
                             text = "Wiki",
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 8.dp)
-                    )
-                    ScalingActionButton(
-                            onClick = {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.serverJar)))
-                            },
-                            icon = Icons.Default.Download,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    ShardButton(
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(versionInfo.serverJar)
+                                )
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        type = ButtonType.GRADIENT,
+                        size = ButtonSize.SMALL,
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
                             text = "服务端",
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 8.dp)
-                    )
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
-        }
-    }
+        })
+}
 
 
 fun loadXaml(context: Context, fileName: String): String {

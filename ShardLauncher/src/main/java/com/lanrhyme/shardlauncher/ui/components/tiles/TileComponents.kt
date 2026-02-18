@@ -1,14 +1,6 @@
 package com.lanrhyme.shardlauncher.ui.components.tiles
 
-import android.os.Build
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,32 +15,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.lanrhyme.shardlauncher.ui.components.basic.glow
-import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import dev.chrisbanes.haze.hazeEffect
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardIconButton
 
 /**
  * 磁贴尺寸枚举
@@ -62,16 +46,15 @@ enum class TileSize {
 
 /**
  * 磁贴样式枚举
+ * @deprecated 使用 [CardStyle] 替代
  */
-enum class TileStyle {
-    DEFAULT,    // 默认样式 - 使用Surface颜色
-    ACCENT,     // 强调色 - 使用主色
-    GRADIENT,   // 渐变样式
-    GLASS       // 毛玻璃效果
-}
+@Deprecated("使用 CardStyle 替代")
+typealias TileStyle = CardStyle
 
 /**
  * 现代化磁贴卡片组件
+ *
+ * 基于 ShardCard 构建，专门用于磁贴布局
  *
  * @param modifier 修饰符
  * @param size 磁贴尺寸
@@ -85,93 +68,31 @@ enum class TileStyle {
 fun TileCard(
     modifier: Modifier = Modifier,
     size: TileSize = TileSize.MEDIUM,
-    style: TileStyle = TileStyle.DEFAULT,
+    style: CardStyle = CardStyle.DEFAULT,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && onClick != null) 0.96f else 1f,
-        animationSpec = tween(durationMillis = 100),
-        label = "tile_scale"
-    )
-
-    // 根据样式确定背景
-    val backgroundModifier = when (style) {
-        TileStyle.ACCENT -> {
-            Modifier.background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary
-                    )
-                ),
-                shape = shape
-            )
-        }
-        TileStyle.GRADIENT -> {
-            Modifier.background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
-                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
-                    )
-                ),
-                shape = shape
-            )
-        }
-        else -> Modifier
+    // 将 TileStyle 映射到 CardStyle
+    val cardStyle = when (style) {
+        CardStyle.DEFAULT -> CardStyle.DEFAULT
+        CardStyle.GLASS -> CardStyle.GLASS
+        CardStyle.GRADIENT -> CardStyle.GRADIENT
+        CardStyle.ACCENT -> CardStyle.ACCENT
+        CardStyle.BORDERED -> CardStyle.BORDERED
     }
 
-    val cardModifier = modifier
-        .scale(scale)
-        .clip(shape)
-        .then(
-            if (style == TileStyle.GLASS && isCardBlurEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Modifier.hazeEffect(state = hazeState)
-            } else Modifier
-        )
-        .then(
-            if (onClick != null) {
-                Modifier.clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = enabled,
-                    onClick = onClick
-                )
-            } else Modifier
-        )
-
-    Card(
-        modifier = cardModifier,
+    ShardCard(
+        modifier = modifier,
+        enabled = enabled,
         shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = when (style) {
-                TileStyle.DEFAULT -> MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha)
-                TileStyle.GLASS -> MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-                else -> Color.Transparent
-            }
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(backgroundModifier)
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                content = content
-            )
-        }
-    }
+        style = cardStyle,
+        onClick = onClick,
+        border = style != CardStyle.GRADIENT && style != CardStyle.ACCENT,
+        contentPadding = PaddingValues(16.dp),
+        content = content
+    )
 }
 
 /**
@@ -192,11 +113,11 @@ fun InfoTile(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    style: TileStyle = TileStyle.DEFAULT,
+    style: CardStyle = CardStyle.DEFAULT,
     onClick: (() -> Unit)? = null
 ) {
     val contentColor = when (style) {
-        TileStyle.ACCENT, TileStyle.GRADIENT -> MaterialTheme.colorScheme.onPrimary
+        CardStyle.ACCENT, CardStyle.GRADIENT -> MaterialTheme.colorScheme.onPrimary
         else -> MaterialTheme.colorScheme.onSurface
     }
 
@@ -213,7 +134,7 @@ fun InfoTile(
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = if (style == TileStyle.DEFAULT) {
+                color = if (style == CardStyle.DEFAULT) {
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                 } else {
                     contentColor.copy(alpha = 0.2f)
@@ -227,7 +148,7 @@ fun InfoTile(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = if (style == TileStyle.DEFAULT) {
+                        tint = if (style == CardStyle.DEFAULT) {
                             MaterialTheme.colorScheme.primary
                         } else contentColor
                     )
@@ -282,7 +203,7 @@ fun ActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    style: TileStyle = TileStyle.DEFAULT
+    style: CardStyle = CardStyle.DEFAULT
 ) {
     ActionTileContent(
         title = title,
@@ -318,7 +239,7 @@ fun ActionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    style: TileStyle = TileStyle.DEFAULT
+    style: CardStyle = CardStyle.DEFAULT
 ) {
     ActionTileContent(
         title = title,
@@ -344,10 +265,10 @@ private fun ActionTileContent(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    style: TileStyle = TileStyle.DEFAULT
+    style: CardStyle = CardStyle.DEFAULT
 ) {
     val contentColor = when (style) {
-        TileStyle.ACCENT, TileStyle.GRADIENT -> MaterialTheme.colorScheme.onPrimary
+        CardStyle.ACCENT, CardStyle.GRADIENT -> MaterialTheme.colorScheme.onPrimary
         else -> MaterialTheme.colorScheme.onSurface
     }
 
@@ -362,7 +283,7 @@ private fun ActionTileContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             iconProvider(
-                if (style == TileStyle.DEFAULT) {
+                if (style == CardStyle.DEFAULT) {
                     MaterialTheme.colorScheme.primary
                 } else contentColor
             )
@@ -400,12 +321,12 @@ fun ContentTile(
     title: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    style: TileStyle = TileStyle.DEFAULT,
+    style: CardStyle = CardStyle.DEFAULT,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val contentColor = when (style) {
-        TileStyle.ACCENT, TileStyle.GRADIENT -> MaterialTheme.colorScheme.onPrimary
+        CardStyle.ACCENT, CardStyle.GRADIENT -> MaterialTheme.colorScheme.onPrimary
         else -> MaterialTheme.colorScheme.onSurface
     }
 
@@ -414,9 +335,7 @@ fun ContentTile(
         style = style,
         onClick = onClick
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             // 标题栏
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -427,7 +346,7 @@ fun ContentTile(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = if (style == TileStyle.DEFAULT) {
+                        tint = if (style == CardStyle.DEFAULT) {
                             MaterialTheme.colorScheme.primary
                         } else contentColor
                     )
@@ -538,7 +457,9 @@ private class TileGridScopeImpl(
  * @param modifier 修饰符
  * @param enabled 是否启用
  * @param size 按钮大小
+ * @deprecated 使用 [ShardIconButton] 替代
  */
+@Deprecated("使用 ShardIconButton 替代", ReplaceWith("ShardIconButton(onClick, icon, modifier, enabled, size)"))
 @Composable
 fun TileButton(
     onClick: () -> Unit,
@@ -547,43 +468,11 @@ fun TileButton(
     enabled: Boolean = true,
     size: Dp = 36.dp
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f,
-        animationSpec = spring(stiffness = 400f),
-        label = "button_scale"
+    ShardIconButton(
+        onClick = onClick,
+        icon = icon,
+        modifier = modifier,
+        enabled = enabled,
+        size = size
     )
-
-    Surface(
-        modifier = modifier
-            .size(size)
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            )
-            .glow(
-                color = MaterialTheme.colorScheme.primary,
-                cornerRadius = size / 2,
-                blurRadius = 8.dp,
-                enabled = isPressed
-            ),
-        shape = RoundedCornerShape(size / 2),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(size * 0.5f),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
 }
