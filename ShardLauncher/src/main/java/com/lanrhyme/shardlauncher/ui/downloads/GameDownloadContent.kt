@@ -24,6 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.model.BmclapiManifest
 import com.lanrhyme.shardlauncher.ui.components.basic.*
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.business.VersionListItem
 import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
 import com.lanrhyme.shardlauncher.ui.components.layout.PageStateContainer
@@ -89,9 +91,10 @@ private fun FilterBar(
     onRefresh: () -> Unit,
     animatedSpeed: Float
 ) {
-    ShardGlassCard(
+    ShardCard(
         modifier = Modifier.animatedAppearance(1, animatedSpeed),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(24.dp),
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier

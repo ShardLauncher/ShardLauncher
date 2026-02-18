@@ -74,7 +74,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lanrhyme.shardlauncher.common.SidebarPosition
 import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
-import com.lanrhyme.shardlauncher.ui.components.basic.CollapsibleCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ExpandableCard
 import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
@@ -885,7 +885,7 @@ internal fun LauncherSettingsContent(
             )
         }
         item {
-            CollapsibleCard(
+            ExpandableCard(
                     modifier = Modifier.animatedAppearance(8, animationSpeed),
                     title = "背景光效",
                     summary = if (enableBackgroundLightEffect) "已开启" else "已关闭",

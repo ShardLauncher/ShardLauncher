@@ -71,7 +71,8 @@ fun AccountCard(
         val isPressed by interactionSource.collectIsPressedAsState()
 
         Box {
-                ShardGlassCard(
+                ShardCard(
+                        style = CardStyle.GLASS,
                         modifier = Modifier
                                 .selectableCard(
                                         isSelected = isSelected,

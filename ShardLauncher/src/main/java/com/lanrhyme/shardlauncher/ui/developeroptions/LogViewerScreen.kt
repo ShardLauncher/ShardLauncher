@@ -25,7 +25,8 @@ import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.basic.SubPageNavigationBar
 import com.lanrhyme.shardlauncher.ui.components.basic.TitleAndSummary
-import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButtonWithIcon
 import com.lanrhyme.shardlauncher.utils.logging.LogCollector
 import kotlinx.coroutines.delay
 import android.content.Context
@@ -154,27 +155,29 @@ fun LogViewerScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // 自动刷新开关
-                    ScalingActionButton(
+                    ShardButtonWithIcon(
                         onClick = { autoRefresh = !autoRefresh },
                         modifier = Modifier.weight(1f),
                         text = if (autoRefresh) "停止刷新" else "自动刷新",
-                        icon = if (autoRefresh) Icons.Default.Pause else Icons.Default.PlayArrow
+                        icon = if (autoRefresh) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        type = ButtonType.GRADIENT
                     )
-                    
+
                     // 清空日志
-                    ScalingActionButton(
-                        onClick = { 
+                    ShardButtonWithIcon(
+                        onClick = {
                             LogCollector.clear()
                             logs = emptyList()
                         },
                         modifier = Modifier.weight(1f),
                         text = "清空日志",
-                        icon = Icons.Default.Delete
+                        icon = Icons.Default.Delete,
+                        type = ButtonType.GRADIENT
                     )
-                    
+
                     // 导出日志
-                    ScalingActionButton(
-                        onClick = { 
+                    ShardButtonWithIcon(
+                        onClick = {
                             exportLogs(context) { message ->
                                 exportMessage = message
                                 showExportDialog = true
@@ -182,7 +185,8 @@ fun LogViewerScreen(navController: NavController) {
                         },
                         modifier = Modifier.weight(1f),
                         text = "导出日志",
-                        icon = Icons.Default.Save
+                        icon = Icons.Default.Save,
+                        type = ButtonType.GRADIENT
                     )
                 }
                 

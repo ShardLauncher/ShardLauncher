@@ -27,7 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButtonWithIcon
 import com.lanrhyme.shardlauncher.ui.components.layout.SliderLayoutCard
 import com.lanrhyme.shardlauncher.ui.components.basic.SubPageNavigationBar
 import com.lanrhyme.shardlauncher.ui.components.basic.TitleAndSummary
@@ -57,10 +58,11 @@ fun DeveloperOptionsScreen(navController: NavController) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     TitleAndSummary(title = "组件演示", summary = "查看所有可用组件")
                     Spacer(modifier = Modifier.height(16.dp))
-                    ScalingActionButton(
+                    ShardButtonWithIcon(
                             onClick = { navController.navigate("component_demo") },
                             modifier = Modifier.fillMaxWidth(),
-                            text = "打开组件演示"
+                            text = "打开组件演示",
+                            type = ButtonType.GRADIENT
                     )
                 }
             }
@@ -75,11 +77,12 @@ fun DeveloperOptionsScreen(navController: NavController) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     TitleAndSummary(title = "实时日志", summary = "查看应用运行日志，用于调试")
                     Spacer(modifier = Modifier.height(16.dp))
-                    ScalingActionButton(
+                    ShardButtonWithIcon(
                             onClick = { navController.navigate("log_viewer") },
                             modifier = Modifier.fillMaxWidth(),
                             text = "打开日志查看器",
-                            icon = Icons.Default.List
+                            icon = Icons.Default.List,
+                            type = ButtonType.GRADIENT
                     )
                 }
             }
@@ -89,10 +92,11 @@ fun DeveloperOptionsScreen(navController: NavController) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     TitleAndSummary(title = "模拟崩溃", summary = "测试崩溃报告功能")
                     Spacer(modifier = Modifier.height(16.dp))
-                    ScalingActionButton(
+                    ShardButtonWithIcon(
                             onClick = { throw RuntimeException("Test Crash") },
                             modifier = Modifier.fillMaxWidth(),
-                            text = "模拟崩溃"
+                            text = "模拟崩溃",
+                            type = ButtonType.GRADIENT
                     )
                 }
             }

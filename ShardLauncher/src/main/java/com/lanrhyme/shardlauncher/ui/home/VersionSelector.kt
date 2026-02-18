@@ -44,11 +44,12 @@ fun VersionSelector(
     val cardShape = RoundedCornerShape(16.dp)
 
     // 版本选择卡片
-    ShardGlassCard(
+    ShardCard(
         modifier = modifier
             .height(72.dp)
             .clickable { showVersionList = true },
         shape = RoundedCornerShape(20.dp),
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -162,12 +163,13 @@ private fun VersionListItem(
     val (isCardBlurEnabled, cardAlpha, hazeState) = LocalCardLayoutConfig.current
     val dateFormat = remember { SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()) }
 
-    ShardGlassCard(
+    ShardCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .then(if (isSelected) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp)) else Modifier),
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

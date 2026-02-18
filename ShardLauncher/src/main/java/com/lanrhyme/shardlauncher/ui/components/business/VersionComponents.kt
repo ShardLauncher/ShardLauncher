@@ -22,7 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.model.BmclapiManifest
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
 
 /**
@@ -39,11 +40,11 @@ fun VersionListItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    ShardGlassCard(
+    ShardCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp)
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp),

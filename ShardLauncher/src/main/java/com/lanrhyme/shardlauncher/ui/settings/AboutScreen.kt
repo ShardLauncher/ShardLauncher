@@ -61,9 +61,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lanrhyme.shardlauncher.R
 import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
 import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardSectionHeader
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
@@ -190,10 +191,11 @@ private fun RightPanel(
 
 @Composable
 private fun AppHeaderTile(animationSpeed: Float) {
-    ShardGlassCard(
+    ShardCard(
         modifier = Modifier
             .fillMaxWidth()
-            .animatedAppearance(0, animationSpeed)
+            .animatedAppearance(0, animationSpeed),
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -295,9 +297,10 @@ private fun QuickActionButton(
     onClick: () -> Unit,
     color: Color
 ) {
-    ShardGlassCard(
+    ShardCard(
         modifier = modifier,
-        onClick = onClick
+        onClick = onClick,
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -343,9 +346,10 @@ private fun QuickActionButton(
     onClick: () -> Unit,
     color: Color
 ) {
-    ShardGlassCard(
+    ShardCard(
         modifier = modifier,
-        onClick = onClick
+        onClick = onClick,
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -393,8 +397,9 @@ private fun VersionInfoTile(animationSpeed: Float) {
     val gitBranch = stringResource(id = R.string.git_branch)
     val buildStatus = stringResource(id = R.string.build_status)
 
-    ShardGlassCard(
-        modifier = Modifier.animatedAppearance(0, animationSpeed)
+    ShardCard(
+        modifier = Modifier.animatedAppearance(0, animationSpeed),
+        style = CardStyle.GLASS
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ShardSectionHeader(title = "编译信息")
@@ -583,8 +588,9 @@ private fun VersionInfoRowContent(
 
 @Composable
 private fun CreditsSection(animationSpeed: Float) {
-    ShardGlassCard(
-        modifier = Modifier.animatedAppearance(3, animationSpeed)
+    ShardCard(
+        modifier = Modifier.animatedAppearance(3, animationSpeed),
+        style = CardStyle.GLASS
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ShardSectionHeader(title = "核心团队")
@@ -769,8 +775,9 @@ private fun CreditPersonTile(
 
 @Composable
 private fun ThanksSection(animationSpeed: Float) {
-    ShardGlassCard(
-        modifier = Modifier.animatedAppearance(4, animationSpeed)
+    ShardCard(
+        modifier = Modifier.animatedAppearance(4, animationSpeed),
+        style = CardStyle.GLASS
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ShardSectionHeader(title = "鸣谢")
@@ -872,8 +879,9 @@ private fun ApiServicesTile(animationSpeed: Float) {
         )
     }
 
-    ShardGlassCard(
-        modifier = Modifier.animatedAppearance(5, animationSpeed)
+    ShardCard(
+        modifier = Modifier.animatedAppearance(5, animationSpeed),
+        style = CardStyle.GLASS
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             ShardSectionHeader(title = "第三方服务")

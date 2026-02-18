@@ -190,6 +190,7 @@ fun VersionScreen(navController: NavController, animationSpeed: Float) {
 
     errorMessage?.let { message ->
         ShardAlertDialog(
+            visible = true,
             title = "提示",
             text = message,
             onDismiss = { errorMessage = null }
@@ -547,7 +548,7 @@ fun DirectorySelectionPopup(onDismissRequest: () -> Unit) {
         GamePathNameDialog(onDismissRequest = { showGamePathNameDialog = false }, onConfirm = { name -> GamePathManager.addNewPath(name, pendingGamePath ?: ""); showGamePathNameDialog = false; showFileSelector = false })
     }
     if (showPermissionErrorDialog) {
-        ShardAlertDialog(title = "权限错误", text = permissionError ?: "未知错误", onDismiss = { showPermissionErrorDialog = false })
+        ShardAlertDialog(visible = true, title = "权限错误", text = permissionError ?: "未知错误", onDismiss = { showPermissionErrorDialog = false })
     }
 }
 

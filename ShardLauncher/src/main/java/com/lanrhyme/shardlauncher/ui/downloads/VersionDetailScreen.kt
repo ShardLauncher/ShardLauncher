@@ -55,8 +55,10 @@ import com.lanrhyme.shardlauncher.ui.components.basic.CapsuleTextField
 import com.lanrhyme.shardlauncher.ui.components.basic.CombinedCard
 import com.lanrhyme.shardlauncher.ui.components.business.LoaderVersionDropdown
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
-import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardButtonWithIcon
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.StyledFilterChip
 import com.lanrhyme.shardlauncher.ui.components.basic.SubPageNavigationBar
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
@@ -109,8 +111,9 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
             )
 
             // Hero Section
-            ShardGlassCard(
-                modifier = Modifier.animatedAppearance(1, animatedSpeed)
+            ShardCard(
+                modifier = Modifier.animatedAppearance(1, animatedSpeed),
+                style = CardStyle.GLASS
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -161,10 +164,11 @@ fun VersionDetailScreen(navController: NavController, versionId: String?) {
                     .animatedAppearance(3, animatedSpeed)
                     .fillMaxWidth()
             ) {
-                ScalingActionButton(
+                ShardButtonWithIcon(
                     onClick = { viewModel.download() },
                     icon = androidx.compose.material.icons.Icons.Default.Download,
                     text = if (downloadTask?.taskState == TaskState.RUNNING) "正在准备下载..." else "开始下载游戏",
+                    type = ButtonType.GRADIENT,
                     enabled = downloadTask == null || downloadTask?.taskState == TaskState.COMPLETED,
                     modifier = Modifier
                         .fillMaxWidth()

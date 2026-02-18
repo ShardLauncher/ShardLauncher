@@ -193,14 +193,15 @@ fun VersionItemLayout(
         label = "ItemScale"
     )
 
-    ShardGlassCard(
+    ShardCard(
         modifier = modifier
             .graphicsLayer(scaleX = scale, scaleY = scale)
             .selectableCard(isSelected = selected, isPressed = isPressed),
         onClick = {
             if (!selected) onSelected()
         },
-        shape = RoundedCornerShape(20.dp)
+        shape = RoundedCornerShape(20.dp),
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

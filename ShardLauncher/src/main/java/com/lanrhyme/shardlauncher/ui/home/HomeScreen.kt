@@ -65,7 +65,6 @@ import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
 import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
-import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
@@ -236,8 +235,9 @@ private fun WelcomeCard(
     nodes: List<XamlNode>,
     animatedSpeed: Float
 ) {
-    ShardGlassCard(
-        modifier = Modifier.animatedAppearance(1, animatedSpeed)
+    ShardCard(
+        modifier = Modifier.animatedAppearance(1, animatedSpeed),
+        style = CardStyle.GLASS
     ) {
         Text(
             text = "欢迎回来！",
@@ -255,8 +255,9 @@ private fun VersionCheckContent(
 ) {
     when {
         errorMessage != null -> {
-            ShardGlassCard(
-                modifier = Modifier.animatedAppearance(3, animatedSpeed)
+            ShardCard(
+                modifier = Modifier.animatedAppearance(3, animatedSpeed),
+                style = CardStyle.GLASS
             ) {
                 Text(
                     text = errorMessage,
@@ -267,8 +268,9 @@ private fun VersionCheckContent(
         }
         latestVersions != null -> {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ShardGlassCard(
-                    modifier = Modifier.animatedAppearance(2, animatedSpeed)
+                ShardCard(
+                    modifier = Modifier.animatedAppearance(2, animatedSpeed),
+                    style = CardStyle.GLASS
                 ) {
                     Text(
                         text = "Minecraft 最新动态",
@@ -292,8 +294,9 @@ private fun VersionCheckContent(
             }
         }
         else -> {
-            ShardGlassCard(
-                modifier = Modifier.animatedAppearance(3, animatedSpeed)
+            ShardCard(
+                modifier = Modifier.animatedAppearance(3, animatedSpeed),
+                style = CardStyle.GLASS
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth().height(100.dp),

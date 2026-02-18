@@ -19,6 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.lanrhyme.shardlauncher.ui.components.basic.*
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.layout.PageContent
 import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
 
@@ -74,11 +76,12 @@ private fun PlaceholderContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ShardGlassCard(
+        ShardCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            shape = RoundedCornerShape(32.dp)
+            shape = RoundedCornerShape(32.dp),
+            style = CardStyle.GLASS
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),

@@ -38,12 +38,13 @@ import dev.chrisbanes.haze.hazeEffect
 fun HomeAccountCard(account: Account) {
     val animatedSpeed = 1.0f
     
-    ShardGlassCard(
+    ShardCard(
             modifier = Modifier
                 .width(135.dp)
                 .height(180.dp)
                 .animatedAppearance(5, animatedSpeed),
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(24.dp),
+            style = CardStyle.GLASS
     ) {
         Column(
                 modifier = Modifier.fillMaxSize(),

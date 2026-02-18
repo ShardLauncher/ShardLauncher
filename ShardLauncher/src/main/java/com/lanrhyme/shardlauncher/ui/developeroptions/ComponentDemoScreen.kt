@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +41,7 @@ import com.lanrhyme.shardlauncher.ui.components.business.FluidFabDirection
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabItem
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
-import com.lanrhyme.shardlauncher.ui.components.basic.ScalingActionButton
+import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
 import com.lanrhyme.shardlauncher.ui.components.basic.SegmentedNavigationBar
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardInputField
@@ -83,11 +85,20 @@ fun ComponentDemoScreen() {
         }
 
         item {
-            ScalingActionButton(
+            ShardButton(
                     onClick = {},
-                    text = "Scaling Action Button",
-                    icon = Icons.Default.Favorite
-            )
+                    type = ButtonType.GRADIENT
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text("Scaling Action Button")
+                }
+            }
         }
 
         item { ShardButton(onClick = {}) { Text("Custom Button") } }

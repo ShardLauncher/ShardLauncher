@@ -675,6 +675,7 @@ private fun VersionOverviewOperations(
         is VersionOverviewOperation.None -> {}
         is VersionOverviewOperation.ResetIconAlert -> {
             ShardAlertDialog(
+                visible = true,
                 title = "重置图标",
                 text = "确定要重置版本图标吗？",
                 onDismiss = { updateOperation(VersionOverviewOperation.None) },

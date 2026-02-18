@@ -56,9 +56,13 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.game.account.Account
-import com.lanrhyme.shardlauncher.ui.components.basic.*
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
 import com.lanrhyme.shardlauncher.ui.components.basic.DialogSize
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
+import com.lanrhyme.shardlauncher.ui.components.basic.SubPageNavigationBar
+import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
+import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFab
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabDirection
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabItem
@@ -100,9 +104,10 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
                         .padding(24.dp)
                         .animatedAppearance(1, animatedSpeed)
                 ) {
-                    ShardGlassCard(
+                    ShardCard(
                         modifier = Modifier.fillMaxSize(),
-                        shape = RoundedCornerShape(32.dp)
+                        shape = RoundedCornerShape(32.dp),
+                        style = CardStyle.GLASS
                     ) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
