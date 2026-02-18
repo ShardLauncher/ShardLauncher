@@ -176,11 +176,7 @@ ShardLauncher 采用现代化的 Material Design 3 设计语言，结合丰富�
 - 支持视差效果 (Parallax)
 
 #### 形状和圆角
-遵循 Material Design 3 的圆角规范：
-- `extraSmall`: 22dp
-- `small`: 4dp
-- `medium`: 8dp
-- `large`: 0dp
+统一16.dp
 
 ### Git Commit 格式
 项目遵循 Conventional Commits 规范，并使用 Emoji 来增强可读性。提交消息格式如下：

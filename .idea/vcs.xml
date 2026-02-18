@@ -3,5 +3,8 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2/NG-GL4ES/NG-GL4ES" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2/NG-GL4ES/NG-GL4ES/3rdparty/SPIRV-Cross" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2/NG-GL4ES/NG-GL4ES/3rdparty/glslang" vcs="Git" />
   </component>
 </project>
