@@ -3,6 +3,8 @@
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,34 +14,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutCard
 import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.Alignment
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
-import com.lanrhyme.shardlauncher.ui.components.basic.ScrollIndicator
 import androidx.compose.ui.res.stringResource
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
+import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
 
 @Composable
 fun GameSettingsContent(
     animationSpeed: Float,
     isGlowEffectEnabled: Boolean
 ) {
-    val listState = rememberLazyListState()
     val allSettings = com.lanrhyme.shardlauncher.settings.AllSettings
     var showRuntimeManageDialog by remember { mutableStateOf(false) }
     var showRendererManageDialog by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+    PageLazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        showScrollIndicator = true
+    ) {
             // === 基础设置 (Foundation) ===
             item { com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "基础设置", modifier = Modifier.animatedAppearance(0, animationSpeed)) }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
             
             item {
                 SwitchLayoutCard(
@@ -73,7 +70,9 @@ fun GameSettingsContent(
             }
 
             // === 运行环境 (Runtime) ===
+            item { Spacer(modifier = Modifier.height(8.dp)) }
             item { com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "运行环境", modifier = Modifier.animatedAppearance(4, animationSpeed)) }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
 
             item {
                 val runtimes = RuntimesManager.getRuntimes()
@@ -140,7 +139,9 @@ fun GameSettingsContent(
             }
 
             // === 图形渲染 (Graphics) ===
+            item { Spacer(modifier = Modifier.height(8.dp)) }
             item { com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "图形渲染", modifier = Modifier.animatedAppearance(10, animationSpeed)) }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
 
             item {
                 val renderers = com.lanrhyme.shardlauncher.game.renderer.Renderers.getAllRenderers()
@@ -253,7 +254,9 @@ fun GameSettingsContent(
             }
 
             // === 日志管理 (Logs) ===
+            item { Spacer(modifier = Modifier.height(8.dp)) }
             item { com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "日志管理", modifier = Modifier.animatedAppearance(20, animationSpeed)) }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
 
             item {
                 SwitchLayoutCard(
@@ -292,7 +295,9 @@ fun GameSettingsContent(
             }
 
             // === 下载设置 (Downloads) ===
+            item { Spacer(modifier = Modifier.height(8.dp)) }
             item { com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "下载设置", modifier = Modifier.animatedAppearance(24, animationSpeed)) }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
 
             item {
                 com.lanrhyme.shardlauncher.ui.components.layout.SimpleListLayoutCard(
@@ -318,12 +323,6 @@ fun GameSettingsContent(
                 )
             }
         }
-
-        ScrollIndicator(
-            listState = listState,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
-    }
 
     RuntimeManageScreen(
         visible = showRuntimeManageDialog,

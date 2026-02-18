@@ -2,12 +2,12 @@ package com.lanrhyme.shardlauncher.ui.version.config
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -16,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.game.version.installed.SettingState
 import com.lanrhyme.shardlauncher.game.version.installed.Version
@@ -63,16 +62,10 @@ fun VersionConfigScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 版本设置标题
-        Text(
-            text = "版本设置",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
+        com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "版本设置")
 
         // 版本隔离
         val isolationOptions = listOf(
@@ -117,13 +110,8 @@ fun VersionConfigScreen(
         )
 
         // 游戏设置标题
-        Text(
-            text = "游戏设置",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
-        )
+        Spacer(modifier = Modifier.height(8.dp))
+        com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "游戏设置")
 
         // 内存分配
         SliderLayoutCard(
@@ -194,13 +182,8 @@ fun VersionConfigScreen(
         )
 
         // 高级设置标题
-        Text(
-            text = "高级设置",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
-        )
+        Spacer(modifier = Modifier.height(8.dp))
+        com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "高级设置")
 
         // 服务器IP
         TextInputLayoutCard(
@@ -239,13 +222,8 @@ fun VersionConfigScreen(
         )
 
         // 触控设置标题
-        Text(
-            text = "触控设置",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp)
-        )
+        Spacer(modifier = Modifier.height(8.dp))
+        com.lanrhyme.shardlauncher.ui.components.basic.TitledDivider(title = "触控设置")
 
         // 启用触控代理
         SwitchLayoutCard(

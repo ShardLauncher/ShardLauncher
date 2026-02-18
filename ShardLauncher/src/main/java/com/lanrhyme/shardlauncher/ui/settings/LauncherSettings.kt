@@ -76,7 +76,6 @@ import com.lanrhyme.shardlauncher.common.SidebarPosition
 import com.lanrhyme.shardlauncher.ui.components.basic.ButtonType
 import com.lanrhyme.shardlauncher.ui.components.basic.CollapsibleCard
 import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
-import com.lanrhyme.shardlauncher.ui.components.basic.ScrollIndicator
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardButton
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDropdownMenu
@@ -86,6 +85,7 @@ import com.lanrhyme.shardlauncher.ui.components.color.ThemeColorEditor
 import com.lanrhyme.shardlauncher.ui.components.dialog.MusicPlayerDialog
 import com.lanrhyme.shardlauncher.ui.components.layout.IconSwitchLayoutCard
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
 import com.lanrhyme.shardlauncher.ui.components.layout.SimpleListLayoutCard
 import com.lanrhyme.shardlauncher.ui.components.layout.SliderLayoutCard
 import com.lanrhyme.shardlauncher.ui.components.layout.SwitchLayoutCard
@@ -742,23 +742,17 @@ internal fun LauncherSettingsContent(
         )
     }
 
-    val listState = rememberLazyListState()
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            state = listState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+    PageLazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        showScrollIndicator = true
+    ) {
         item {
             Text(
                 text = "显示设置",
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        .animatedAppearance(0, animationSpeed)
+                modifier = Modifier.animatedAppearance(0, animationSpeed)
             )
         }
         item {
@@ -1017,12 +1011,6 @@ internal fun LauncherSettingsContent(
             )
         }
         item { Spacer(modifier = Modifier.height(45.dp)) }
-    }
-    
-    ScrollIndicator(
-            listState = listState,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        )
     }
 }
 

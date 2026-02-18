@@ -1,4 +1,4 @@
-﻿package com.lanrhyme.shardlauncher.ui.home
+package com.lanrhyme.shardlauncher.ui.home
 
 import android.content.Context
 import android.content.Intent
@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,10 +68,13 @@ import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardGlassCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
-import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
+import com.lanrhyme.shardlauncher.ui.components.layout.PageLazyColumn
+import com.lanrhyme.shardlauncher.ui.components.layout.PageStateContainer
+import com.lanrhyme.shardlauncher.ui.components.layout.PageTwoColumnLayout
 import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.ui.xaml.XamlRenderer
 import com.lanrhyme.shardlauncher.ui.xaml.parseXaml
+import com.lanrhyme.shardlauncher.ui.xaml.model.XamlNode
 import com.lanrhyme.shardlauncher.utils.Logger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -81,13 +83,12 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-        navController: NavController,
-        enableVersionCheck: Boolean,
-        animationSpeed: Float,
-        accountViewModel: AccountViewModel = viewModel()
+    navController: NavController,
+    enableVersionCheck: Boolean,
+    animationSpeed: Float,
+    accountViewModel: AccountViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) }
@@ -96,7 +97,6 @@ fun HomeScreen(
     var latestVersions by remember { mutableStateOf<LatestVersionsResponse?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val selectedAccount by accountViewModel.selectedAccount.collectAsState()
-    val cardLayoutConfig = LocalCardLayoutConfig.current
     val coroutineScope = rememberCoroutineScope()
     val currentGamePath = com.lanrhyme.shardlauncher.game.path.GamePathManager.currentPath
 
@@ -104,212 +104,268 @@ fun HomeScreen(
     val installedVersions = VersionsManager.versions
     val currentVersion by VersionsManager.currentVersion.collectAsState()
     var selectedVersionForLaunch by remember { mutableStateOf(currentVersion) }
-    
+
     // Update selected version when current version changes
     LaunchedEffect(currentVersion) {
         if (selectedVersionForLaunch == null) {
             selectedVersionForLaunch = currentVersion
         }
     }
-    
+
     // Refresh versions when game path changes
     LaunchedEffect(currentGamePath) {
         VersionsManager.refresh("HomeScreen_GamePathChanged")
     }
 
-    val animatedSpeed by
-            animateFloatAsState(
-                    targetValue = animationSpeed,
-                    animationSpec = tween((1000 / animationSpeed).toInt())
-            )
+    val animatedSpeed by animateFloatAsState(
+        targetValue = animationSpeed,
+        animationSpec = tween((1000 / animationSpeed).toInt())
+    )
 
+    // Version check polling
     if (enableVersionCheck) {
         LaunchedEffect(Unit) {
             Logger.log(context, "HomeScreen", "Version check enabled. Starting polling.")
-            var backoffDelay = 60 * 1000L // 1 minute initial backoff
-            val maxBackoffDelay = 60 * 60 * 1000L // 1 hour
-            val normalPollInterval = 60 * 60 * 1000L // 1 hour
+            var backoffDelay = 60 * 1000L
+            val maxBackoffDelay = 60 * 60 * 1000L
+            val normalPollInterval = 60 * 60 * 1000L
 
             while (true) {
                 var nextDelay = normalPollInterval
                 try {
                     Logger.log(context, "HomeScreen", "Fetching latest versions...")
-                    errorMessage = null // Clear previous error
+                    errorMessage = null
                     val response = ApiClient.versionApiService.getLatestVersions()
                     latestVersions = response
-                    Logger.log(
-                            context,
-                            "HomeScreen",
-                            "Successfully fetched latest versions: $response"
-                    )
-                    // On success, reset backoff delay
+                    Logger.log(context, "HomeScreen", "Successfully fetched latest versions: $response")
                     backoffDelay = 60 * 1000L
                 } catch (e: Exception) {
                     e.printStackTrace()
                     val errorText = "获取版本信息失败: ${e.message}"
                     errorMessage = errorText
                     Logger.log(context, "HomeScreen", errorText)
-
-                    // On failure, use the current backoff delay for the next attempt
                     nextDelay = backoffDelay
-                    // Increase backoff for the *next* failure
                     backoffDelay = (backoffDelay * 2).coerceAtMost(maxBackoffDelay)
-                    Logger.log(
-                            context,
-                            "HomeScreen",
-                            "Request failed. Retrying in ${nextDelay / 1000} seconds."
-                    )
+                    Logger.log(context, "HomeScreen", "Request failed. Retrying in ${nextDelay / 1000} seconds.")
                 }
                 delay(nextDelay)
             }
         }
     }
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(0.72f)) {
-            LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(24.dp)
-            ) {
-                item {
-                    ShardGlassCard(
-                            modifier = Modifier.animatedAppearance(1, animatedSpeed),
-                    ) {
-                        Text(text = "欢迎回来！", style = MaterialTheme.typography.titleMedium)
-                        XamlRenderer(nodes = nodes, modifier = Modifier.padding(vertical = 8.dp))
-                    }
-                }
-                if (enableVersionCheck) {
-                    item {
-                        when {
-                            errorMessage != null -> {
-                                ShardGlassCard(modifier = Modifier.animatedAppearance(3, animatedSpeed)) {
-                                    Text(text = errorMessage!!, modifier = Modifier.padding(16.dp))
-                                }
-                            }
-                            latestVersions != null -> {
-                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    ShardGlassCard(
-                                        modifier = Modifier.animatedAppearance(
-                                            2,
-                                            animatedSpeed
-                                        )
-                                    ) {
-                                        Text(text = "Minecraft 最新动态", style = MaterialTheme.typography.titleMedium)
-                                        Spacer(Modifier.height(8.dp))
-                                        latestVersions!!.release.let { release ->
-                                            VersionInfoCard(
-                                                versionInfo = release,
-                                                modifier = Modifier.animatedAppearance(
-                                                    3,
-                                                    animatedSpeed
-                                                )
-                                            )
+    PageTwoColumnLayout(
+        leftWeight = 0.72f,
+        rightWeight = 0.28f,
+        leftContent = {
+            LeftPanel(
+                nodes = nodes,
+                enableVersionCheck = enableVersionCheck,
+                errorMessage = errorMessage,
+                latestVersions = latestVersions,
+                animatedSpeed = animatedSpeed
+            )
+        },
+        rightContent = {
+            RightPanel(
+                selectedAccount = selectedAccount,
+                selectedVersionForLaunch = selectedVersionForLaunch,
+                installedVersions = installedVersions,
+                onAccountClick = { navController.navigate(Screen.Account.route) },
+                onVersionSelected = { version ->
+                    selectedVersionForLaunch = version
+                    VersionsManager.saveCurrentVersion(version.getVersionName())
+                },
+                onLaunchGame = {
+                    selectedVersionForLaunch?.let { version ->
+                        selectedAccount?.let { account ->
+                            coroutineScope.launch {
+                                try {
+                                    GameLaunchManager.launchGame(
+                                        activity = context as android.app.Activity,
+                                        version = version,
+                                        account = account,
+                                        onExit = { code, isSignal ->
+                                            Logger.log(context, "HomeScreen", "Game exited with code: $code")
                                         }
-                                        Spacer(Modifier.height(8.dp))
-                                        latestVersions!!.snapshot?.let { snapshot ->
-                                            VersionInfoCard(
-                                                versionInfo = snapshot,
-                                                modifier = Modifier.animatedAppearance(
-                                                    4,
-                                                    animatedSpeed
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            else -> {
-                                ShardGlassCard(modifier = Modifier.animatedAppearance(3, animatedSpeed)) {
-                                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator()
-                                    }
+                                    )
+                                } catch (e: Exception) {
+                                    Logger.log(context, "HomeScreen", "Launch failed: ${e.message}")
                                 }
                             }
                         }
                     }
-                }
-            }
+                },
+                animatedSpeed = animatedSpeed
+            )
+        }
+    )
+}
+
+@Composable
+private fun LeftPanel(
+    nodes: List<XamlNode>,
+    enableVersionCheck: Boolean,
+    errorMessage: String?,
+    latestVersions: LatestVersionsResponse?,
+    animatedSpeed: Float
+) {
+    PageLazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        showScrollIndicator = false
+    ) {
+        // Welcome Card
+        item {
+            WelcomeCard(nodes = nodes, animatedSpeed = animatedSpeed)
         }
 
-        VerticalDivider()
+        // Version Check Content
+        if (enableVersionCheck) {
+            item {
+                VersionCheckContent(
+                    errorMessage = errorMessage,
+                    latestVersions = latestVersions,
+                    animatedSpeed = animatedSpeed
+                )
+            }
+        }
+    }
+}
 
-        Box(modifier = Modifier.weight(0.28f).fillMaxHeight()) {
-            Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+@Composable
+private fun WelcomeCard(
+    nodes: List<XamlNode>,
+    animatedSpeed: Float
+) {
+    ShardGlassCard(
+        modifier = Modifier.animatedAppearance(1, animatedSpeed)
+    ) {
+        Text(
+            text = "欢迎回来！",
+            style = MaterialTheme.typography.titleMedium
+        )
+        XamlRenderer(nodes = nodes, modifier = Modifier.padding(vertical = 8.dp))
+    }
+}
+
+@Composable
+private fun VersionCheckContent(
+    errorMessage: String?,
+    latestVersions: LatestVersionsResponse?,
+    animatedSpeed: Float
+) {
+    when {
+        errorMessage != null -> {
+            ShardGlassCard(
+                modifier = Modifier.animatedAppearance(3, animatedSpeed)
             ) {
-                Spacer(modifier = Modifier.weight(1f))
-
-                Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier =
-                                Modifier.clickable { navController.navigate(Screen.Account.route) }
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        latestVersions != null -> {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ShardGlassCard(
+                    modifier = Modifier.animatedAppearance(2, animatedSpeed)
                 ) {
-                    HomeAccountCard(
-                            account = selectedAccount
-                                            ?: Account(
-                                                    uniqueUUID = "",
-                                                    username = "选择账户档案",
-                                                    accountType = null
-                                            ),
+                    Text(
+                        text = "Minecraft 最新动态",
+                        style = MaterialTheme.typography.titleMedium
                     )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.animatedAppearance(6, animatedSpeed)
-                ) {
-                    // Version Selector
-                    VersionSelector(
-                        selectedVersion = selectedVersionForLaunch,
-                        versions = installedVersions,
-                        onVersionSelected = { version ->
-                            selectedVersionForLaunch = version
-                            VersionsManager.saveCurrentVersion(version.getVersionName())
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Launch Button - Height increased for prominence
-                    ShardButton(
-                        onClick = { 
-                            selectedVersionForLaunch?.let { version ->
-                                selectedAccount?.let { account ->
-                                    coroutineScope.launch {
-                                        try {
-                                            GameLaunchManager.launchGame(
-                                                activity = context as android.app.Activity,
-                                                version = version,
-                                                account = account,
-                                                onExit = { code, isSignal ->
-                                                    Logger.log(context, "HomeScreen", "Game exited with code: $code")
-                                                }
-                                            )
-                                        } catch (e: Exception) {
-                                            Logger.log(context, "HomeScreen", "Launch failed: ${e.message}")
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        type = ButtonType.GRADIENT,
-                        size = ButtonSize.LARGE,
-                        enabled = selectedVersionForLaunch != null && selectedAccount != null
-                    ) {
-                        Text(
-                            text = if (selectedVersionForLaunch != null && selectedAccount != null) "启动游戏" else "未准备就绪",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                    Spacer(Modifier.height(8.dp))
+                    latestVersions.release.let { release ->
+                        VersionInfoCard(
+                            versionInfo = release,
+                            modifier = Modifier.animatedAppearance(3, animatedSpeed)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    latestVersions.snapshot?.let { snapshot ->
+                        VersionInfoCard(
+                            versionInfo = snapshot,
+                            modifier = Modifier.animatedAppearance(4, animatedSpeed)
                         )
                     }
                 }
+            }
+        }
+        else -> {
+            ShardGlassCard(
+                modifier = Modifier.animatedAppearance(3, animatedSpeed)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RightPanel(
+    selectedAccount: Account?,
+    selectedVersionForLaunch: com.lanrhyme.shardlauncher.game.version.installed.Version?,
+    installedVersions: List<com.lanrhyme.shardlauncher.game.version.installed.Version>,
+    onAccountClick: () -> Unit,
+    onVersionSelected: (com.lanrhyme.shardlauncher.game.version.installed.Version) -> Unit,
+    onLaunchGame: () -> Unit,
+    animatedSpeed: Float
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Account Section
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable { onAccountClick() }
+        ) {
+            HomeAccountCard(
+                account = selectedAccount ?: Account(
+                    uniqueUUID = "",
+                    username = "选择账户档案",
+                    accountType = null
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Launch Section
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.animatedAppearance(6, animatedSpeed)
+        ) {
+            // Version Selector
+            VersionSelector(
+                selectedVersion = selectedVersionForLaunch,
+                versions = installedVersions,
+                onVersionSelected = onVersionSelected,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Launch Button
+            ShardButton(
+                onClick = onLaunchGame,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                type = ButtonType.GRADIENT,
+                size = ButtonSize.LARGE,
+                enabled = selectedVersionForLaunch != null && selectedAccount != null
+            ) {
+                Text(
+                    text = if (selectedVersionForLaunch != null && selectedAccount != null) "启动游戏" else "未准备就绪",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -318,123 +374,114 @@ fun HomeScreen(
 @Composable
 fun VersionInfoCard(versionInfo: VersionInfo, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+
     ShardCard(
         modifier = modifier.fillMaxWidth().alpha(0.5f),
         shape = RoundedCornerShape(24.dp),
         style = CardStyle.GLASS,
-        border = true,
-        content = {
-            AsyncImage(
-                model = versionInfo.versionImageLink,
-                contentDescription = versionInfo.title,
-                modifier = Modifier.fillMaxWidth().height(160.dp)
-                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                        Text(
-                            text = versionInfo.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        versionInfo.intro?.let { intro ->
-                            Text(
-                                text = intro,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
-                    ShardTag(
-                        text = versionInfo.versionType,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+        border = true
+    ) {
+        AsyncImage(
+            model = versionInfo.versionImageLink,
+            contentDescription = versionInfo.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
+            contentScale = ContentScale.Crop
+        )
+
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = versionInfo.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    ShardButton(
-                        onClick = {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse(versionInfo.officialLink)
-                                )
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        type = ButtonType.GRADIENT,
-                        size = ButtonSize.SMALL,
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Article, null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
+                    versionInfo.intro?.let { intro ->
                         Text(
-                            text = "官方日志",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    ShardButton(
-                        onClick = {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse(versionInfo.wikiLink)
-                                )
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        type = ButtonType.GRADIENT,
-                        size = ButtonSize.SMALL,
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        Icon(Icons.Default.Book, null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Wiki",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    ShardButton(
-                        onClick = {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse(versionInfo.serverJar)
-                                )
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        type = ButtonType.GRADIENT,
-                        size = ButtonSize.SMALL,
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "服务端",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
+                            text = intro,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
+                ShardTag(
+                    text = versionInfo.versionType,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
             }
-        })
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                VersionActionButton(
+                    icon = Icons.AutoMirrored.Filled.Article,
+                    text = "官方日志",
+                    onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.officialLink))
+                        )
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                VersionActionButton(
+                    icon = Icons.Default.Book,
+                    text = "Wiki",
+                    onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.wikiLink))
+                        )
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                VersionActionButton(
+                    icon = Icons.Default.Download,
+                    text = "服务端",
+                    onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(versionInfo.serverJar))
+                        )
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
 }
 
+@Composable
+private fun VersionActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ShardButton(
+        onClick = onClick,
+        modifier = modifier,
+        type = ButtonType.GRADIENT,
+        size = ButtonSize.SMALL,
+        contentPadding = PaddingValues(vertical = 8.dp)
+    ) {
+        Icon(icon, null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
 
 fun loadXaml(context: Context, fileName: String): String {
     val homesDir = File(context.getExternalFilesDir(null), ".shardlauncher/homes")
@@ -454,8 +501,9 @@ fun loadXaml(context: Context, fileName: String): String {
 
     return try {
         context.assets.open(fileName).use { inputStream ->
-            FileOutputStream(externalFile).use { outputStream -> inputStream.copyTo(outputStream) }
-            // Now read the copied file
+            FileOutputStream(externalFile).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
             FileInputStream(externalFile).bufferedReader().use { it.readText() }
         }
     } catch (e: IOException) {
@@ -468,18 +516,16 @@ fun loadXaml(context: Context, fileName: String): String {
 fun VerticalDivider() {
     val dividerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
     Canvas(modifier = Modifier.fillMaxHeight().width(1.dp)) {
-        val brush =
-                Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, dividerColor, Color.Transparent),
-                        startY = 0f,
-                        endY = size.height
-                )
+        val brush = Brush.verticalGradient(
+            colors = listOf(Color.Transparent, dividerColor, Color.Transparent),
+            startY = 0f,
+            endY = size.height
+        )
         drawLine(
-                brush = brush,
-                start = Offset(x = 0f, y = 0f),
-                end = Offset(x = 0f, y = size.height),
-                strokeWidth = 1.dp.toPx()
+            brush = brush,
+            start = Offset(x = 0f, y = 0f),
+            end = Offset(x = 0f, y = size.height),
+            strokeWidth = 1.dp.toPx()
         )
     }
 }
-
