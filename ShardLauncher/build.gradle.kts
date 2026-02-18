@@ -199,4 +199,5 @@ dependencies {
     // OkHttp (already used via retrofit, but making explicit)
     implementation(libs.okhttp)
     implementation(project(":SL-GameCore"))
+    implementation(project(":NG-GL4ES"))
 }

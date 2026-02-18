@@ -11,6 +11,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/LWJGL" />
+            <option value="$PROJECT_DIR$/NG-GL4ES" />
             <option value="$PROJECT_DIR$/SL-GameCore" />
             <option value="$PROJECT_DIR$/ShardLauncher" />
           </set>

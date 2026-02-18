@@ -1,3 +1,6 @@
 [submodule "third_party/ZalithLauncher2"]
 	path = third_party/ZalithLauncher2
 	url = https://github.com/ZalithLauncher/ZalithLauncher2.git
+[submodule "LWJGL/third_party/NG-GL4ES_Source"]
+	path = LWJGL/third_party/NG-GL4ES_Source
+	url = https://github.com/BZLZHH/NG-GL4ES.git
