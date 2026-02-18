@@ -35,6 +35,8 @@ import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
 import com.lanrhyme.shardlauncher.game.multirt.RuntimeInstaller
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
+import com.lanrhyme.shardlauncher.ui.components.basic.DialogSize
+import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,9 +64,13 @@ fun RuntimeManageScreen(
     ShardDialog(
         visible = visible,
         onDismissRequest = onDismissRequest,
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
+        size = DialogSize.FULL
     ) {
-        ShardCard(modifier = Modifier.fillMaxSize()) {
+        ShardCard(
+            modifier = Modifier.fillMaxSize(),
+            style = CardStyle.DEFAULT
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -130,8 +136,9 @@ fun RuntimeManageScreen(
         ShardDialog(
             visible = true,
             onDismissRequest = { showDeleteDialog = null },
-            width = 320.dp,
-            height = 220.dp
+            size = DialogSize.MEDIUM,
+            customWidth = 320.dp,
+            customHeight = 220.dp
         ) {
             Column(
                 modifier = Modifier
@@ -208,8 +215,9 @@ fun RuntimeManageScreen(
         ShardDialog(
             visible = true,
             onDismissRequest = { },
-            width = 360.dp,
-            height = 220.dp
+            size = DialogSize.MEDIUM,
+            customWidth = 360.dp,
+            customHeight = 220.dp
         ) {
             Column(
                 modifier = Modifier
@@ -246,8 +254,9 @@ fun RuntimeManageScreen(
         ShardDialog(
             visible = true,
             onDismissRequest = { importErrorMessage = null },
-            width = 320.dp,
-            height = 220.dp
+            size = DialogSize.MEDIUM,
+            customWidth = 320.dp,
+            customHeight = 220.dp
         ) {
             Column(
                 modifier = Modifier
@@ -473,8 +482,9 @@ private fun BundledRuntimeInstallDialog(
     ShardDialog(
         visible = true,
         onDismissRequest = onDismiss,
-        width = 360.dp,
-        height = 520.dp
+        size = DialogSize.LARGE,
+        customWidth = 360.dp,
+        customHeight = 520.dp
     ) {
         Column(
             modifier = Modifier

@@ -69,7 +69,6 @@ import com.lanrhyme.shardlauncher.ui.components.basic.ShardSectionHeader
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTag
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
 import com.lanrhyme.shardlauncher.ui.components.tiles.TileCard
-import com.lanrhyme.shardlauncher.ui.components.tiles.TileStyle
 
 // ==================== 数据模型 ====================
 
@@ -628,7 +627,7 @@ private fun CreditPersonTile(
     val context = LocalContext.current
     TileCard(
         modifier = Modifier.fillMaxWidth(),
-        style = TileStyle.GLASS
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -802,7 +801,7 @@ private fun ThanksTile(
     TileCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
-        style = TileStyle.GLASS
+        style = CardStyle.GLASS
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
