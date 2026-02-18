@@ -2,6 +2,7 @@ package com.lanrhyme.shardlauncher.game.input;
 
 import android.view.KeyEvent;
 import com.lanrhyme.shardlauncher.game.keycodes.LwjglGlfwKeycode;
+import org.lwjgl.glfw.CallbackBridge;
 import java.util.Arrays;
 
 public class EfficientAndroidLWJGLKeycode {
@@ -124,6 +125,27 @@ public class EfficientAndroidLWJGLKeycode {
         return index >= 0;
     }
 
+    public static void execKey(KeyEvent keyEvent, int valueIndex) {
+        CallbackBridge.holdingAlt = keyEvent.isAltPressed();
+        CallbackBridge.holdingCapslock = keyEvent.isCapsLockOn();
+        CallbackBridge.holdingCtrl = keyEvent.isCtrlPressed();
+        CallbackBridge.holdingNumlock = keyEvent.isNumLockOn();
+        CallbackBridge.holdingShift = keyEvent.isShiftPressed();
+
+        System.out.println(keyEvent.getKeyCode() + " " +keyEvent.getDisplayLabel());
+        char key = (char)(keyEvent.getUnicodeChar() != 0 ? keyEvent.getUnicodeChar() : '\u0000');
+        CallbackBridge.sendKeyPress(
+                getValueByIndex(valueIndex),
+                key,
+                0,
+                CallbackBridge.getCurrentMods(),
+                keyEvent.getAction() == KeyEvent.ACTION_DOWN);
+    }
+
+    public static void execKeyIndex(int index){
+        CallbackBridge.sendKeyPress(getValueByIndex(index));
+    }
+
     public static short getValueByIndex(int index) {
         return sLwjglKeycodes[index];
     }
@@ -142,7 +164,6 @@ public class EfficientAndroidLWJGLKeycode {
     private static void add(int androidKeycode, short LWJGLKeycode){
         sAndroidKeycodes[mTmpCount] = androidKeycode;
         sLwjglKeycodes[mTmpCount] = LWJGLKeycode;
-
         mTmpCount ++;
     }
 }

@@ -1,20 +1,6 @@
 /*
  * Shard Launcher
  * Adapted from Zalith Launcher 2
- * Copyright (C) 2025 MovTery <movtery228@qq.com> and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
  */
 
 package com.lanrhyme.shardlauncher.game.launch
@@ -73,7 +59,7 @@ class GameLauncher(
         try {
             CallbackBridge.nativeSetUseInputStackQueue(gameManifest.arguments != null)
         } catch (e: Exception) {
-            Logger.lWarning("Failed to set input stack queue mode", e)
+            Logger.lWarning("Failed to set input stack queue mode")
         }
 
         // Get current account
@@ -136,8 +122,10 @@ class GameLauncher(
      */
     private fun initializeLogger() {
         runCatching {
-            val logFile = File(PathManager.DIR_NATIVE_LOGS, "${getLogName()}.log")
-            logFile.parentFile?.mkdirs()
+            val logDir = PathManager.DIR_NATIVE_LOGS
+            if (!logDir.exists()) logDir.mkdirs()
+            
+            val logFile = File(logDir, "${getLogName()}.log")
             LoggerBridge.start(logFile.absolutePath)
             Logger.lInfo("Native logging initialized: ${logFile.absolutePath}")
         }.onFailure { e ->
@@ -162,7 +150,7 @@ class GameLauncher(
     /**
      * Start offline Yggdrasil server for skin support
      */
-    private fun startOfflineYggdrasil(account: Account) {
+    private suspend fun startOfflineYggdrasil(account: Account) {
         runCatching {
             offlinePort = OfflineYggdrasilServer.start()
             OfflineYggdrasilServer.addCharacter(account.username, account.profileId)
@@ -300,7 +288,16 @@ class GameLauncher(
         val rendererLib = loadGraphicsLibrary()
         if (rendererLib != null) {
             safeJniCall("dlopen graphics library $rendererLib") {
+                // Try direct load first
                 var success = SLBridge.dlopen(rendererLib)
+                
+                // If not absolute path and failed, try from nativeLibraryDir
+                if (!success && !rendererLib.startsWith("/")) {
+                    val fullPath = "${PathManager.DIR_NATIVE_LIB}/$rendererLib"
+                    Logger.lInfo("Attempting to load from native dir: $fullPath")
+                    success = SLBridge.dlopen(fullPath)
+                }
+                
                 if (!success) {
                     // Try to find in LD_LIBRARY_PATH if direct loading fails
                     val pathLib = findInLdLibPath(rendererLib)
@@ -308,8 +305,11 @@ class GameLauncher(
                         success = SLBridge.dlopen(pathLib)
                     }
                 }
+                
                 if (!success) {
-                    throw RuntimeException("Failed to load renderer library: $rendererLib")
+                    Logger.lError("Failed to load renderer library: $rendererLib. Continuing anyway, it might crash later.")
+                } else {
+                    Logger.lInfo("Successfully loaded renderer library: $rendererLib")
                 }
             }
         }
@@ -447,23 +447,23 @@ class GameLauncher(
         }
 
         // Apply global renderer settings
-        if (AllSettings.dumpShaders.state) {
+        if (AllSettings.dumpShaders.getValue()) {
             envMap["LIBGL_VGPU_DUMP"] = "1"
         }
         
-        if (AllSettings.zinkPreferSystemDriver.state) {
+        if (AllSettings.zinkPreferSystemDriver.getValue()) {
             envMap["POJAV_ZINK_PREFER_SYSTEM_DRIVER"] = "1"
         }
         
-        if (AllSettings.vsyncInZink.state) {
+        if (AllSettings.vsyncInZink.getValue()) {
             envMap["POJAV_VSYNC_IN_ZINK"] = "1"
         }
         
-        if (AllSettings.bigCoreAffinity.state) {
+        if (AllSettings.bigCoreAffinity.getValue()) {
             envMap["POJAV_BIG_CORE_AFFINITY"] = "1"
         }
         
-        if (AllSettings.sustainedPerformance.state) {
+        if (AllSettings.sustainedPerformance.getValue()) {
             envMap["POJAV_SUSTAINED_PERFORMANCE"] = "1"
         }
     }

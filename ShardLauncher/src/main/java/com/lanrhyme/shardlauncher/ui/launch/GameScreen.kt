@@ -17,7 +17,7 @@ import com.lanrhyme.shardlauncher.bridge.SLBridge
 import com.lanrhyme.shardlauncher.game.input.AWTInputEvent
 import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
-import com.lanrhyme.shardlauncher.utils.logging.Logger
+import com.lanrhyme.shardlauncher.utils.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -39,7 +39,7 @@ class GameViewModel : ViewModel() {
             isGameRunning = true
             val version = VersionsManager.versions.find { it.getVersionName() == versionName }
             if (version == null) {
-                Logger.e("GameScreen", "Version not found: $versionName")
+                Logger.lError("Version not found: $versionName")
                 withContext(Dispatchers.Main) { onExit() }
                 return@launch
             }
@@ -52,16 +52,16 @@ class GameViewModel : ViewModel() {
                         IntSize(activity.window.decorView.width, activity.window.decorView.height)
                     },
                     onExit = { code, isSignal ->
-                        Logger.i("GameScreen", "Game exited with code $code, signal: $isSignal")
+                        Logger.lInfo("Game exited with code $code, signal: $isSignal")
                         viewModelScope.launch(Dispatchers.Main) {
                             isGameRunning = false
                             onExit()
                         }
                     }
                 )
-                Logger.i("GameScreen", "Launch process finished with code: $exitCode")
+                Logger.lInfo("Launch process finished with code: $exitCode")
             } catch (e: Exception) {
-                Logger.e("GameScreen", "Failed to launch game", e)
+                Logger.lError("Failed to launch game", e)
                 viewModelScope.launch(Dispatchers.Main) {
                     isGameRunning = false
                     onExit()

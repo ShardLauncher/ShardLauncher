@@ -35,7 +35,6 @@ import com.lanrhyme.shardlauncher.info.InfoDistributor
 import com.lanrhyme.shardlauncher.path.LibPath
 import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.settings.AllSettings
-import com.lanrhyme.shardlauncher.settings.unit.getOrMin
 import com.lanrhyme.shardlauncher.utils.device.Architecture
 import com.lanrhyme.shardlauncher.utils.device.Architecture.ARCH_X86
 import com.lanrhyme.shardlauncher.utils.device.Architecture.is64BitsDevice
@@ -467,7 +466,7 @@ abstract class Launcher(
      */
     protected open fun progressFinalUserArgs(
         args: MutableList<String>,
-        ramAllocation: Int = AllSettings.ramAllocation.getOrMin()
+        ramAllocation: Int = AllSettings.ramAllocation.getValue()
     ) {
         args.purgeArg("-Xms")
         args.purgeArg("-Xmx")
