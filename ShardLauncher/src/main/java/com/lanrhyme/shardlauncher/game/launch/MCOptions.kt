@@ -71,6 +71,43 @@ object MCOptions {
 
     fun containsKey(key: String): Boolean = parameterMap.containsKey(key)
 
+    /**
+     * Load and set language for the Minecraft version
+     */
+    fun loadLanguage(versionName: String) {
+        runCatching {
+            // Try to get language from existing options
+            val currentLang = get("lang")
+            if (currentLang.isNullOrBlank()) {
+                // Set default language based on system locale
+                val systemLang = java.util.Locale.getDefault().language
+                val mcLang = when (systemLang) {
+                    "zh" -> {
+                        val country = java.util.Locale.getDefault().country
+                        when (country) {
+                            "CN", "SG" -> "zh_cn"
+                            "TW", "HK", "MO" -> "zh_tw"
+                            else -> "en_us"
+                        }
+                    }
+                    "ja" -> "ja_jp"
+                    "ko" -> "ko_kr"
+                    "de" -> "de_de"
+                    "fr" -> "fr_fr"
+                    "es" -> "es_es"
+                    "it" -> "it_it"
+                    "pt" -> "pt_br"
+                    "ru" -> "ru_ru"
+                    else -> "en_us"
+                }
+                set("lang", mcLang)
+                Logger.lInfo("Set Minecraft language to: $mcLang")
+            }
+        }.onFailure {
+            Logger.lWarning("Failed to load language for version $versionName", it)
+        }
+    }
+
     fun save() {
         synchronized(lock) {
             val optionsFile = getOptionsFile()

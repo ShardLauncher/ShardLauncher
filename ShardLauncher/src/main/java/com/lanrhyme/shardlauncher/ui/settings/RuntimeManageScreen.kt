@@ -204,7 +204,7 @@ fun RuntimeManageScreen(
                         runtimes = RuntimesManager.getRuntimes()
                     }.onFailure { error ->
                         showProgressDialog = false
-                        // TODO: Show error dialog
+                        importErrorMessage = error.message ?: "安装失败，请重试"
                     }
                 }
             }

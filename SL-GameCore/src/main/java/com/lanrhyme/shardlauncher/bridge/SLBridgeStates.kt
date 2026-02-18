@@ -26,7 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.pointer.PointerIcon
 import android.view.PointerIcon as NativePointerIcon
 
-object ZLBridgeStates {
+object SLBridgeStates {
     /**
      * 状态：指针模式（启用、禁用）
      */

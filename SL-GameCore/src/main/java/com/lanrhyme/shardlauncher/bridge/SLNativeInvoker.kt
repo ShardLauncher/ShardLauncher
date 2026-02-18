@@ -1,17 +1,6 @@
 /*
  * Shard Launcher
  * Adapted from Zalith Launcher 2
- * Copyright (C) 2025 MovTery <movtery228@qq.com> and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
@@ -19,46 +8,230 @@
 
 package com.lanrhyme.shardlauncher.bridge
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.annotation.Keep
+import com.lanrhyme.shardlauncher.utils.logging.Logger
+import java.io.File
 
+/**
+ * Native invoker for bridging between Java/LWJGL and Android
+ * This class is called from native code via JNI
+ */
 @Keep
 object SLNativeInvoker {
+    private const val TAG = "SLNativeInvoker"
+    
+    /**
+     * Global context reference - should be set from Application or Activity
+     */
+    @JvmStatic
+    var context: Context? = null
+    
+    /**
+     * Current launcher instance for exit handling
+     */
     @JvmStatic
     var staticLauncher: Any? = null
 
+    /**
+     * Initialize the invoker with context
+     */
+    @JvmStatic
+    fun init(context: Context) {
+        this.context = context.applicationContext
+        Logger.i(TAG, "SLNativeInvoker initialized")
+    }
+
+    /**
+     * Open a link or share a file
+     * Called from native code when game wants to open a URL or share a file
+     */
     @Keep
     @JvmStatic
     fun openLink(link: String) {
-        // TODO: Implement link opening functionality
-        // This will be connected to the game launch activity later
-        println("Open Link: $link")
+        Logger.i(TAG, "openLink: $link")
+        
+        val ctx = context ?: run {
+            Logger.e(TAG, "Context is null, cannot open link")
+            return
+        }
+        
+        try {
+            // Check if this is a file:// URI for sharing
+            val prefix = "file:"
+            if (link.startsWith(prefix)) {
+                // Handle file sharing
+                val filePath = when {
+                    link.startsWith("file://") -> link.removePrefix("file://")
+                    else -> link.removePrefix(prefix)
+                }
+                
+                Logger.i(TAG, "Sharing file: $filePath")
+                val file = File(filePath)
+                
+                if (file.exists()) {
+                    val uri = Uri.fromFile(file)
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "*/*"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    
+                    val chooserIntent = Intent.createChooser(shareIntent, "Share file")
+                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    ctx.startActivity(chooserIntent)
+                } else {
+                    Logger.e(TAG, "File does not exist: $filePath")
+                }
+            } else {
+                // Handle URL opening
+                val uri = Uri.parse(link)
+                val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                ctx.startActivity(intent)
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to open link: $link", e)
+        }
     }
 
+    /**
+     * Query system clipboard content
+     * Called from native code when game wants to read clipboard
+     */
     @Keep
     @JvmStatic
     fun querySystemClipboard() {
-        // TODO: Implement clipboard query
-        SLBridge.clipboardReceived(null, null)
+        Logger.d(TAG, "querySystemClipboard")
+        
+        val ctx = context ?: run {
+            Logger.e(TAG, "Context is null, cannot query clipboard")
+            SLBridge.clipboardReceived(null, null)
+            return
+        }
+        
+        try {
+            val clipboardManager = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            
+            if (clipboardManager?.hasPrimaryClip() == true) {
+                val clipData = clipboardManager.primaryClip
+                val clipItem = clipData?.getItemAt(0)
+                val clipText = clipItem?.text?.toString()
+                
+                if (clipText != null) {
+                    val mimeType = when (clipData?.description?.mimeTypeCount ?: 0) {
+                        0 -> "text/plain"
+                        else -> clipData?.description?.getMimeType(0) ?: "text/plain"
+                    }
+                    Logger.d(TAG, "Clipboard content received: ${clipText.take(20)}...")
+                    SLBridge.clipboardReceived(clipText, mimeType)
+                } else {
+                    SLBridge.clipboardReceived(null, null)
+                }
+            } else {
+                SLBridge.clipboardReceived(null, null)
+            }
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to query clipboard", e)
+            SLBridge.clipboardReceived(null, null)
+        }
     }
 
+    /**
+     * Put data to system clipboard
+     * Called from native code when game wants to write to clipboard
+     */
     @Keep
     @JvmStatic
     fun putClipboardData(data: String, mimeType: String) {
-        // TODO: Implement clipboard data set
-        println("Put Clipboard: $data ($mimeType)")
+        Logger.d(TAG, "putClipboardData: ${data.take(20)}... ($mimeType)")
+        
+        val ctx = context ?: run {
+            Logger.e(TAG, "Context is null, cannot put clipboard data")
+            return
+        }
+        
+        try {
+            val clipboardManager = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            
+            val clipData = when (mimeType) {
+                "text/html" -> ClipData.newHtmlText("ShardLauncher", data, data)
+                else -> ClipData.newPlainText("ShardLauncher", data)
+            }
+            
+            clipboardManager?.setPrimaryClip(clipData)
+            Logger.d(TAG, "Clipboard data set successfully")
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to put clipboard data", e)
+        }
     }
 
+    /**
+     * Update FPS value from native code
+     * Called from native code to report current FPS
+     */
     @Keep
     @JvmStatic
     fun putFpsValue(fps: Int) {
-        ZLBridgeStates.currentFPS = fps
+        SLBridgeStates.currentFPS = fps
     }
 
+    /**
+     * Handle JVM exit
+     * Called from native code when JVM terminates
+     */
     @Keep
     @JvmStatic
     fun jvmExit(exitCode: Int, isSignal: Boolean) {
-        println("JVM Exit: $exitCode, isSignal: $isSignal")
-        // TODO: Implement proper exit handling
-        staticLauncher = null
+        Logger.i(TAG, "JVM Exit: code=$exitCode, isSignal=$isSignal")
+        
+        try {
+            // Get launcher instance
+            val launcher = staticLauncher
+            
+            // Clear static reference first
+            staticLauncher = null
+            
+            // If launcher has exit handling, invoke it
+            if (launcher != null) {
+                // Use reflection to call onExit if available
+                try {
+                    val onExitMethod = launcher.javaClass.getMethod("onExit", Int::class.java, Boolean::class.java)
+                    onExitMethod.invoke(launcher, exitCode, isSignal)
+                } catch (e: NoSuchMethodException) {
+                    Logger.d(TAG, "Launcher has no onExit method")
+                }
+                
+                // Also try to call exit() method for cleanup
+                try {
+                    val exitMethod = launcher.javaClass.getMethod("exit")
+                    exitMethod.invoke(launcher)
+                } catch (e: NoSuchMethodException) {
+                    Logger.d(TAG, "Launcher has no exit method")
+                }
+            }
+            
+            // Kill any remaining processes
+            killProcess()
+            
+        } catch (e: Exception) {
+            Logger.e(TAG, "Error during JVM exit handling", e)
+        }
+    }
+
+    /**
+     * Kill the game process
+     */
+    private fun killProcess() {
+        try {
+            android.os.Process.killProcess(android.os.Process.myPid())
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to kill process", e)
+        }
     }
 }

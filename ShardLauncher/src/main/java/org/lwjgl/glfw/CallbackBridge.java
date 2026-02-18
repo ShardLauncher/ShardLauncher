@@ -13,7 +13,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
 import com.lanrhyme.shardlauncher.bridge.CursorShape;
-import com.lanrhyme.shardlauncher.bridge.ZLBridgeStates;
+import com.lanrhyme.shardlauncher.bridge.SLBridgeStates;
 import com.lanrhyme.shardlauncher.bridge.SLNativeInvoker;
 import com.lanrhyme.shardlauncher.game.keycodes.LwjglGlfwKeycode;
 
@@ -25,7 +25,7 @@ import dalvik.annotation.optimization.CriticalNative;
 public class CallbackBridge {
     private static Choreographer sChoreographer;
     private static boolean isGrabbing = false;
-    private static final Consumer<Boolean> grabListener = isGrabbing -> ZLBridgeStates
+    private static final Consumer<Boolean> grabListener = isGrabbing -> SLBridgeStates
             .setCursorMode(isGrabbing ? CURSOR_DISABLED : CURSOR_ENABLED);
 
     public static Choreographer getChoreographer() {
@@ -42,7 +42,7 @@ public class CallbackBridge {
     }
 
     private static int cursorShape = 0x36001;
-    private static final Consumer<CursorShape> cursorShapeListener = ZLBridgeStates::setCursorShape;
+    private static final Consumer<CursorShape> cursorShapeListener = SLBridgeStates::setCursorShape;
 
     public static final int CLIPBOARD_COPY = 2000;
     public static final int CLIPBOARD_PASTE = 2001;

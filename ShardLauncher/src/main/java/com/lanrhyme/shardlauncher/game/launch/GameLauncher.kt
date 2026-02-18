@@ -1,6 +1,20 @@
 /*
  * Shard Launcher
  * Adapted from Zalith Launcher 2
+ * Copyright (C) 2025 MovTery <movtery228@qq.com> and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
  */
 
 package com.lanrhyme.shardlauncher.game.launch
@@ -16,6 +30,7 @@ import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.account.AccountType
 import com.lanrhyme.shardlauncher.game.account.AccountsManager
 import com.lanrhyme.shardlauncher.game.account.offline.OfflineYggdrasilServer
+import com.lanrhyme.shardlauncher.game.account.isLocalAccount
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
 import com.lanrhyme.shardlauncher.game.plugin.driver.DriverPluginManager
 import com.lanrhyme.shardlauncher.game.plugin.renderer.RendererPluginManager
@@ -26,10 +41,13 @@ import com.lanrhyme.shardlauncher.game.version.remote.MinecraftVersionJson
 import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.device.Architecture
-import com.lanrhyme.shardlauncher.game.account.isLocalAccount
 import com.lanrhyme.shardlauncher.utils.logging.Logger
+import org.lwjgl.glfw.CallbackBridge
 import java.io.File
 
+/**
+ * Game launcher for launching Minecraft
+ */
 class GameLauncher(
     private val activity: Activity,
     private val version: Version,
@@ -37,11 +55,65 @@ class GameLauncher(
     onExit: (code: Int, isSignal: Boolean) -> Unit
 ) : Launcher(onExit) {
     
+    companion object {
+        private const val TAG = "GameLauncher"
+    }
+
     private lateinit var gameManifest: MinecraftVersionJson
     private var offlinePort: Int = 0
 
     override suspend fun launch(): Int {
         // Initialize renderer if needed
+        initializeRenderer()
+
+        // Get game manifest
+        gameManifest = getGameManifest(version)
+        
+        // Set input stack queue usage based on game arguments support
+        try {
+            CallbackBridge.nativeSetUseInputStackQueue(gameManifest.arguments != null)
+        } catch (e: Exception) {
+            Logger.lWarning("Failed to set input stack queue mode", e)
+        }
+
+        // Get current account
+        val currentAccount = AccountsManager.currentAccountFlow.value
+            ?: throw IllegalStateException("No account selected for launch")
+            
+        val account = if (version.offlineAccountLogin) {
+            currentAccount.copy(accountType = AccountType.LOCAL.toString())
+        } else {
+            currentAccount
+        }
+
+        val customArgs = version.getJvmArgs().takeIf { it.isNotBlank() } ?: AllSettings.jvmArgs.getValue()
+        val javaRuntimeName = getRuntimeName()
+        this.runtime = RuntimesManager.loadRuntime(javaRuntimeName)
+
+        // Initialize LoggerBridge for native logging
+        initializeLogger()
+
+        // Initialize MCOptions and set language
+        initializeMCOptions()
+
+        // Start offline Yggdrasil if needed for local accounts with skins
+        if (account.isLocalAccount() && account.hasSkinFile) {
+            startOfflineYggdrasil(account)
+        }
+
+        printLauncherInfo(
+            javaArguments = customArgs.takeIf { it.isNotEmpty() } ?: "NONE",
+            javaRuntime = javaRuntimeName,
+            account = account
+        )
+
+        return launchGame(account, javaRuntimeName, customArgs)
+    }
+
+    /**
+     * Initialize the renderer
+     */
+    private fun initializeRenderer() {
         if (!Renderers.isCurrentRendererValid()) {
             val rendererIdentifier = version.getRenderer()
             if (rendererIdentifier.isNotEmpty()) {
@@ -57,69 +129,52 @@ class GameLauncher(
                 }
             }
         }
+    }
 
-        // Get game manifest
-        gameManifest = getGameManifest(version)
-        
-        // Skip input stack queue setup for now to avoid UI thread issues
-        // TODO: Set input stack queue usage after game is fully launched
-        // org.lwjgl.glfw.CallbackBridge.nativeSetUseInputStackQueue(gameManifest.arguments != null)
-
-        // Get current account
-        val currentAccount = AccountsManager.currentAccountFlow.value!!
-        val account = if (version.offlineAccountLogin) {
-            currentAccount.copy(accountType = AccountType.LOCAL.toString())
-        } else {
-            currentAccount
+    /**
+     * Initialize native logger
+     */
+    private fun initializeLogger() {
+        runCatching {
+            val logFile = File(PathManager.DIR_NATIVE_LOGS, "${getLogName()}.log")
+            logFile.parentFile?.mkdirs()
+            LoggerBridge.start(logFile.absolutePath)
+            Logger.lInfo("Native logging initialized: ${logFile.absolutePath}")
+        }.onFailure { e ->
+            Logger.lWarning("Failed to initialize native logging, using Java logging only", e)
         }
+    }
 
-        val customArgs = version.getJvmArgs().takeIf { it.isNotBlank() } ?: AllSettings.jvmArgs.getValue()
-        val javaRuntimeName = getRuntimeName()
-        this.runtime = RuntimesManager.loadRuntime(javaRuntimeName)
-
-        // Initialize LoggerBridge (temporarily disabled due to JNI issues)
-        // TODO: Fix LoggerBridge JNI method resolution
-        try {
-            // Skip native logging for now to avoid UnsatisfiedLinkError
-            // val logFile = File(PathManager.DIR_NATIVE_LOGS, "${getLogName()}.log")
-            // LoggerBridge.start(logFile.absolutePath)
-            Logger.lInfo("Native logging skipped - using Java logging only")
-        } catch (e: Exception) {
-            Logger.lWarning("Failed to initialize native logging", e)
-        }
-
-        // Initialize MCOptions and set language (skip for now to avoid potential issues)
-        // TODO: Re-enable after fixing stability issues
-        try {
+    /**
+     * Initialize MCOptions
+     */
+    private fun initializeMCOptions() {
+        runCatching {
             MCOptions.setup(activity, version)
             MCOptions.loadLanguage(version.getVersionName())
             MCOptions.save()
             Logger.lInfo("MCOptions initialized successfully")
-        } catch (e: Exception) {
+        }.onFailure { e ->
             Logger.lWarning("Failed to initialize MCOptions, continuing without it", e)
         }
-
-        // Start offline Yggdrasil if needed (skip for now to avoid potential issues)
-        // TODO: Re-enable after fixing stability issues
-        try {
-            if (account.isLocalAccount() && account.hasSkinFile) {
-                offlinePort = OfflineYggdrasilServer.start()
-                OfflineYggdrasilServer.addCharacter(account.username, account.profileId)
-                Logger.lInfo("Offline Yggdrasil server started on port $offlinePort")
-            }
-        } catch (e: Exception) {
-            Logger.lWarning("Failed to start offline Yggdrasil server, continuing without it", e)
-        }
-
-        printLauncherInfo(
-            javaArguments = customArgs.takeIf { it.isNotEmpty() } ?: "NONE",
-            javaRuntime = javaRuntimeName,
-            account = account
-        )
-
-        return launchGame(account, javaRuntimeName, customArgs)
     }
 
+    /**
+     * Start offline Yggdrasil server for skin support
+     */
+    private fun startOfflineYggdrasil(account: Account) {
+        runCatching {
+            offlinePort = OfflineYggdrasilServer.start()
+            OfflineYggdrasilServer.addCharacter(account.username, account.profileId)
+            Logger.lInfo("Offline Yggdrasil server started on port $offlinePort")
+        }.onFailure { e ->
+            Logger.lWarning("Failed to start offline Yggdrasil server, continuing without it", e)
+        }
+    }
+
+    /**
+     * Launch the game
+     */
     private suspend fun launchGame(
         account: Account,
         javaRuntime: String,
@@ -162,18 +217,24 @@ class GameLauncher(
     override fun getLogName(): String = "game_${version.getVersionName()}_${System.currentTimeMillis()}"
 
     override fun exit() {
+        // Stop offline Yggdrasil server if it was started
         if (offlinePort != 0) {
-            OfflineYggdrasilServer.stop()
+            runCatching {
+                OfflineYggdrasilServer.stop()
+                Logger.lInfo("Offline Yggdrasil server stopped")
+            }.onFailure { e ->
+                Logger.lWarning("Failed to stop offline Yggdrasil server", e)
+            }
         }
     }
 
     override fun MutableMap<String, String>.putJavaArgs() {
         val versionInfo = version.getVersionInfo()
         
-        // Fix Forge 1.7.2
+        // Fix Forge 1.7.2 sorting issue
         val is172 = (versionInfo?.minecraftVersion ?: "0.0") == "1.7.2"
         if (is172 && (versionInfo?.loaderInfo?.loader?.name == "forge")) {
-            Logger.lDebug("Is Forge 1.7.2, use the patched sorting method.")
+            Logger.lDebug("Is Forge 1.7.2, using patched sorting method")
             put("sort.patch", "true")
         }
 
@@ -219,49 +280,44 @@ class GameLauncher(
     override fun dlopenEngine() {
         super.dlopenEngine()
         
-        try {
+        // Log renderer loading
+        runCatching {
             LoggerBridge.appendTitle("DLOPEN Renderer")
-        } catch (e: Exception) {
+        }.onFailure {
             Logger.lInfo("DLOPEN Renderer")
         }
         
         // Load renderer plugin libraries
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->
             renderer.dlopen.forEach { lib ->
-                SLBridge.dlopen("${renderer.path}/$lib")
+                safeJniCall("dlopen renderer plugin $lib") {
+                    SLBridge.dlopen("${renderer.path}/$lib")
+                }
             }
         }
 
         // Load graphics library
         val rendererLib = loadGraphicsLibrary()
         if (rendererLib != null) {
-            // if (!ZLBridge.dlopen(rendererLib) && !ZLBridge.dlopen(findInLdLibPath(rendererLib))) {
-            //     Logger.lError("Failed to load renderer $rendererLib")
-            // }
-            // Logger.lInfo("Skipping dlopen for renderer due to JNI issues - lib: $rendererLib")
-            
-            // Try to restore renderer library loading - this is critical for graphics
-            try {
+            safeJniCall("dlopen graphics library $rendererLib") {
                 var success = SLBridge.dlopen(rendererLib)
                 if (!success) {
                     // Try to find in LD_LIBRARY_PATH if direct loading fails
                     val pathLib = findInLdLibPath(rendererLib)
-                    if (pathLib != null) {
+                    if (pathLib != null && pathLib != rendererLib) {
                         success = SLBridge.dlopen(pathLib)
                     }
                 }
-                
-                if (success) {
-                    Logger.lInfo("Successfully loaded renderer library: $rendererLib")
-                } else {
-                    Logger.lError("Failed to load renderer library: $rendererLib")
+                if (!success) {
+                    throw RuntimeException("Failed to load renderer library: $rendererLib")
                 }
-            } catch (e: UnsatisfiedLinkError) {
-                Logger.lWarning("JNI error loading renderer library $rendererLib: ${e.message}")
             }
         }
     }
 
+    /**
+     * Print launcher information to logs
+     */
     private fun printLauncherInfo(
         javaArguments: String,
         javaRuntime: String,
@@ -269,7 +325,6 @@ class GameLauncher(
     ) {
         val renderer = Renderers.getCurrentRenderer()
         
-        // Use regular Logger instead of LoggerBridge to avoid native library issues
         Logger.lInfo("==================== Launch Minecraft ====================")
         Logger.lInfo("Info: Launcher version: ${BuildConfig.VERSION_NAME}")
         Logger.lInfo("Info: Architecture: ${Architecture.archAsString(Architecture.getDeviceArchitecture())}")
@@ -279,8 +334,22 @@ class GameLauncher(
         Logger.lInfo("Info: Custom Java arguments: $javaArguments")
         Logger.lInfo("Info: Java Runtime: $javaRuntime")
         Logger.lInfo("Info: Account: ${account.username} (${account.accountType})")
+        
+        // Also log to native logger
+        runCatching {
+            LoggerBridge.appendTitle("Launch Minecraft")
+            LoggerBridge.append("Info: Launcher version: ${BuildConfig.VERSION_NAME}")
+            LoggerBridge.append("Info: Architecture: ${Architecture.archAsString(Architecture.getDeviceArchitecture())}")
+            LoggerBridge.append("Info: Renderer: ${renderer.getRendererName()}")
+            LoggerBridge.append("Info: Selected Minecraft version: ${version.getVersionName()}")
+            LoggerBridge.append("Info: Game Path: ${version.getGameDir().absolutePath}")
+            LoggerBridge.append("Info: Account: ${account.username}")
+        }
     }
 
+    /**
+     * Get Cacio Java arguments for AWT support
+     */
     private fun getCacioJavaArgs(windowWidth: Int, windowHeight: Int, isJava8: Boolean): List<String> {
         val args = mutableListOf<String>()
 
@@ -312,19 +381,28 @@ class GameLauncher(
         return args
     }
 
+    /**
+     * Get the runtime name to use
+     */
     private fun getRuntimeName(): String {
-        val versionRuntime = version.getJavaRuntime().takeIf { it.isNotEmpty() } ?: ""
-        if (versionRuntime.isNotEmpty()) return versionRuntime
+        // Check version-specific runtime first
+        val versionRuntime = version.getJavaRuntime().takeIf { it.isNotEmpty() }
+        if (versionRuntime != null) return versionRuntime
 
+        // Check if auto-pick is enabled
         val defaultRuntime = AllSettings.javaRuntime.getValue()
         if (AllSettings.autoPickJavaRuntime.getValue()) {
             val targetJavaVersion = gameManifest.javaVersion?.majorVersion ?: 8
             val runtimeName = RuntimesManager.getNearestJreName(targetJavaVersion)
             if (runtimeName != null) return runtimeName
         }
+        
         return defaultRuntime
     }
 
+    /**
+     * Disable Forge splash screen
+     */
     private fun disableSplash(dir: File) {
         val configDir = File(dir, "config")
         if (configDir.exists() || configDir.mkdirs()) {
@@ -338,28 +416,37 @@ class GameLauncher(
                 } else {
                     forgeSplashFile.writeText("enabled=false")
                 }
+            }.onFailure { e ->
+                Logger.lWarning("Failed to disable splash screen", e)
             }
         }
     }
 
+    /**
+     * Set renderer environment variables
+     */
     private fun setRendererEnv(envMap: MutableMap<String, String>) {
         val renderer = Renderers.getCurrentRenderer()
         val rendererId = renderer.getRendererId()
 
+        // Set GLES version for GL4ES
         if (rendererId.startsWith("opengles")) {
             envMap["LIBGL_ES"] = if (getDetectedVersion() >= 3) "3" else "2"
         }
 
+        // Add renderer-specific environment variables
         envMap.putAll(renderer.getRendererEnv().value)
         
+        // Set Pojav renderer
         envMap["POJAV_RENDERER"] = rendererId
         
+        // Set Mesa configuration for non-GLES renderers
         if (!rendererId.startsWith("opengles")) {
             envMap["MESA_LOADER_DRIVER_OVERRIDE"] = "zink"
             envMap["MESA_GLSL_CACHE_DIR"] = PathManager.DIR_CACHE.absolutePath
         }
 
-        // Apply renderer-specific settings
+        // Apply global renderer settings
         if (AllSettings.dumpShaders.state) {
             envMap["LIBGL_VGPU_DUMP"] = "1"
         }
@@ -381,6 +468,9 @@ class GameLauncher(
         }
     }
 
+    /**
+     * Detect OpenGL ES version
+     */
     private fun getDetectedVersion(): Int {
         return runCatching {
             val display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
@@ -399,6 +489,9 @@ class GameLauncher(
         }.getOrElse { 2 }
     }
 
+    /**
+     * Load the graphics library for the current renderer
+     */
     private fun loadGraphicsLibrary(): String? {
         val rendererPlugin = RendererPluginManager.selectedRendererPlugin
         return if (rendererPlugin != null) {
@@ -406,12 +499,5 @@ class GameLauncher(
         } else {
             Renderers.getCurrentRenderer().getRendererLibrary()
         }
-    }
-
-    /**
-     * Calculate display-friendly resolution
-     */
-    private fun getDisplayFriendlyRes(pixels: Int, scaleFactor: Float): Int {
-        return (pixels * scaleFactor).toInt().coerceAtLeast(1)
     }
 }
