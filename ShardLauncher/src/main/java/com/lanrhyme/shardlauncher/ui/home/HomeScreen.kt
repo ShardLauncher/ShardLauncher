@@ -1,5 +1,6 @@
 ﻿package com.lanrhyme.shardlauncher.ui.home
 
+import android.R
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -68,6 +69,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
 import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
 import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
 import kotlinx.coroutines.launch
@@ -164,24 +166,15 @@ fun HomeScreen(
                     contentPadding = PaddingValues(24.dp)
             ) {
                 item {
-                    ShardSectionHeader(
-                        title = "欢迎使用 Shard Launcher",
-                        modifier = Modifier.animatedAppearance(0, animatedSpeed)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     ShardGlassCard(
                             modifier = Modifier.animatedAppearance(1, animatedSpeed),
                     ) {
+                        Text(text = "欢迎回来！", style = MaterialTheme.typography.titleMedium)
                         XamlRenderer(nodes = nodes, modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
                 if (enableVersionCheck) {
                     item {
-                        ShardSectionHeader(
-                            title = "Minecraft 更新动态",
-                            modifier = Modifier.animatedAppearance(2, animatedSpeed)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
                         when {
                             errorMessage != null -> {
                                 ShardGlassCard(modifier = Modifier.animatedAppearance(3, animatedSpeed)) {
@@ -190,17 +183,33 @@ fun HomeScreen(
                             }
                             latestVersions != null -> {
                                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    latestVersions!!.release.let { release ->
-                                        VersionInfoCard(
-                                            versionInfo = release,
-                                            modifier = Modifier.animatedAppearance(3, animatedSpeed)
+                                    ShardGlassCard(
+                                        modifier = Modifier.animatedAppearance(
+                                            2,
+                                            animatedSpeed
                                         )
-                                    }
-                                    latestVersions!!.snapshot?.let { snapshot ->
-                                        VersionInfoCard(
-                                            versionInfo = snapshot,
-                                            modifier = Modifier.animatedAppearance(4, animatedSpeed)
-                                        )
+                                    ) {
+                                        Text(text = "Minecraft 最新动态", style = MaterialTheme.typography.titleMedium)
+                                        Spacer(Modifier.height(8.dp))
+                                        latestVersions!!.release.let { release ->
+                                            VersionInfoCard(
+                                                versionInfo = release,
+                                                modifier = Modifier.animatedAppearance(
+                                                    3,
+                                                    animatedSpeed
+                                                )
+                                            )
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        latestVersions!!.snapshot?.let { snapshot ->
+                                            VersionInfoCard(
+                                                versionInfo = snapshot,
+                                                modifier = Modifier.animatedAppearance(
+                                                    4,
+                                                    animatedSpeed
+                                                )
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -296,10 +305,9 @@ fun HomeScreen(
 fun VersionInfoCard(versionInfo: VersionInfo, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     ShardGlassCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().alpha(0.5f),
         shape = RoundedCornerShape(24.dp)
     ) {
-        Column {
             AsyncImage(
                     model = versionInfo.versionImageLink,
                     contentDescription = versionInfo.title,
@@ -370,7 +378,7 @@ fun VersionInfoCard(versionInfo: VersionInfo, modifier: Modifier = Modifier) {
             }
         }
     }
-}
+
 
 fun loadXaml(context: Context, fileName: String): String {
     val homesDir = File(context.getExternalFilesDir(null), ".shardlauncher/homes")
