@@ -65,7 +65,7 @@ import kotlinx.coroutines.delay
  * 对话框尺寸枚举
  */
 enum class DialogSize {
-    SMALL,      // 小型对话框 (280dp x 200dp)
+    SMALL,      // 小型对话框 (280dp x 300dp)
     MEDIUM,     // 中型对话框 (350dp x 310dp) - 默认
     LARGE,      // 大型对话框 (560dp x 420dp)
     FULL        // 全屏对话框
@@ -107,7 +107,7 @@ fun ShardDialog(
 
     // 尺寸配置
     val (width, height) = when (size) {
-        DialogSize.SMALL -> 280.dp to 200.dp
+        DialogSize.SMALL -> 280.dp to 300.dp
         DialogSize.MEDIUM -> 350.dp to 310.dp
         DialogSize.LARGE -> 560.dp to 420.dp
         DialogSize.FULL -> 600.dp to 600.dp

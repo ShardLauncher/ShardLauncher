@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,9 +59,9 @@ import com.lanrhyme.shardlauncher.ui.components.basic.CardStyle
 import com.lanrhyme.shardlauncher.ui.components.basic.DialogSize
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardCard
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardDialog
+import com.lanrhyme.shardlauncher.ui.components.basic.ShardInputField
 import com.lanrhyme.shardlauncher.ui.components.basic.SubPageNavigationBar
 import com.lanrhyme.shardlauncher.ui.components.basic.animatedAppearance
-import com.lanrhyme.shardlauncher.ui.components.basic.PopupContainer
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFab
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabDirection
 import com.lanrhyme.shardlauncher.ui.components.business.FluidFabItem
@@ -335,21 +334,24 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
             }
 
             is MicrosoftLoginState.Error -> {
-                PopupContainer(
+                ShardDialog(
                     visible = true,
-                    onDismissRequest = { accountViewModel.resetMicrosoftLoginState() }
+                    onDismissRequest = { accountViewModel.resetMicrosoftLoginState() },
+                    size = DialogSize.SMALL
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("登录失败", style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(8.dp))
-                        Text(state.message)
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Text("登录失败", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.height(16.dp))
-                        TextButton(
-                            onClick = {
-                                accountViewModel.resetMicrosoftLoginState()
-                            },
-                            modifier = Modifier.align(Alignment.End)
-                        ) { Text("确定") }
+                        Text(state.message, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.align(Alignment.End),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = { accountViewModel.resetMicrosoftLoginState() }
+                            ) { Text("确定") }
+                        }
                     }
                 }
             }
@@ -379,19 +381,26 @@ fun AccountScreen(navController: NavController, accountViewModel: AccountViewMod
 @Composable
 fun OfflineAccountInputDialog(onDismiss: () -> Unit, onAddOfflineAccount: (String) -> Unit) {
     var username by remember { mutableStateOf("") }
-    PopupContainer(visible = true, onDismissRequest = onDismiss) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text("添加离线账户", style = MaterialTheme.typography.titleLarge)
+    ShardDialog(
+        visible = true,
+        onDismissRequest = onDismiss,
+        size = DialogSize.SMALL
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text("添加离线账户", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(16.dp))
-            OutlinedTextField(
+            ShardInputField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("用户名") },
+                label = "用户名",
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )
-            Spacer(Modifier.height(16.dp))
-            Row(modifier = Modifier.align(Alignment.End)) {
+            Spacer(Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.End
+            ) {
                 TextButton(onClick = onDismiss) { Text("取消") }
                 Spacer(Modifier.width(8.dp))
                 Button(
@@ -408,19 +417,26 @@ fun OfflineAccountInputDialog(onDismiss: () -> Unit, onAddOfflineAccount: (Strin
 @Composable
 fun EditAccountDialog(account: Account, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var username by remember(account.username) { mutableStateOf(account.username) }
-    PopupContainer(visible = true, onDismissRequest = onDismiss) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text("编辑账户", style = MaterialTheme.typography.titleLarge)
+    ShardDialog(
+        visible = true,
+        onDismissRequest = onDismiss,
+        size = DialogSize.SMALL
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text("编辑账户", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(16.dp))
-            OutlinedTextField(
+            ShardInputField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("用户名") },
+                label = "用户名",
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )
-            Spacer(Modifier.height(16.dp))
-            Row(modifier = Modifier.align(Alignment.End)) {
+            Spacer(Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.End
+            ) {
                 TextButton(onClick = onDismiss) { Text("取消") }
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = { onConfirm(username) }) { Text("保存") }
