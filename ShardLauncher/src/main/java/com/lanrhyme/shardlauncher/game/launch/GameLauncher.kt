@@ -236,9 +236,26 @@ class GameLauncher(
             envMap[loaderKey] = "1"
         }
 
-        // Set renderer environment
-        if (Renderers.isCurrentRendererValid()) {
-            setRendererEnv(envMap)
+        // Set renderer environment - always try, even if currentRenderer is not set yet
+        // This ensures POJAV_RENDERER and POJAVEXEC_EGL are set before dlopenEngine
+        try {
+            if (!Renderers.isCurrentRendererValid()) {
+                // Initialize renderer if not set yet
+                val rendererIdentifier = version.getRenderer()
+                if (rendererIdentifier.isNotEmpty()) {
+                    Renderers.setCurrentRenderer(activity, rendererIdentifier)
+                } else {
+                    val compatibleRenderers = Renderers.getCompatibleRenderers(activity)
+                    if (compatibleRenderers.isNotEmpty()) {
+                        Renderers.setCurrentRenderer(activity, compatibleRenderers[0].getUniqueIdentifier())
+                    }
+                }
+            }
+            if (Renderers.isCurrentRendererValid()) {
+                setRendererEnv(envMap)
+            }
+        } catch (e: Exception) {
+            Logger.lWarning("Failed to set renderer environment", e)
         }
 
         envMap["SHARD_VERSION_CODE"] = BuildConfig.VERSION_CODE.toString()
@@ -248,14 +265,7 @@ class GameLauncher(
 
     override fun dlopenEngine() {
         super.dlopenEngine()
-        
-        // Log renderer loading
-        runCatching {
-            LoggerBridge.appendTitle("DLOPEN Renderer")
-        }.onFailure {
-            Logger.lInfo("DLOPEN Renderer")
-        }
-        
+
         // Load renderer plugin libraries
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->
             renderer.dlopen.forEach { lib ->
@@ -265,7 +275,7 @@ class GameLauncher(
             }
         }
 
-        // Load graphics library
+        // Load graphics library (GL4ES/Zink)
         val rendererLib = loadGraphicsLibrary()
         if (rendererLib != null) {
             safeJniCall("dlopen graphics library $rendererLib") {
@@ -288,17 +298,11 @@ class GameLauncher(
                 }
                 
                 if (!success) {
-                    Logger.lError("Failed to load renderer library: $rendererLib. Continuing anyway, it might crash later.")
+                    Logger.lError("Failed to load renderer library: $rendererLib")
                 } else {
                     Logger.lInfo("Successfully loaded renderer library: $rendererLib")
                 }
             }
-        }
-
-        // After loading renderer libraries, refresh bridge window to ensure br_setup_window is called
-        // This is necessary because setupBridgeWindow may have been called before renderer libraries were loaded
-        safeJniCall("refreshBridgeWindow") {
-            SLBridge.refreshBridgeWindow()
         }
     }
 
@@ -423,6 +427,11 @@ class GameLauncher(
 
         // Add renderer-specific environment variables
         envMap.putAll(renderer.getRendererEnv().value)
+        
+        // Set EGL name for pojav exec - this is critical for OpenGL initialization
+        renderer.getRendererEGL()?.let { eglName ->
+            envMap["POJAVEXEC_EGL"] = eglName
+        }
         
         // Set Pojav renderer
         envMap["POJAV_RENDERER"] = rendererId

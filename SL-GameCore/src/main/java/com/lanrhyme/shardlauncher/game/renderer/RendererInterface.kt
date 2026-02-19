@@ -19,6 +19,8 @@
 
 package com.lanrhyme.shardlauncher.game.renderer
 
+import com.lanrhyme.shardlauncher.game.plugin.renderer.RendererPlugin
+
 /**
  * 启动器渲染器实现
  */
@@ -72,4 +74,20 @@ interface RendererInterface {
      * 获取EGL名称
      */
     fun getRendererEGL(): String? = null
+}
+
+/**
+ * 将 RendererPlugin 转换为 RendererInterface
+ */
+fun RendererPlugin.toInterface() = object : RendererInterface {
+    override fun getRendererId(): String = uniqueIdentifier
+    override fun getUniqueIdentifier(): String = uniqueIdentifier
+    override fun getRendererName(): String = name
+    override fun getRendererSummary(): String? = null
+    override fun getMinMCVersion(): String? = null
+    override fun getMaxMCVersion(): String? = null
+    override fun getRendererEnv(): Lazy<Map<String, String>> = lazy { emptyMap() }
+    override fun getDlopenLibrary(): Lazy<List<String>> = lazy { dlopen }
+    override fun getRendererLibrary(): String = glName
+    override fun getRendererEGL(): String = eglName
 }

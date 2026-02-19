@@ -223,12 +223,10 @@ int pojavInitOpenGL() {
         set_gl_bridge_tbl();
     }
 
-    if (pojav_environ->config_renderer == RENDERER_GL4ES)
+    // 在所有渲染器配置完成后，初始化 bridge（仅适用于 GL4ES 和 Zink） 
+    if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK)
     {
         if (br_init()) br_setup_window();
-        ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
-        pojavInitOpenGL();
-        return 1;
     }
 
     return 0;
@@ -351,6 +349,15 @@ Java_org_lwjgl_vulkan_VK_getVulkanDriverHandle(ABI_COMPAT JNIEnv *env, ABI_COMPA
     return (jlong) maybe_load_vulkan();
 }
 
+EXTERNAL_API int pojavInit() {
+    ANativeWindow_acquire(pojav_environ->pojavWindow);
+    pojav_environ->savedWidth = ANativeWindow_getWidth(pojav_environ->pojavWindow);
+    pojav_environ->savedHeight = ANativeWindow_getHeight(pojav_environ->pojavWindow);
+    ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
+    pojavInitOpenGL();
+    return 1;
+}
+
 EXTERNAL_API void pojavSwapInterval(int interval) {
     if (pojav_environ->config_renderer == RENDERER_VK_ZINK
      || pojav_environ->config_renderer == RENDERER_GL4ES)
@@ -368,10 +375,33 @@ EXTERNAL_API void pojavSwapInterval(int interval) {
 // 新增：刷新桥接窗口设置，用于渲染器库加载后重新初始化窗口
 JNIEXPORT void JNICALL
 Java_com_lanrhyme_shardlauncher_bridge_SLBridge_refreshBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz) {
+    printf("EGLBridge: refreshBridgeWindow called, br_setup_window=%p\n", (void*)br_setup_window);
+    
+    // 如果 br_setup_window 还没有被初始化，先初始化桥接表
+    // 这是必须的，因为 libopenal.so 可能在桥接表初始化之前加载
+    if (!br_setup_window) {
+        printf("EGLBridge: Bridge table not initialized, calling pojavInitOpenGL to set up bridge\n");
+        pojavInitOpenGL();
+        printf("EGLBridge: After pojavInitOpenGL, br_setup_window=%p\n", (void*)br_setup_window);
+    }
+    
     if (br_setup_window) {
         printf("EGLBridge: Refreshing bridge window settings\n");
         br_setup_window();
+        
+        // 在刷新窗口后，如果需要重新初始化 OpenGL，则执行
+        // 确保在渲染器库加载后，OpenGL 环境被正确设置
+        if (pojav_environ && pojav_environ->config_renderer != 0) {
+            printf("EGLBridge: Renderer already configured (renderer=%d), attempting to init bridge\n", pojav_environ->config_renderer);
+            if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK) {
+                if (br_init()) {
+                    printf("EGLBridge: Bridge re-initialized successfully after renderer load\n");
+                } else {
+                    printf("EGLBridge: Failed to re-initialize bridge after renderer load\n");
+                }
+            }
+        }
     } else {
-        printf("EGLBridge: Cannot refresh bridge window, br_setup_window is not initialized\n");
+        printf("EGLBridge: Cannot refresh bridge window, br_setup_window is still not initialized\n");
     }
 }

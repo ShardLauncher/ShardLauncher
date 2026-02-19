@@ -13,5 +13,6 @@ data class RendererPlugin(
     val name: String,
     val path: String,
     val glName: String,
+    val eglName: String = "libEGL.so",
     val dlopen: List<String> = emptyList()
 )

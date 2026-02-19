@@ -12,6 +12,8 @@ import com.lanrhyme.shardlauncher.game.account.Account
 import com.lanrhyme.shardlauncher.game.account.AccountsManager
 import com.lanrhyme.shardlauncher.game.plugin.driver.DriverPluginManager
 import com.lanrhyme.shardlauncher.game.plugin.renderer.RendererPluginManager
+import com.lanrhyme.shardlauncher.game.renderer.Renderers
+import com.lanrhyme.shardlauncher.game.renderer.toInterface
 import com.lanrhyme.shardlauncher.game.version.installed.Version
 import com.lanrhyme.shardlauncher.utils.GSON
 import com.lanrhyme.shardlauncher.utils.logging.Logger
@@ -85,6 +87,11 @@ object GameLaunchManager {
             
             // Initialize renderer plugins
             RendererPluginManager.initializePlugins(activity)
+            
+            // Add renderer plugins to Renderers so they can be used as RendererInterface
+            RendererPluginManager.getRendererList().forEach { plugin ->
+                Renderers.addRenderer(plugin.toInterface())
+            }
             
             Logger.lInfo("Plugins initialized successfully")
         } catch (e: Exception) {
