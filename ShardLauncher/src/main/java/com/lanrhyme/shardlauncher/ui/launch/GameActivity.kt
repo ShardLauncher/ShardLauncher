@@ -197,7 +197,9 @@ class GameActivity : ComponentActivity() {
                                 refreshWindowSize()
 
                                 // 设置 Surface 到 Bridge
+                                Logger.lInfo("GameActivity: About to call setupBridgeWindow()")
                                 SLBridge.setupBridgeWindow(Surface(surface))
+                                Logger.lInfo("GameActivity: setupBridgeWindow() returned successfully")
 
                                 if (!isGameRunning) {
                                     viewModel.launchGame(

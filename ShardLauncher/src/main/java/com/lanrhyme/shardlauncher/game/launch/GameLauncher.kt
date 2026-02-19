@@ -264,6 +264,12 @@ class GameLauncher(
     }
 
     override fun dlopenEngine() {
+        // CRITICAL: Initialize OpenGL/EGL bridge BEFORE loading renderer libraries
+        // This ensures EGL display and context are available when libng_gl4es.so is loaded
+        // POJAV_RENDERER environment variable must be set before calling this
+        val initResult = SLBridge.initOpenGLBridge()
+        Logger.lInfo("initOpenGLBridge() returned: $initResult")
+
         // Load renderer plugin libraries FIRST - this is critical!
         // libopenal.so may try to use OpenGL, so we need renderer loaded first
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->

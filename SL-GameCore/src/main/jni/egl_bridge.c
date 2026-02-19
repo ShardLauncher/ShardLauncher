@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <android/log.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -72,20 +73,19 @@ EXTERNAL_API void pojavTerminate() {
 }
 
 JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setupBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz, jobject surface) {
-    printf("EGLBridge: setupBridgeWindow() called\n");
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "setupBridgeWindow() called");
 
     if (!pojav_environ) {
-        printf("EGLBridge: ERROR: pojav_environ is NULL in setupBridgeWindow!\n");
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL in setupBridgeWindow!");
         return;
     }
 
     pojav_environ->pojavWindow = ANativeWindow_fromSurface(env, surface);
-    printf("EGLBridge: pojavWindow set to %p\n", (void*)pojav_environ->pojavWindow);
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "pojavWindow set to %p", (void*)pojav_environ->pojavWindow);
 
-    // CRITICAL: Initialize OpenGL/EGL bridge BEFORE loading renderer libraries
-    // This ensures EGL display and context are available when libng_gl4es.so is loaded
-    int result = pojavInitOpenGL();
-    printf("EGLBridge: pojavInitOpenGL() returned %d\n", result);
+    // NOTE: pojavInitOpenGL() is NOT called here anymore because
+    // POJAV_RENDERER environment variable is not set yet at this point.
+    // It will be called from dlopenEngine() after environment variables are set.
 
     if (br_setup_window) br_setup_window();
 }
@@ -132,18 +132,18 @@ void load_vulkan() {
 int pojavInitOpenGL() {
     const char *renderer = getenv("POJAV_RENDERER");
 
-    printf("EGLBridge: pojavInitOpenGL() called, POJAV_RENDERER=%s\n", renderer ? renderer : "(null)");
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "pojavInitOpenGL() called, POJAV_RENDERER=%s", renderer ? renderer : "(null)");
 
     if (!renderer) {
-        printf("EGLBridge: ERROR: POJAV_RENDERER environment variable is not set!\n");
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: POJAV_RENDERER environment variable is not set!");
         return -1;
     }
 
     if (!strncmp("opengles", renderer, 8))
     {
-        printf("EGLBridge: Setting renderer to GL4ES\n");
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Setting renderer to GL4ES");
         if (!pojav_environ) {
-            printf("EGLBridge: ERROR: pojav_environ is NULL!\n");
+            __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL!");
             return -1;
         }
         pojav_environ->config_renderer = RENDERER_GL4ES;
@@ -382,6 +382,11 @@ EXTERNAL_API int pojavInit() {
     ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
     pojavInitOpenGL();
     return 1;
+}
+
+// Expose pojavInitOpenGL for Java to call before loading renderer libraries
+EXTERNAL_API int pojavInitOpenGLExternal() {
+    return pojavInitOpenGL();
 }
 
 EXTERNAL_API void pojavSwapInterval(int interval) {
