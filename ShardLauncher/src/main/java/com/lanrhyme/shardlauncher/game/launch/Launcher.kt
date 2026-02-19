@@ -161,14 +161,11 @@ abstract class Launcher(
         Logger.lInfo("==================== Env Map ====================")
         setEnv()
 
-        Logger.lInfo("==================== DLOPEN Engine (Renderer) ====================")
-        // CRITICAL: Load renderer BEFORE Java runtime libraries!
-        // Java runtime libraries (especially libawt.so) trigger OpenGL calls during initialization.
-        // If renderer is not loaded first, these calls will use system EGL and fail.
-        dlopenEngine()
-
         Logger.lInfo("==================== DLOPEN Java Runtime ====================")
         dlopenJavaRuntime()
+
+        Logger.lInfo("==================== DLOPEN Engine (Renderer) ====================")
+        dlopenEngine()
 
         return launchJavaVM(
             context = context,

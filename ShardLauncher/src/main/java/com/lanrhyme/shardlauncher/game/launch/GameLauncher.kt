@@ -264,12 +264,6 @@ class GameLauncher(
     }
 
     override fun dlopenEngine() {
-        // CRITICAL: Initialize OpenGL/EGL bridge BEFORE loading renderer libraries
-        // This ensures EGL display and context are available when libng_gl4es.so is loaded
-        // POJAV_RENDERER environment variable must be set before calling this
-        val initResult = SLBridge.initOpenGLBridge()
-        Logger.lInfo("initOpenGLBridge() returned: $initResult")
-
         // Load renderer plugin libraries FIRST - this is critical!
         // libopenal.so may try to use OpenGL, so we need renderer loaded first
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->
@@ -293,25 +287,17 @@ class GameLauncher(
                     Logger.lInfo("Attempting to load from native dir: $fullPath")
                     success = SLBridge.dlopen(fullPath)
                 }
-                
-                if (!success) {
-                    // Try to find in LD_LIBRARY_PATH if direct loading fails
-                    val pathLib = findInLdLibPath(rendererLib)
-                    if (pathLib != null && pathLib != rendererLib) {
-                        success = SLBridge.dlopen(pathLib)
-                    }
-                }
-                
-                if (!success) {
-                    Logger.lError("Failed to load renderer library: $rendererLib")
+
+                if (success) {
+                    Logger.lInfo("Successfully loaded renderer library: ${rendererLib.substringAfterLast("/")}")
                 } else {
-                    Logger.lInfo("Successfully loaded renderer library: $rendererLib")
+                    Logger.lError("Failed to load renderer library: $rendererLib")
+                    throw RuntimeException("Failed to load renderer library: $rendererLib")
                 }
             }
         }
 
-        // Load libopenal.so LAST - after renderer is loaded
-        // This prevents OpenGL errors when libopenal.so initializes
+        // Load libopenal.so (audio library)
         safeJniCall("dlopen libopenal.so") {
             SLBridge.dlopen("${PathManager.DIR_NATIVE_LIB}/libopenal.so")
         }

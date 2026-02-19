@@ -252,7 +252,14 @@ int pojavInitOpenGL() {
     // 在所有渲染器配置完成后，初始化 bridge（仅适用于 GL4ES 和 Zink） 
     if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK)
     {
-        if (br_init()) br_setup_window();
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Calling br_init() to initialize EGL display");
+        if (br_init()) {
+            __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "br_init() succeeded");
+            br_setup_window();
+        } else {
+            __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "br_init() failed!");
+            return -1;
+        }
     }
 
     return 0;
@@ -386,6 +393,11 @@ EXTERNAL_API int pojavInit() {
 
 // Expose pojavInitOpenGL for Java to call before loading renderer libraries
 EXTERNAL_API int pojavInitOpenGLExternal() {
+    return pojavInitOpenGL();
+}
+
+// JNI export for Java to call before loading renderer libraries
+JNIEXPORT jint JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initOpenGLBridge(JNIEnv* env, jclass clazz) {
     return pojavInitOpenGL();
 }
 
