@@ -24,6 +24,7 @@ import android.os.Build
 import android.os.LocaleList
 import android.system.Os
 import androidx.compose.ui.unit.IntSize
+import com.lanrhyme.shardlauncher.bridge.LauncherCallback
 import com.lanrhyme.shardlauncher.bridge.SLBridge
 import com.lanrhyme.shardlauncher.bridge.SLNativeInvoker
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
@@ -52,7 +53,7 @@ import java.util.TimeZone
  */
 abstract class Launcher(
     val onExit: (code: Int, isSignal: Boolean) -> Unit
-) {
+) : LauncherCallback {
     companion object {
         private const val TAG = "Launcher"
     }
@@ -85,6 +86,15 @@ abstract class Launcher(
      * Exit handling - cleanup resources
      */
     abstract fun exit()
+
+    // LauncherCallback interface implementation
+    override fun onJvmExit(exitCode: Int, isSignal: Boolean) {
+        onExit.invoke(exitCode, isSignal)
+    }
+
+    override fun onCleanup() {
+        exit()
+    }
 
     /**
      * Put Java system properties specific to this launcher

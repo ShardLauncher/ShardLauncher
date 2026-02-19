@@ -35,7 +35,7 @@ object SLNativeInvoker {
      * Current launcher instance for exit handling
      */
     @JvmStatic
-    var staticLauncher: Any? = null
+    var staticLauncher: LauncherCallback? = null
 
     /**
      * Initialize the invoker with context
@@ -191,30 +191,14 @@ object SLNativeInvoker {
         Logger.i(TAG, "JVM Exit: code=$exitCode, isSignal=$isSignal")
         
         try {
-            // Get launcher instance
-            val launcher = staticLauncher
+            // Call cleanup method
+            staticLauncher?.onCleanup()
             
-            // Clear static reference first
+            // Call exit callback
+            staticLauncher?.onJvmExit(exitCode, isSignal)
+            
+            // Clear static reference
             staticLauncher = null
-            
-            // If launcher has exit handling, invoke it
-            if (launcher != null) {
-                // Use reflection to call onExit if available
-                try {
-                    val onExitMethod = launcher.javaClass.getMethod("onExit", Int::class.java, Boolean::class.java)
-                    onExitMethod.invoke(launcher, exitCode, isSignal)
-                } catch (e: NoSuchMethodException) {
-                    Logger.d(TAG, "Launcher has no onExit method")
-                }
-                
-                // Also try to call exit() method for cleanup
-                try {
-                    val exitMethod = launcher.javaClass.getMethod("exit")
-                    exitMethod.invoke(launcher)
-                } catch (e: NoSuchMethodException) {
-                    Logger.d(TAG, "Launcher has no exit method")
-                }
-            }
             
             // Kill any remaining processes
             killProcess()
