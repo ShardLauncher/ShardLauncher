@@ -61,6 +61,13 @@
             android:label="App Crashed"
             android:theme="@style/Theme.ShardLauncher"
             android:screenOrientation="sensorLandscape" />
+        <activity
+            android:name=".ui.launch.GameActivity"
+            android:exported="false"
+            android:label="Game"
+            android:theme="@style/Theme.ShardLauncher"
+            android:screenOrientation="sensorLandscape"
+            android:launchMode="singleTask" />
         <service
             android:name=".service.MusicPlayerService"
             android:exported="true"

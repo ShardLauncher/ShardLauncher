@@ -3,6 +3,7 @@ package com.lanrhyme.shardlauncher.ui.home
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.lanrhyme.shardlauncher.ui.launch.GameActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -176,7 +177,7 @@ fun HomeScreen(
                 },
                 onLaunchGame = {
                     selectedVersionForLaunch?.let { version ->
-                        navController.navigate("game/${version.getVersionName()}")
+                        GameActivity.startGame(context, version)
                     }
                 },
                 animatedSpeed = animatedSpeed

@@ -102,7 +102,7 @@ import com.lanrhyme.shardlauncher.ui.developeroptions.DeveloperOptionsScreen
 import com.lanrhyme.shardlauncher.ui.downloads.DownloadScreen
 import com.lanrhyme.shardlauncher.ui.downloads.VersionDetailScreen
 import com.lanrhyme.shardlauncher.ui.home.HomeScreen
-import com.lanrhyme.shardlauncher.ui.launch.GameScreen
+import com.lanrhyme.shardlauncher.ui.launch.GameActivity
 import com.lanrhyme.shardlauncher.ui.music.MusicPlayerViewModel
 import com.lanrhyme.shardlauncher.ui.navigation.Screen
 import com.lanrhyme.shardlauncher.ui.navigation.getRootRoute
@@ -1128,16 +1128,6 @@ fun MainContent(
                 }
                 composable("log_viewer") { LogViewerScreen(navController = navController) }
                 composable("component_demo") { ComponentDemoScreen() }
-                composable(
-                    Screen.Game.route,
-                    arguments = listOf(navArgument("versionName") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val versionName = backStackEntry.arguments?.getString("versionName") ?: ""
-                    GameScreen(
-                        versionName = versionName,
-                        onExit = { navController.popBackStack() }
-                    )
-                }
             }
         }
 
