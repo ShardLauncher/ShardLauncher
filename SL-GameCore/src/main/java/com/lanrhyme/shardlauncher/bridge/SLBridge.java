@@ -20,6 +20,7 @@
 package com.lanrhyme.shardlauncher.bridge;
 
 import android.content.Context;
+import android.os.Build;
 
 import androidx.annotation.Keep;
 
@@ -97,9 +98,18 @@ public final class SLBridge {
     @Keep
     public static native int chdir(String path);
 
+    // Disable fdsan before loading native libraries
+    @Keep
+    public static native void disableFdsan();
+
     static {
+        // Disable fdsan on Android 10+ before loading any native libraries
+        // This prevents crashes from JVM/legacy code that incorrectly close file descriptors
         System.loadLibrary("exithook");
         System.loadLibrary("pojavexec");
+        if (Build.VERSION.SDK_INT >= 29) {
+            disableFdsan();
+        }
         System.loadLibrary("pojavexec_awt");
     }
 }

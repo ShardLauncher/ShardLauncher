@@ -533,11 +533,7 @@ public class GLFW
         // CallbackBridge.receiveCallback(CallbackBridge.EVENT_TYPE_FRAMEBUFFER_SIZE, mGLFWWindowWidth, mGLFWWindowHeight, 0, 0);
         // CallbackBridge.receiveCallback(CallbackBridge.EVENT_TYPE_WINDOW_SIZE, mGLFWWindowWidth, mGLFWWindowHeight, 0, 0);
 
-        try {
-            System.loadLibrary("pojavexec");
-        } catch (UnsatisfiedLinkError e) {
-            e.printStackTrace();
-        }
+        // Library loading moved to SLBridge to ensure fdsan is disabled first
         mGLFWErrorCallback = GLFWErrorCallback.createPrint();
         mGLFWKeyCodes = new ArrayMap<>();
 

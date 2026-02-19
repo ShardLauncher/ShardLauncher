@@ -323,7 +323,5 @@ public class CallbackBridge {
     @Keep
     public static native void nativeSetWindowAttrib(int attrib, int value);
 
-    static {
-        System.loadLibrary("pojavexec");
-    }
+    // Library loading moved to SLBridge to ensure fdsan is disabled first
 }

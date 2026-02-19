@@ -55,10 +55,6 @@ public final class LoggerBridge {
         append(logText);
     }
 
-    // Remove static library loading to prevent crashes during class initialization
-    // Libraries will be loaded when actually needed by the game launch process
-    
-    static {
-        System.loadLibrary("pojavexec");
-    }
+    // Library loading moved to SLBridge to ensure fdsan is disabled first
+    // SLBridge loads: exithook -> pojavexec -> disableFdsan -> pojavexec_awt
 }

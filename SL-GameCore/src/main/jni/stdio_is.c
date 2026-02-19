@@ -8,9 +8,37 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <android/api-level.h>
+#include <dlfcn.h>
 #include <environ/environ.h>
 
 #include "stdio_is.h"
+
+// fdsan error levels
+#define ANDROID_FDSAN_ERROR_LEVEL_DISABLED 0
+#define ANDROID_FDSAN_ERROR_LEVEL_WARN_ONCE 1
+#define ANDROID_FDSAN_ERROR_LEVEL_WARN_ALWAYS 2
+#define ANDROID_FDSAN_ERROR_LEVEL_FATAL 3
+
+// Typedef for fdsan function pointer
+typedef void (*android_fdsan_set_error_level_func)(int new_level);
+
+// Helper function to disable fdsan at runtime
+static void disable_fdsan(void) {
+    // Only attempt on Android 10 (API 29) or higher
+    if (android_get_device_api_level() >= 29) {
+        // Use dlsym to find the function (it's in libc.so)
+        void *libc_handle = dlopen("libc.so", RTLD_NOW);
+        if (libc_handle) {
+            android_fdsan_set_error_level_func set_error_level = 
+                (android_fdsan_set_error_level_func)dlsym(libc_handle, "android_fdsan_set_error_level");
+            if (set_error_level) {
+                set_error_level(ANDROID_FDSAN_ERROR_LEVEL_WARN_ONCE);
+            }
+            dlclose(libc_handle);
+        }
+    }
+}
 
 //
 // Created by maks on 17.02.21.
@@ -68,6 +96,10 @@ static void *logger_thread() {
 
 JNIEXPORT void JNICALL
 Java_com_lanrhyme_shardlauncher_bridge_LoggerBridge_start(JNIEnv *env, __attribute((unused)) jclass clazz, jstring logPath) {
+    // Disable fdsan on Android 10+ to prevent crashes from JVM/legacy code
+    // that may incorrectly close file descriptors owned by FILE* streams
+    disable_fdsan();
+
     if (latestlog_fd != -1)
     {
         int localfd = latestlog_fd;
@@ -204,4 +236,9 @@ Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setupExitMethod(JNIEnv *env, jcl
     (*env)->GetJavaVM(env,&exitTrap_jvm);
     exitTrap_exitClass = (*env)->NewGlobalRef(env,(*env)->FindClass(env,"com/lanrhyme/shardlauncher/bridge/SLNativeInvoker"));
     exitTrap_exitMethod = (*env)->GetStaticMethodID(env, exitTrap_exitClass, "jvmExit", "(IZ)V");
+}
+
+JNIEXPORT void JNICALL
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_disableFdsan(JNIEnv *env, __attribute((unused)) jclass clazz) {
+    disable_fdsan();
 }
