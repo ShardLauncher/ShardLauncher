@@ -169,18 +169,69 @@ int pojavInitOpenGL() {
         return 0;
     }
 
-    if (br_init()) br_setup_window();
+    if (!strcmp(renderer, "opengles3_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        setenv("LIBGL_ALWAYS_16_BITS", "1", 1);
+        setenv("LIBGL_ALLOW_UNOFFICIAL_ES3", "1", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "opengles2_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "opengles1_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "osmesa_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        setenv("LIBGL_ALWAYS_16_BITS", "1", 1);
+        setenv("LIBGL_ALLOW_UNOFFICIAL_ES3", "1", 1);
+        setenv("MESA_GL_VERSION_OVERRIDE", "3.2", 1);
+        setenv("MESA_GLSL_VERSION_OVERRIDE", "150", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (pojav_environ->config_renderer == RENDERER_GL4ES)
+    {
+        if (br_init()) br_setup_window();
+        ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
+        pojavInitOpenGL();
+        return 1;
+    }
 
     return 0;
-}
-
-EXTERNAL_API int pojavInit() {
-    ANativeWindow_acquire(pojav_environ->pojavWindow);
-    pojav_environ->savedWidth = ANativeWindow_getWidth(pojav_environ->pojavWindow);
-    pojav_environ->savedHeight = ANativeWindow_getHeight(pojav_environ->pojavWindow);
-    ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
-    pojavInitOpenGL();
-    return 1;
 }
 
 EXTERNAL_API void pojavSetWindowHint(int hint, int value) {
@@ -231,45 +282,67 @@ EXTERNAL_API void pojavMakeCurrent(void* window) {
 
 }
 
-EXTERNAL_API void* pojavCreateContext(void* contextSrc) {
-    if (pojav_environ->config_renderer == RENDERER_VULKAN)
-        return (void *) pojav_environ->pojavWindow;
+int pojavCreateContext() {
+    int result = 0;
+
+    if (pojav_environ->config_renderer == RENDERER_VK_ZINK
+     || pojav_environ->config_renderer == RENDERER_GL4ES)
+    {
+        printf("EGLBridge: Creating context...\n");
+        if (br_init()) {
+            printf("EGLBridge: Context created successfully\n");
+            result = 1;
+        } else {
+            printf("EGLBridge: Failed to create context\n");
+        }
+    }
 
     if (pojav_environ->config_renderer == RENDERER_VIRGL)
-        return virglCreateContext(contextSrc);
+    {
+        printf("VirGL: Creating context...\n");
+        void* ctx_result = virglCreateContext(NULL);
+        printf("VirGL: Context created, pointer: %p\n", ctx_result);
+        result = ctx_result != NULL; // Convert to boolean (int) result
+    }
 
-    return br_init_context((basic_render_window_t*)contextSrc);
+    return result;
 }
-
-void* maybe_load_vulkan() {
-    // We use the env var because
-    // 1. it's easier to do that
-    // 2. it won't break if something will try to load vulkan and osmesa simultaneously
-    if(getenv("VULKAN_PTR") == NULL) load_vulkan();
-    return (void*) strtoul(getenv("VULKAN_PTR"), NULL, 0x10);
-}
-
-static int frameCount = 0;
-static time_t lastTime = 0;
 
 void calculateFPS() {
+    static uint64_t lastTime = 0;
+    static int frameCount = 0;
+
+    struct timespec currentTime;
+    clock_gettime(CLOCK_MONOTONIC, &currentTime);
+    uint64_t currentTimeMs = currentTime.tv_sec * 1000 + currentTime.tv_nsec / 1000000;
+
+    if (lastTime == 0) {
+        lastTime = currentTimeMs;
+    }
+
     frameCount++;
-    time_t currentTime = time(NULL);
 
-    if (currentTime != lastTime) {
-        lastTime = currentTime;
-
-        if (!pojav_environ->dalvikJavaVMPtr ||!pojav_environ->class_ZLInvoker ||!pojav_environ->method_PutFpsValue) {
-            return;
-        }
-
+    if (currentTimeMs - lastTime >= 1000) {
+        int fps = (int) (frameCount * 1000.0 / (currentTimeMs - lastTime));
+        
+        // Call FPS update method
         JNIEnv *dalvikEnv;
         (*pojav_environ->dalvikJavaVMPtr)->AttachCurrentThread(pojav_environ->dalvikJavaVMPtr,&dalvikEnv,NULL);
         (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv,pojav_environ->class_ZLInvoker,pojav_environ->method_PutFpsValue,(jint) frameCount);
         (*pojav_environ->dalvikJavaVMPtr)->DetachCurrentThread(pojav_environ->dalvikJavaVMPtr);
 
         frameCount = 0;
+        lastTime = currentTimeMs;
     }
+}
+
+// 添加 maybe_load_vulkan 函数定义
+void* maybe_load_vulkan() {
+    // We use the env var because
+    // 1. it's easier to do that
+    // 2. it won't break if something will try to load vulkan and osmesa simultaneously
+    if(getenv("VULKAN_PTR") == NULL) load_vulkan();
+    return (void*) strtoul(getenv("VULKAN_PTR"), NULL, 0x10);
 }
 
 EXTERNAL_API JNIEXPORT jlong JNICALL
@@ -292,3 +365,13 @@ EXTERNAL_API void pojavSwapInterval(int interval) {
 
 }
 
+// 新增：刷新桥接窗口设置，用于渲染器库加载后重新初始化窗口
+JNIEXPORT void JNICALL
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_refreshBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz) {
+    if (br_setup_window) {
+        printf("EGLBridge: Refreshing bridge window settings\n");
+        br_setup_window();
+    } else {
+        printf("EGLBridge: Cannot refresh bridge window, br_setup_window is not initialized\n");
+    }
+}

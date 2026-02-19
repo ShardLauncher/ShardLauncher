@@ -87,6 +87,10 @@ public final class SLBridge {
     @Keep
     public static native int[] renderAWTScreenFrame();
 
+    // 新增方法：刷新桥接窗口设置
+    @Keep
+    public static native void refreshBridgeWindow();
+
     // Input
     @Keep
     public static native void sendInputData(int type, int i1, int i2, int i3, int i4);

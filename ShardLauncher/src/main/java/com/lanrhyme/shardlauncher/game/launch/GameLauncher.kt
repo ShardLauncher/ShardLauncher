@@ -76,9 +76,6 @@ class GameLauncher(
         val javaRuntimeName = getRuntimeName()
         this.runtime = RuntimesManager.loadRuntime(javaRuntimeName)
 
-        // Initialize LoggerBridge for native logging
-        initializeLogger()
-
         // Initialize MCOptions and set language
         initializeMCOptions()
 
@@ -114,22 +111,6 @@ class GameLauncher(
                     throw IllegalStateException("No compatible renderers available")
                 }
             }
-        }
-    }
-
-    /**
-     * Initialize native logger
-     */
-    private fun initializeLogger() {
-        runCatching {
-            val logDir = PathManager.DIR_NATIVE_LOGS
-            if (!logDir.exists()) logDir.mkdirs()
-            
-            val logFile = File(logDir, "${getLogName()}.log")
-            LoggerBridge.start(logFile.absolutePath)
-            Logger.lInfo("Native logging initialized: ${logFile.absolutePath}")
-        }.onFailure { e ->
-            Logger.lWarning("Failed to initialize native logging, using Java logging only", e)
         }
     }
 
@@ -312,6 +293,12 @@ class GameLauncher(
                     Logger.lInfo("Successfully loaded renderer library: $rendererLib")
                 }
             }
+        }
+
+        // After loading renderer libraries, refresh bridge window to ensure br_setup_window is called
+        // This is necessary because setupBridgeWindow may have been called before renderer libraries were loaded
+        safeJniCall("refreshBridgeWindow") {
+            SLBridge.refreshBridgeWindow()
         }
     }
 
