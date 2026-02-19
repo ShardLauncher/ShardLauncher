@@ -97,6 +97,11 @@ class GameActivity : ComponentActivity() {
             )
         }
 
+        // 首先初始化 SLBridge 以加载 native 库
+        // 这必须在 LoggerBridge.start() 之前调用，因为 LoggerBridge 依赖于 pojavexec 库
+        // 触发 SLBridge 的静态初始化块，加载 native 库并禁用 fdsan
+        SLBridge.initializeGameExitHook()
+
         // 初始化日志
         val logFile = File(PathManager.DIR_NATIVE_LOGS, "game_${version.getVersionName()}_${System.currentTimeMillis()}.log")
         try {
