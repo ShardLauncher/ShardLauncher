@@ -33,7 +33,9 @@ static void disable_fdsan(void) {
             android_fdsan_set_error_level_func set_error_level = 
                 (android_fdsan_set_error_level_func)dlsym(libc_handle, "android_fdsan_set_error_level");
             if (set_error_level) {
-                set_error_level(ANDROID_FDSAN_ERROR_LEVEL_WARN_ONCE);
+                // Completely disable fdsan to prevent any crashes from JVM/legacy code
+                // that may incorrectly close file descriptors owned by FILE* streams
+                set_error_level(ANDROID_FDSAN_ERROR_LEVEL_DISABLED);
             }
             dlclose(libc_handle);
         }
