@@ -2,12 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/LWJGL/third_party/NG-GL4ES_Source" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/LWJGL/third_party/NG-GL4ES_Source/3rdparty/SPIRV-Cross" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/LWJGL/third_party/NG-GL4ES_Source/3rdparty/glslang" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2/NG-GL4ES/NG-GL4ES" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2/NG-GL4ES/NG-GL4ES/3rdparty/SPIRV-Cross" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/third_party/ZalithLauncher2/NG-GL4ES/NG-GL4ES/3rdparty/glslang" vcs="Git" />
   </component>
 </project>

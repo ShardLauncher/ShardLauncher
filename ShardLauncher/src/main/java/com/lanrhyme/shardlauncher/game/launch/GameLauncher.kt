@@ -264,8 +264,14 @@ class GameLauncher(
     }
 
     override fun dlopenEngine() {
-        // Load renderer plugin libraries FIRST - this is critical!
-        // libopenal.so may try to use OpenGL, so we need renderer loaded first
+        // Load libopenal.so first (audio library) - matching ZalithLauncher2 order
+        safeJniCall("dlopen libopenal.so") {
+            SLBridge.dlopen("${PathManager.DIR_NATIVE_LIB}/libopenal.so")
+        }
+
+        Logger.lInfo("==================== DLOPEN Renderer ====================")
+
+        // Load renderer plugin libraries
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->
             renderer.dlopen.forEach { lib ->
                 safeJniCall("dlopen renderer plugin $lib") {
@@ -274,32 +280,22 @@ class GameLauncher(
             }
         }
 
-        // Load graphics library (GL4ES/Zink) FIRST
+        // Load graphics library (GL4ES/Zink) - matching ZalithLauncher2
         val rendererLib = loadGraphicsLibrary()
         if (rendererLib != null) {
-            safeJniCall("dlopen graphics library $rendererLib") {
-                // Try direct load first
-                var success = SLBridge.dlopen(rendererLib)
-                
-                // If not absolute path and failed, try from nativeLibraryDir
-                if (!success && !rendererLib.startsWith("/")) {
-                    val fullPath = "${PathManager.DIR_NATIVE_LIB}/$rendererLib"
-                    Logger.lInfo("Attempting to load from native dir: $fullPath")
-                    success = SLBridge.dlopen(fullPath)
-                }
-
-                if (success) {
-                    Logger.lInfo("Successfully loaded renderer library: ${rendererLib.substringAfterLast("/")}")
-                } else {
-                    Logger.lError("Failed to load renderer library: $rendererLib")
-                    throw RuntimeException("Failed to load renderer library: $rendererLib")
+            var success = SLBridge.dlopen(rendererLib)
+            if (!success) {
+                // Try to find in library path
+                val foundPath = findInLdLibPath(rendererLib)
+                if (foundPath != null && foundPath != rendererLib) {
+                    Logger.lInfo("Found renderer in library path: $foundPath")
+                    success = SLBridge.dlopen(foundPath)
                 }
             }
-        }
-
-        // Load libopenal.so (audio library)
-        safeJniCall("dlopen libopenal.so") {
-            SLBridge.dlopen("${PathManager.DIR_NATIVE_LIB}/libopenal.so")
+            
+            if (!success) {
+                Logger.lError("Failed to load renderer $rendererLib")
+            }
         }
     }
 
@@ -417,7 +413,7 @@ class GameLauncher(
         val renderer = Renderers.getCurrentRenderer()
         val rendererId = renderer.getRendererId()
 
-        // Set GL4ES environment variables - matching ZalithLauncher2
+        // Set GL4ES environment variables for opengles2 - matching ZalithLauncher2
         if (rendererId.startsWith("opengles2")) {
             envMap["LIBGL_ES"] = "2"
             envMap["LIBGL_MIPMAP"] = "3"
@@ -429,7 +425,7 @@ class GameLauncher(
         // Add renderer-specific environment variables
         envMap.putAll(renderer.getRendererEnv().value)
 
-        // Set EGL name for pojav exec - this is critical for OpenGL initialization
+        // Set EGL name for pojav exec
         renderer.getRendererEGL()?.let { eglName ->
             envMap["POJAVEXEC_EGL"] = eglName
         }
@@ -456,33 +452,15 @@ class GameLauncher(
             Logger.lInfo("GLES version detected: $glesMajor")
 
             envMap["LIBGL_ES"] = if (glesMajor < 3) {
+                // Fallback to 2 since it's the minimum for the entire app
                 "2"
             } else if (rendererId.startsWith("opengles")) {
                 rendererId.replace("opengles", "").replace("_5", "")
             } else {
+                // TODO if can: other backends such as Vulkan.
+                // Sure, they should provide GLES 3 support.
                 "3"
             }
-        }
-
-        // Apply global renderer settings
-        if (AllSettings.dumpShaders.getValue()) {
-            envMap["LIBGL_VGPU_DUMP"] = "1"
-        }
-
-        if (AllSettings.zinkPreferSystemDriver.getValue()) {
-            envMap["POJAV_ZINK_PREFER_SYSTEM_DRIVER"] = "1"
-        }
-
-        if (AllSettings.vsyncInZink.getValue()) {
-            envMap["POJAV_VSYNC_IN_ZINK"] = "1"
-        }
-
-        if (AllSettings.bigCoreAffinity.getValue()) {
-            envMap["POJAV_BIG_CORE_AFFINITY"] = "1"
-        }
-
-        if (AllSettings.sustainedPerformance.getValue()) {
-            envMap["POJAV_SUSTAINED_PERFORMANCE"] = "1"
         }
     }
 

@@ -91,10 +91,6 @@ public final class SLBridge {
     @Keep
     public static native void refreshBridgeWindow();
 
-    // 新增方法：初始化 OpenGL/EGL 桥接（在加载渲染器库之前调用）
-    @Keep
-    public static native int initOpenGLBridge();
-
     // Input
     @Keep
     public static native void sendInputData(int type, int i1, int i2, int i3, int i4);

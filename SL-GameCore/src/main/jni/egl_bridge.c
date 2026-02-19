@@ -73,20 +73,7 @@ EXTERNAL_API void pojavTerminate() {
 }
 
 JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setupBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz, jobject surface) {
-    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "setupBridgeWindow() called");
-
-    if (!pojav_environ) {
-        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL in setupBridgeWindow!");
-        return;
-    }
-
     pojav_environ->pojavWindow = ANativeWindow_fromSurface(env, surface);
-    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "pojavWindow set to %p", (void*)pojav_environ->pojavWindow);
-
-    // NOTE: pojavInitOpenGL() is NOT called here anymore because
-    // POJAV_RENDERER environment variable is not set yet at this point.
-    // It will be called from dlopenEngine() after environment variables are set.
-
     if (br_setup_window) br_setup_window();
 }
 
@@ -393,11 +380,6 @@ EXTERNAL_API int pojavInit() {
 
 // Expose pojavInitOpenGL for Java to call before loading renderer libraries
 EXTERNAL_API int pojavInitOpenGLExternal() {
-    return pojavInitOpenGL();
-}
-
-// JNI export for Java to call before loading renderer libraries
-JNIEXPORT jint JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initOpenGLBridge(JNIEnv* env, jclass clazz) {
     return pojavInitOpenGL();
 }
 
