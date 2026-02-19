@@ -43,12 +43,13 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := exithook
-LOCAL_LDLIBS := -ldl -llog
-LOCAL_SHARED_LIBRARIES := bytehook pojavexec
-LOCAL_SRC_FILES := exit_hook.c
-include $(BUILD_SHARED_LIBRARY)
+# exithook is built by ShardLauncher module
+# include $(CLEAR_VARS)
+# LOCAL_MODULE := exithook
+# LOCAL_LDLIBS := -ldl -llog
+# LOCAL_SHARED_LIBRARIES := bytehook pojavexec
+# LOCAL_SRC_FILES := exit_hook.c
+# include $(BUILD_SHARED_LIBRARY)
 
 
 include $(CLEAR_VARS)

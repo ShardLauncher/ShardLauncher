@@ -98,7 +98,9 @@ class GameActivity : ComponentActivity() {
         // 首先初始化 SLBridge 以加载 native 库
         // 这必须在任何 native 调用之前，因为其他 Bridge 依赖于 pojavexec 库
         // 触发 SLBridge 的静态初始化块，加载 native 库并禁用 fdsan
-        SLBridge.initializeGameExitHook()
+        // 注意: initializeGameExitHook 只能在 Launcher.kt 中调用一次
+        // 重复调用会导致 bytehook 返回 "already inited" 错误
+        SLBridge.disableFdsan()
 
         // 注意: LoggerBridge.start() 会在 GameLauncher.initializeLogger() 中调用
         // 不要在这里调用，否则会重复初始化导致问题

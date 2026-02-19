@@ -79,6 +79,7 @@ Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initializeGameExitHook(JNIEnv *e
         // If we can't hook, register atexit(). This won't report a proper error code,
         // but it will prevent a SIGSEGV or a SIGABRT from the depths of Dalvik that happens
         // on exit().
+        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Using atexit fallback");
         atexit(custom_atexit);
     }
 }

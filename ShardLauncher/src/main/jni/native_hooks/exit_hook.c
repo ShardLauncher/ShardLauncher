@@ -86,3 +86,15 @@ Java_net_kdt_pojavlaunch_utils_JREUtils_initializeHooks(JNIEnv *env, jclass claz
     // We only use the hook to capture the exit code.
     atexit(custom_atexit);
 }
+
+// Also export as SLBridge method for compatibility
+JNIEXPORT void JNICALL
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initializeGameExitHook(JNIEnv *env, jclass clazz) {
+    bool hooks_ready = init_hooks();
+    if(!hooks_ready) {
+        LOGI("Using atexit fallback for exit hook");
+    }
+    // Always register atexit, because that's what we will call our exit from.
+    // We only use the hook to capture the exit code.
+    atexit(custom_atexit);
+}
