@@ -59,7 +59,9 @@ static bool init_hooks() {
         goto dlerror;
     }
     int bhook_status = bytehook_init_p(BYTEHOOK_MODE_AUTOMATIC, false);
-    if(bhook_status == BYTEHOOK_STATUS_CODE_OK) {
+    // BYTEHOOK_STATUS_CODE_OK = 0, already inited = 3
+    // Even if already inited, we can still try to set the hooks
+    if(bhook_status == BYTEHOOK_STATUS_CODE_OK || bhook_status == 3) {
         create_hooks(bytehook_hook_all_p);
         return true;
     } else {

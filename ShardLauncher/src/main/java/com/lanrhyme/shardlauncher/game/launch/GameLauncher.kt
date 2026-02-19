@@ -197,6 +197,14 @@ class GameLauncher(
         }
     }
 
+    override fun progressFinalUserArgs(args: MutableList<String>, ramAllocation: Int) {
+        super.progressFinalUserArgs(args, ramAllocation)
+        // Set the OpenGL library name for LWJGL - matching ZalithLauncher2
+        if (Renderers.isCurrentRendererValid()) {
+            args.add("-Dorg.lwjgl.opengl.libname=${loadGraphicsLibrary()}")
+        }
+    }
+
     override fun MutableMap<String, String>.putJavaArgs() {
         val versionInfo = version.getVersionInfo()
         
@@ -283,6 +291,7 @@ class GameLauncher(
         // Load graphics library (GL4ES/Zink) - matching ZalithLauncher2
         val rendererLib = loadGraphicsLibrary()
         if (rendererLib != null) {
+            Logger.lInfo("Loading renderer library: $rendererLib")
             var success = SLBridge.dlopen(rendererLib)
             if (!success) {
                 // Try to find in library path
@@ -293,7 +302,9 @@ class GameLauncher(
                 }
             }
             
-            if (!success) {
+            if (success) {
+                Logger.lInfo("Successfully loaded renderer library: $rendererLib")
+            } else {
                 Logger.lError("Failed to load renderer $rendererLib")
             }
         }

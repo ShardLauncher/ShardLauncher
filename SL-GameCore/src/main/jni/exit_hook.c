@@ -54,9 +54,11 @@ static bool init_exit_hook() {
         goto dlerror;
     }
     int bhook_status = bytehook_init_p(BYTEHOOK_MODE_AUTOMATIC, false);
-    if(bhook_status == BYTEHOOK_STATUS_CODE_OK) {
+    // BYTEHOOK_STATUS_CODE_OK = 0, already inited = 3
+    // Even if already inited, we can still try to set the hook
+    if(bhook_status == BYTEHOOK_STATUS_CODE_OK || bhook_status == 3) {
         bytehook_stub_t stub = bytehook_hook_all_p(NULL, "exit", &custom_exit, NULL, NULL);
-        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Successfully initialized exit hook, stub=%p", stub);
+        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Exit hook initialized, status=%i, stub=%p", bhook_status, stub);
         return true;
     } else {
         __android_log_print(ANDROID_LOG_INFO, "exit_hook", "bytehook_init failed (%i)", bhook_status);
