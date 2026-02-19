@@ -45,12 +45,11 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.lanrhyme.shardlauncher.bridge.LoggerBridge
 import com.lanrhyme.shardlauncher.bridge.SLBridge
 import com.lanrhyme.shardlauncher.game.input.AWTInputEvent
 import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
+import org.lwjgl.glfw.CallbackBridge
 import com.lanrhyme.shardlauncher.game.version.installed.Version
-import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
 import com.lanrhyme.shardlauncher.utils.Logger
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +57,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 
 private const val INTENT_VERSION = "INTENT_VERSION"
 
@@ -98,22 +96,12 @@ class GameActivity : ComponentActivity() {
         }
 
         // 首先初始化 SLBridge 以加载 native 库
-        // 这必须在 LoggerBridge.start() 之前调用，因为 LoggerBridge 依赖于 pojavexec 库
+        // 这必须在任何 native 调用之前，因为其他 Bridge 依赖于 pojavexec 库
         // 触发 SLBridge 的静态初始化块，加载 native 库并禁用 fdsan
         SLBridge.initializeGameExitHook()
 
-        // 初始化日志
-        val logFile = File(PathManager.DIR_NATIVE_LOGS, "game_${version.getVersionName()}_${System.currentTimeMillis()}.log")
-        try {
-            if (!logFile.exists()) {
-                logFile.parentFile?.mkdirs()
-                logFile.createNewFile()
-            }
-            LoggerBridge.start(logFile.absolutePath)
-            Logger.lInfo("Native logging initialized: ${logFile.absolutePath}")
-        } catch (e: Exception) {
-            Logger.lError("Failed to initialize native logging", e)
-        }
+        // 注意: LoggerBridge.start() 会在 GameLauncher.initializeLogger() 中调用
+        // 不要在这里调用，否则会重复初始化导致问题
 
         // 设置退出回调
         SLBridge.setupExitMethod(this)
@@ -152,7 +140,6 @@ class GameActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        LoggerBridge.setListener(null)
         super.onDestroy()
     }
 
@@ -172,8 +159,15 @@ class GameActivity : ComponentActivity() {
     }
 
     private fun refreshWindowSize() {
+        val displayMetrics = resources.displayMetrics
+        
+        // 设置 CallbackBridge 的物理尺寸和窗口尺寸
+        CallbackBridge.physicalWidth = displayMetrics.widthPixels
+        CallbackBridge.physicalHeight = displayMetrics.heightPixels
+        CallbackBridge.windowWidth = displayMetrics.widthPixels
+        CallbackBridge.windowHeight = displayMetrics.heightPixels
+        
         mTextureView?.surfaceTexture?.apply {
-            val displayMetrics = resources.displayMetrics
             setDefaultBufferSize(displayMetrics.widthPixels, displayMetrics.heightPixels)
         }
     }
@@ -198,6 +192,9 @@ class GameActivity : ComponentActivity() {
                         surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                             override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
                                 Logger.lInfo("Surface available: ${width}x${height}")
+
+                                // 设置窗口尺寸到 CallbackBridge
+                                refreshWindowSize()
 
                                 // 设置 Surface 到 Bridge
                                 SLBridge.setupBridgeWindow(Surface(surface))
