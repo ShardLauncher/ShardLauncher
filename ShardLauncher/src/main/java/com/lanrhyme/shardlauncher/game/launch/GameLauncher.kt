@@ -349,8 +349,8 @@ class GameLauncher(
         val args = mutableListOf<String>()
 
         args.add("-Djava.awt.headless=false")
-        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctk.CToolkit")
-        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctk.CGraphicsEnvironment")
+        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctc.CTCToolkit")
+        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctc.CTCGraphicsEnvironment")
         args.add("-Dglfwstub.windowWidth=$windowWidth")
         args.add("-Dglfwstub.windowHeight=$windowHeight")
         args.add("-Dglfwstub.initEgl=false")
@@ -466,7 +466,8 @@ class GameLauncher(
                 // Fallback to 2 since it's the minimum for the entire app
                 "2"
             } else if (rendererId.startsWith("opengles")) {
-                rendererId.replace("opengles", "").replace("_5", "")
+                // Extract just the version number (e.g., "opengles3_ng_gl4es" -> "3")
+                rendererId.substring(8).takeWhile { it.isDigit() }.ifEmpty { "3" }
             } else {
                 // TODO if can: other backends such as Vulkan.
                 // Sure, they should provide GLES 3 support.

@@ -54,14 +54,14 @@ static bool init_exit_hook() {
         goto dlerror;
     }
     int bhook_status = bytehook_init_p(BYTEHOOK_MODE_AUTOMATIC, false);
-    // BYTEHOOK_STATUS_CODE_OK = 0, already inited = 3
-    // Even if already inited, we can still try to set the hook
-    if(bhook_status == BYTEHOOK_STATUS_CODE_OK || bhook_status == 3) {
+    // BYTEHOOK_STATUS_CODE_OK = 0
+    if(bhook_status == BYTEHOOK_STATUS_CODE_OK) {
         bytehook_stub_t stub = bytehook_hook_all_p(NULL, "exit", &custom_exit, NULL, NULL);
-        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Exit hook initialized, status=%i, stub=%p", bhook_status, stub);
-        return true;
+        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Exit hook initialized, stub=%p", stub);
+        return stub != NULL;
     } else {
-        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "bytehook_init failed (%i)", bhook_status);
+        // bytehook_init failed (already inited or other error)
+        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "bytehook_init failed (%i), using atexit fallback", bhook_status);
         dlclose(bytehook_handle);
         return false;
     }
@@ -75,11 +75,10 @@ static bool init_exit_hook() {
 JNIEXPORT void JNICALL
 Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initializeGameExitHook(JNIEnv *env, jclass clazz) {
     bool hookReady = init_exit_hook();
+    // Always register atexit as a backup, because the bytehook hook might fail silently
+    // We only use the hook to capture the exit code, but atexit ensures we still get called
+    atexit(custom_atexit);
     if(!hookReady){
-        // If we can't hook, register atexit(). This won't report a proper error code,
-        // but it will prevent a SIGSEGV or a SIGABRT from the depths of Dalvik that happens
-        // on exit().
-        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Using atexit fallback");
-        atexit(custom_atexit);
+        __android_log_print(ANDROID_LOG_INFO, "exit_hook", "Using atexit fallback only");
     }
 }

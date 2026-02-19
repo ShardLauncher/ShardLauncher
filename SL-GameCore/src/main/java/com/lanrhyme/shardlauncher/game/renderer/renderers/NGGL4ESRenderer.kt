@@ -34,5 +34,5 @@ object NGGL4ESRenderer : RendererInterface {
 
     override fun getDlopenLibrary(): Lazy<List<String>> = lazy { emptyList() }
 
-    override fun getRendererLibrary(): String = "libng_gl4es.so"
+    override fun getRendererLibrary(): String = "libgl4es_114.so"
 }

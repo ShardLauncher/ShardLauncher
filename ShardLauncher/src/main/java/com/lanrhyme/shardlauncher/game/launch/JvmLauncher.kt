@@ -78,8 +78,8 @@ open class JvmLauncher(
         val args = mutableListOf<String>()
         
         args.add("-Djava.awt.headless=false")
-        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctk.CToolkit")
-        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctk.CGraphicsEnvironment")
+        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctc.CTCToolkit")
+        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctc.CTCGraphicsEnvironment")
         args.add("-Dglfwstub.windowWidth=$windowWidth")
         args.add("-Dglfwstub.windowHeight=$windowHeight")
         args.add("-Dglfwstub.initEgl=false")
