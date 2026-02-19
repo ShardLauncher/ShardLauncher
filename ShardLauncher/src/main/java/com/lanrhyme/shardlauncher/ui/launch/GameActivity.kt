@@ -46,6 +46,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.lanrhyme.shardlauncher.bridge.SLBridge
+import com.lanrhyme.shardlauncher.bridge.SLNativeInvoker
 import com.lanrhyme.shardlauncher.game.input.AWTInputEvent
 import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
 import org.lwjgl.glfw.CallbackBridge
@@ -101,6 +102,9 @@ class GameActivity : ComponentActivity() {
         // 注意: initializeGameExitHook 只能在 Launcher.kt 中调用一次
         // 重复调用会导致 bytehook 返回 "already inited" 错误
         SLBridge.disableFdsan()
+        
+        // 初始化 SLNativeInvoker，为 native 提供 Context 支持
+        SLNativeInvoker.init(this)
 
         // 注意: LoggerBridge.start() 会在 GameLauncher.initializeLogger() 中调用
         // 不要在这里调用，否则会重复初始化导致问题

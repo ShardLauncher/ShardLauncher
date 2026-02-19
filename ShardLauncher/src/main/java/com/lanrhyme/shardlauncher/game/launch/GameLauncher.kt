@@ -175,7 +175,10 @@ class GameLauncher(
             getCacioJavaArgs = { isJava8 ->
                 getCacioJavaArgs(currentScreenSize, isJava8)
             },
-            offlineServerPort = offlinePort
+            offlineServerPort = offlinePort,
+            readAssetsFile = { path ->
+                activity.assets.open(path).bufferedReader().use { it.readText() }
+            }
         ).getAllArgs()
 
         return launchJvm(

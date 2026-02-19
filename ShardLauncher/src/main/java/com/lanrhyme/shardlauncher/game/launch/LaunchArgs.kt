@@ -36,7 +36,8 @@ class LaunchArgs(
     private val gameManifest: MinecraftVersionJson,
     private val runtime: Runtime,
     private val getCacioJavaArgs: (isJava8: Boolean) -> List<String>,
-    private val offlineServerPort: Int = 0
+    private val offlineServerPort: Int = 0,
+    private val readAssetsFile: (String) -> String
 ) {
     
     fun getAllArgs(): List<String> {
@@ -118,10 +119,9 @@ class LaunchArgs(
             val is7 = (version.getVersionInfo()?.minecraftVersion ?: "0.0").isLowerOrEqualVer("1.12")
             runCatching {
                 val content = if (is7) {
-                    // In a real implementation, this would read from assets
-                    "<!-- Log4j 1.7 config -->"
+                    readAssetsFile("components/log4j-1.7.xml")
                 } else {
-                    "<!-- Log4j 1.12 config -->"
+                    readAssetsFile("components/log4j-1.12.xml")
                 }
                 configFilePath.writeText(content)
             }.onFailure {
@@ -190,8 +190,8 @@ class LaunchArgs(
             ?.toTypedArray()
             ?: emptyArray()
 
-        val allArgs = jvmArgs.toList() + varArgMap.keys.toList()
-        val replacedArgs = insertJSONValueList(varArgMap, *allArgs.toTypedArray())
+        // Use the correct argument order: args first, then map
+        val replacedArgs = insertJSONValueList(varArgMap, *jvmArgs)
         return if (hasClasspath) {
             replacedArgs
         } else {
@@ -308,8 +308,8 @@ class LaunchArgs(
             gameManifest.minecraftArguments ?:
             minecraftArgs.toTypedArray().joinToString(" ")
         )
-        val allArgs = baseArgs.toList() + varArgMap.keys.toList()
-        return insertJSONValueList(varArgMap, *allArgs.toTypedArray())
+        // Use the correct argument order: args first, then map
+        return insertJSONValueList(varArgMap, *baseArgs)
     }
 
     private fun setLauncherInfo(verArgMap: MutableMap<String, String>) {

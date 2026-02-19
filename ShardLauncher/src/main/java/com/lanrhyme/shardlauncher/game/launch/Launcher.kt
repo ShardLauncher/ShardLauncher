@@ -36,6 +36,7 @@ import com.lanrhyme.shardlauncher.info.InfoDistributor
 import com.lanrhyme.shardlauncher.path.LibPath
 import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.settings.AllSettings
+import com.lanrhyme.shardlauncher.utils.SystemPropertiesHelper
 import com.lanrhyme.shardlauncher.utils.device.Architecture
 import com.lanrhyme.shardlauncher.utils.device.Architecture.ARCH_X86
 import com.lanrhyme.shardlauncher.utils.device.Architecture.is64BitsDevice
@@ -403,7 +404,7 @@ abstract class Launcher(
             put("java.io.tmpdir", PathManager.DIR_CACHE.absolutePath)
             put("jna.boot.library.path", PathManager.DIR_NATIVE_LIB)
             put("user.home", userHome ?: PathManager.DIR_FILES_EXTERNAL.absolutePath)
-            put("user.language", System.getProperty("user.language"))
+            put("user.language", Locale.getDefault().language)
             put("user.country", Locale.getDefault().country)
             put("user.timezone", TimeZone.getDefault().id)
             put("os.name", "Linux")
