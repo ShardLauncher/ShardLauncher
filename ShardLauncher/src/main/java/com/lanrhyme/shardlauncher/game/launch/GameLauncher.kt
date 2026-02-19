@@ -414,51 +414,76 @@ class GameLauncher(
     }
 
     /**
-     * Set renderer environment variables
+     * Set renderer environment variables - matches ZalithLauncher2 implementation
      */
     private fun setRendererEnv(envMap: MutableMap<String, String>) {
         val renderer = Renderers.getCurrentRenderer()
         val rendererId = renderer.getRendererId()
 
-        // Set GLES version for GL4ES
-        if (rendererId.startsWith("opengles")) {
-            envMap["LIBGL_ES"] = if (getDetectedVersion() >= 3) "3" else "2"
+        // Set GL4ES environment variables - matching ZalithLauncher2
+        if (rendererId.startsWith("opengles2")) {
+            envMap["LIBGL_ES"] = "2"
+            envMap["LIBGL_MIPMAP"] = "3"
+            envMap["LIBGL_NOERROR"] = "1"
+            envMap["LIBGL_NOINTOVLHACK"] = "1"
+            envMap["LIBGL_NORMALIZE"] = "1"
         }
 
         // Add renderer-specific environment variables
         envMap.putAll(renderer.getRendererEnv().value)
-        
+
         // Set EGL name for pojav exec - this is critical for OpenGL initialization
         renderer.getRendererEGL()?.let { eglName ->
             envMap["POJAVEXEC_EGL"] = eglName
         }
-        
+
         // Set Pojav renderer
         envMap["POJAV_RENDERER"] = rendererId
-        
-        // Set Mesa configuration for non-GLES renderers
+
+        // If using renderer plugin, skip additional settings
+        if (RendererPluginManager.selectedRendererPlugin != null) return
+
+        // Set Mesa configuration for non-GLES renderers (Zink)
         if (!rendererId.startsWith("opengles")) {
             envMap["MESA_LOADER_DRIVER_OVERRIDE"] = "zink"
             envMap["MESA_GLSL_CACHE_DIR"] = PathManager.DIR_CACHE.absolutePath
+            envMap["force_glsl_extensions_warn"] = "true"
+            envMap["allow_higher_compat_version"] = "true"
+            envMap["allow_glsl_extension_directive_midshader"] = "true"
+            envMap["LIB_MESA_NAME"] = loadGraphicsLibrary() ?: "null"
+        }
+
+        // Set GLES version if not already set
+        if (!envMap.containsKey("LIBGL_ES")) {
+            val glesMajor = getDetectedVersion()
+            Logger.lInfo("GLES version detected: $glesMajor")
+
+            envMap["LIBGL_ES"] = if (glesMajor < 3) {
+                "2"
+            } else if (rendererId.startsWith("opengles")) {
+                rendererId.replace("opengles", "").replace("_5", "")
+            } else {
+                "3"
+            }
         }
 
         // Apply global renderer settings
         if (AllSettings.dumpShaders.getValue()) {
             envMap["LIBGL_VGPU_DUMP"] = "1"
         }
-        
+
         if (AllSettings.zinkPreferSystemDriver.getValue()) {
             envMap["POJAV_ZINK_PREFER_SYSTEM_DRIVER"] = "1"
         }
-        
+
         if (AllSettings.vsyncInZink.getValue()) {
             envMap["POJAV_VSYNC_IN_ZINK"] = "1"
         }
-        
+
         if (AllSettings.bigCoreAffinity.getValue()) {
             envMap["POJAV_BIG_CORE_AFFINITY"] = "1"
         }
-        
+
         if (AllSettings.sustainedPerformance.getValue()) {
             envMap["POJAV_SUSTAINED_PERFORMANCE"] = "1"
         }
