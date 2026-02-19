@@ -84,17 +84,46 @@ Java_com_lanrhyme_shardlauncher_bridge_LoggerBridge_start(JNIEnv *env, __attribu
     jclass ioeClass = (*env)->FindClass(env, "java/io/IOException");
 
 
-    setvbuf(stdout, 0, _IOLBF, 0); // make stdout line-buffered
-    setvbuf(stderr, 0, _IONBF, 0); // make stderr unbuffered
-
     /* create the pipe and redirect stdout and stderr */
     pipe(pfd);
-    dup2(pfd[1], 1);
-    dup2(pfd[1], 2);
+    
+    // Fix fdsan ownership issue on Android 10+:
+    // The FILE* streams (stdout/stderr) own their file descriptors on Android 10+.
+    // When we use dup2() to replace them, the FILE* still thinks it owns the fd,
+    // causing fdsan to abort when the FILE* is closed at exit.
+    // Solution: Close the FILE* with fclose(), then recreate with fdopen().
+    
+    // Save the original fd numbers (should be 1 and 2)
+    int stdout_fd = STDOUT_FILENO;
+    int stderr_fd = STDERR_FILENO;
+    
+    // Flush before closing
+    fflush(stdout);
+    fflush(stderr);
+    
+    // Close the FILE* streams - this also closes the underlying fds
+    // and releases fdsan ownership
+    fclose(stdout);
+    fclose(stderr);
+    
+    // Now open new fds on the same numbers using dup2
+    dup2(pfd[1], stdout_fd);
+    dup2(pfd[1], stderr_fd);
+    
+    // Recreate FILE* streams on the new fds
+    stdout = fdopen(stdout_fd, "w");
+    stderr = fdopen(stderr_fd, "w");
+    
+    // Set buffering modes
+    setvbuf(stdout, 0, _IOLBF, 0); // make stdout line-buffered
+    setvbuf(stderr, 0, _IONBF, 0); // make stderr unbuffered
+    
+    // Close the write end of the pipe that we duplicated (no longer needed)
+    close(pfd[1]);
 
     /* open latestlog.txt for writing */
     const char* logFilePath = (*env)->GetStringUTFChars(env, logPath, NULL);
-    latestlog_fd = open(logFilePath, O_WRONLY | O_TRUNC);
+    latestlog_fd = open(logFilePath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
     if (latestlog_fd == -1)
     {
