@@ -32,14 +32,23 @@ void dlsym_EGL() {
     void* dl_handle = NULL;
     char* eglName = NULL;
     char* gles = getenv("LIBGL_GLES");
+    char* execEgl = getenv("POJAVEXEC_EGL");
+    char* pojavRenderer = getenv("POJAV_RENDERER");
+
+    // Debug: print environment variables
+    printf("EGLLoader: LIBGL_GLES=%s, POJAVEXEC_EGL=%s, POJAV_RENDERER=%s\n",
+           gles ? gles : "(null)",
+           execEgl ? execEgl : "(null)",
+           pojavRenderer ? pojavRenderer : "(null)");
 
     if (gles && !strncmp(gles, "libGLESv2_angle.so", 18))
     {
         eglName = "libEGL_angle.so";
     } else {
-        char* execEgl = getenv("POJAVEXEC_EGL");
         eglName = gles ? gles : (execEgl ? execEgl : "libEGL.so");
     }
+
+    printf("EGLLoader: Attempting to load EGL: %s\n", eglName);
 
     if (eglName)
         dl_handle = dlopen(eglName, RTLD_LOCAL | RTLD_LAZY);

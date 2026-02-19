@@ -161,10 +161,14 @@ abstract class Launcher(
         Logger.lInfo("==================== Env Map ====================")
         setEnv()
 
+        Logger.lInfo("==================== DLOPEN Engine (Renderer) ====================")
+        // CRITICAL: Load renderer BEFORE Java runtime libraries!
+        // Java runtime libraries (especially libawt.so) trigger OpenGL calls during initialization.
+        // If renderer is not loaded first, these calls will use system EGL and fail.
+        dlopenEngine()
+
         Logger.lInfo("==================== DLOPEN Java Runtime ====================")
         dlopenJavaRuntime()
-
-        dlopenEngine()
 
         return launchJavaVM(
             context = context,
@@ -369,12 +373,11 @@ abstract class Launcher(
     }
 
     /**
-     * Load engine specific libraries (OpenAL, etc.)
+     * Load engine specific libraries. 
+     * Note: libopenal.so loading is handled by GameLauncher to ensure proper order with renderer
      */
     protected open fun dlopenEngine() {
-        safeJniCall("dlopen libopenal.so") {
-            SLBridge.dlopen("${PathManager.DIR_NATIVE_LIB}/libopenal.so")
-        }
+        // Default implementation - libopenal.so is loaded by GameLauncher
     }
 
     /**

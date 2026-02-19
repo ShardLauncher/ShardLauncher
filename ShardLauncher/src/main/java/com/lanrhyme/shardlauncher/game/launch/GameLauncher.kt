@@ -264,9 +264,8 @@ class GameLauncher(
     }
 
     override fun dlopenEngine() {
-        super.dlopenEngine()
-
-        // Load renderer plugin libraries
+        // Load renderer plugin libraries FIRST - this is critical!
+        // libopenal.so may try to use OpenGL, so we need renderer loaded first
         RendererPluginManager.selectedRendererPlugin?.let { renderer ->
             renderer.dlopen.forEach { lib ->
                 safeJniCall("dlopen renderer plugin $lib") {
@@ -275,7 +274,7 @@ class GameLauncher(
             }
         }
 
-        // Load graphics library (GL4ES/Zink)
+        // Load graphics library (GL4ES/Zink) FIRST
         val rendererLib = loadGraphicsLibrary()
         if (rendererLib != null) {
             safeJniCall("dlopen graphics library $rendererLib") {
@@ -303,6 +302,12 @@ class GameLauncher(
                     Logger.lInfo("Successfully loaded renderer library: $rendererLib")
                 }
             }
+        }
+
+        // Load libopenal.so LAST - after renderer is loaded
+        // This prevents OpenGL errors when libopenal.so initializes
+        safeJniCall("dlopen libopenal.so") {
+            SLBridge.dlopen("${PathManager.DIR_NATIVE_LIB}/libopenal.so")
         }
     }
 

@@ -72,7 +72,21 @@ EXTERNAL_API void pojavTerminate() {
 }
 
 JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setupBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz, jobject surface) {
+    printf("EGLBridge: setupBridgeWindow() called\n");
+
+    if (!pojav_environ) {
+        printf("EGLBridge: ERROR: pojav_environ is NULL in setupBridgeWindow!\n");
+        return;
+    }
+
     pojav_environ->pojavWindow = ANativeWindow_fromSurface(env, surface);
+    printf("EGLBridge: pojavWindow set to %p\n", (void*)pojav_environ->pojavWindow);
+
+    // CRITICAL: Initialize OpenGL/EGL bridge BEFORE loading renderer libraries
+    // This ensures EGL display and context are available when libng_gl4es.so is loaded
+    int result = pojavInitOpenGL();
+    printf("EGLBridge: pojavInitOpenGL() returned %d\n", result);
+
     if (br_setup_window) br_setup_window();
 }
 
@@ -118,8 +132,20 @@ void load_vulkan() {
 int pojavInitOpenGL() {
     const char *renderer = getenv("POJAV_RENDERER");
 
+    printf("EGLBridge: pojavInitOpenGL() called, POJAV_RENDERER=%s\n", renderer ? renderer : "(null)");
+
+    if (!renderer) {
+        printf("EGLBridge: ERROR: POJAV_RENDERER environment variable is not set!\n");
+        return -1;
+    }
+
     if (!strncmp("opengles", renderer, 8))
     {
+        printf("EGLBridge: Setting renderer to GL4ES\n");
+        if (!pojav_environ) {
+            printf("EGLBridge: ERROR: pojav_environ is NULL!\n");
+            return -1;
+        }
         pojav_environ->config_renderer = RENDERER_GL4ES;
         set_gl_bridge_tbl();
     }
