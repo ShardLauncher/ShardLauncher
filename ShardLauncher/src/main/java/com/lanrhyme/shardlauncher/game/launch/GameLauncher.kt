@@ -47,8 +47,16 @@ class GameLauncher(
 
     private lateinit var gameManifest: MinecraftVersionJson
     private var offlinePort: Int = 0
+    private var currentScreenSize: IntSize = IntSize(0, 0)
+
+    override fun getLaunchScreenSize(): IntSize {
+        return currentScreenSize
+    }
 
     override suspend fun launch(): Int {
+        // Get window size first
+        currentScreenSize = getWindowSize()
+        
         // Initialize renderer if needed
         initializeRenderer()
 
@@ -165,8 +173,7 @@ class GameLauncher(
             gameManifest = gameManifest,
             runtime = runtime,
             getCacioJavaArgs = { isJava8 ->
-                val windowSize = getWindowSize()
-                getCacioJavaArgs(windowSize.width, windowSize.height, isJava8)
+                getCacioJavaArgs(currentScreenSize, isJava8)
             },
             offlineServerPort = offlinePort
         ).getAllArgs()
@@ -232,8 +239,8 @@ class GameLauncher(
         }
     }
 
-    override fun initEnv(): MutableMap<String, String> {
-        val envMap = super.initEnv()
+    override fun initEnv(screenSize: IntSize): MutableMap<String, String> {
+        val envMap = super.initEnv(screenSize)
 
         // Set driver
         DriverPluginManager.setDriverById(version.getDriver())
@@ -340,40 +347,6 @@ class GameLauncher(
             LoggerBridge.append("Info: Game Path: ${version.getGameDir().absolutePath}")
             LoggerBridge.append("Info: Account: ${account.username}")
         }
-    }
-
-    /**
-     * Get Cacio Java arguments for AWT support
-     */
-    private fun getCacioJavaArgs(windowWidth: Int, windowHeight: Int, isJava8: Boolean): List<String> {
-        val args = mutableListOf<String>()
-
-        args.add("-Djava.awt.headless=false")
-        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctc.CTCToolkit")
-        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctc.CTCGraphicsEnvironment")
-        args.add("-Dglfwstub.windowWidth=$windowWidth")
-        args.add("-Dglfwstub.windowHeight=$windowHeight")
-        args.add("-Dglfwstub.initEgl=false")
-
-        if (!isJava8) {
-            args.add("--add-exports=java.desktop/sun.awt=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/sun.java2d=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED")
-
-            if (runtime.javaVersion >= 17) {
-                args.add("-javaagent:${PathManager.DIR_COMPONENTS}/cacio-17/cacio-agent.jar")
-            }
-        }
-
-        val cacioJarDir = if (runtime.javaVersion >= 17) {
-            File(PathManager.DIR_COMPONENTS, "cacio-17")
-        } else {
-            File(PathManager.DIR_COMPONENTS, "cacio-8")
-        }
-        args.add("-Xbootclasspath/a:${File(cacioJarDir, "cacio-ttc.jar").absolutePath}")
-
-        return args
     }
 
     /**

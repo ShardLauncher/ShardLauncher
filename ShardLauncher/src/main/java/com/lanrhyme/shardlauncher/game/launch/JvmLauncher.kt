@@ -9,6 +9,7 @@ import android.content.Context
 import androidx.compose.ui.unit.IntSize
 import com.lanrhyme.shardlauncher.bridge.LoggerBridge
 import com.lanrhyme.shardlauncher.game.multirt.RuntimesManager
+import com.lanrhyme.shardlauncher.path.LibPath
 import com.lanrhyme.shardlauncher.path.PathManager
 import com.lanrhyme.shardlauncher.settings.AllSettings
 import com.lanrhyme.shardlauncher.utils.logging.Logger
@@ -28,7 +29,14 @@ open class JvmLauncher(
     onExit: (code: Int, isSignal: Boolean) -> Unit
 ) : Launcher(onExit) {
 
+    private var currentScreenSize: IntSize = IntSize(0, 0)
+
+    override fun getLaunchScreenSize(): IntSize {
+        return currentScreenSize
+    }
+
     override suspend fun launch(): Int {
+        currentScreenSize = getWindowSize()
         generateLauncherProfiles(jvmLaunchInfo.userHome ?: PathManager.DIR_FILES_PRIVATE.absolutePath)
         val (runtime, argList) = getStartupNeeded()
 
@@ -61,9 +69,8 @@ open class JvmLauncher(
             RuntimesManager.forceReload(AllSettings.javaRuntime.getValue())
         }
 
-        val windowSize = getWindowSize()
         val argList: MutableList<String> = ArrayList(
-            getCacioJavaArgs(windowSize.width, windowSize.height, runtime.javaVersion == 8)
+            getCacioJavaArgs(currentScreenSize, runtime.javaVersion == 8)
         ).apply {
             addAll(args)
         }
@@ -72,37 +79,6 @@ open class JvmLauncher(
         Logger.lInfo("Info: Java arguments: \r\n${argList.joinToString("\r\n")}")
 
         return Pair(runtime, argList)
-    }
-
-    private fun getCacioJavaArgs(windowWidth: Int, windowHeight: Int, isJava8: Boolean): List<String> {
-        val args = mutableListOf<String>()
-        
-        args.add("-Djava.awt.headless=false")
-        args.add("-Dawt.toolkit=net.java.openjdk.cacio.ctc.CTCToolkit")
-        args.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctc.CTCGraphicsEnvironment")
-        args.add("-Dglfwstub.windowWidth=$windowWidth")
-        args.add("-Dglfwstub.windowHeight=$windowHeight")
-        args.add("-Dglfwstub.initEgl=false")
-        
-        if (!isJava8) {
-            args.add("--add-exports=java.desktop/sun.awt=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/sun.java2d=ALL-UNNAMED")
-            args.add("--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED")
-            
-            if (runtime.javaVersion >= 17) {
-                args.add("-javaagent:${PathManager.DIR_COMPONENTS}/cacio-17/cacio-agent.jar")
-            }
-        }
-        
-        val cacioJarDir = if (runtime.javaVersion >= 17) {
-            File(PathManager.DIR_COMPONENTS, "cacio-17")
-        } else {
-            File(PathManager.DIR_COMPONENTS, "cacio-8")
-        }
-        args.add("-Xbootclasspath/a:${File(cacioJarDir, "cacio-ttc.jar").absolutePath}")
-        
-        return args
     }
 
     private fun generateLauncherProfiles(userHome: String) {

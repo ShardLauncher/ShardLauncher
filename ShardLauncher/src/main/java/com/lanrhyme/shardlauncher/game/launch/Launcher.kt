@@ -73,6 +73,11 @@ abstract class Launcher(
     abstract suspend fun launch(): Int
 
     /**
+     * Get window size for launch
+     */
+    protected abstract fun getLaunchScreenSize(): IntSize
+
+    /**
      * Change working directory
      */
     abstract fun chdir(): String
@@ -106,16 +111,16 @@ abstract class Launcher(
     /**
      * Initialize environment variables
      */
-    protected open fun initEnv(): MutableMap<String, String> {
+    protected open fun initEnv(screenSize: IntSize): MutableMap<String, String> {
         val envMap = mutableMapOf<String, String>()
-        setJavaEnv { envMap }
+        setJavaEnv(screenSize) { envMap }
         return envMap
     }
 
     /**
      * Set Java environment variables
      */
-    private fun setJavaEnv(envMap: () -> MutableMap<String, String>) {
+    private fun setJavaEnv(screenSize: IntSize, envMap: () -> MutableMap<String, String>) {
         val path = listOfNotNull("$runtimeHome/bin", Os.getenv("PATH"))
 
         envMap().let { map ->
@@ -126,6 +131,10 @@ abstract class Launcher(
             map["LD_LIBRARY_PATH"] = getLibraryPath()
             map["PATH"] = path.joinToString(":")
             map["MOD_ANDROID_RUNTIME"] = PathManager.DIR_RUNTIME_MOD?.absolutePath ?: ""
+            
+            // AWT stub window size - matching ZalithLauncher2
+            map["AWTSTUB_WIDTH"] = screenSize.width.toString()
+            map["AWTSTUB_HEIGHT"] = screenSize.height.toString()
 
             // Apply settings
             if (AllSettings.dumpShaders.getValue()) map["LIBGL_VGPU_DUMP"] = "1"
@@ -151,6 +160,7 @@ abstract class Launcher(
         // Set the static launcher reference for native callbacks
         SLNativeInvoker.staticLauncher = this
 
+        val windowSize = getWindowSize()
         val runtimeLibraryPath = getRuntimeLibraryPath()
         
         // Set LD_LIBRARY_PATH
@@ -159,7 +169,7 @@ abstract class Launcher(
         }
 
         Logger.lInfo("==================== Env Map ====================")
-        setEnv()
+        setEnv(windowSize)
 
         Logger.lInfo("==================== DLOPEN Java Runtime ====================")
         dlopenJavaRuntime()
@@ -226,8 +236,8 @@ abstract class Launcher(
     /**
      * Set environment variables via Os.setenv
      */
-    private fun setEnv() {
-        val envMap = initEnv()
+    private fun setEnv(screenSize: IntSize) {
+        val envMap = initEnv(screenSize)
         envMap.forEach { (key, value) ->
             Logger.lInfo("ENV: $key=$value")
             runCatching {
@@ -561,4 +571,61 @@ abstract class Launcher(
             Logger.lError("JNI call error ($name)", e)
         }
     }
+}
+
+/**
+ * Get Cacio Java arguments for AWT support
+ * [Modified from PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)
+ */
+fun getCacioJavaArgs(
+    screenSize: IntSize,
+    isJava8: Boolean
+): List<String> {
+    val argsList: MutableList<String> = ArrayList()
+
+    // Caciocavallo config AWT-enabled version
+    argsList.add("-Djava.awt.headless=false")
+    argsList.add("-Dcacio.managed.screensize=${screenSize.width}x${screenSize.height}")
+    argsList.add("-Dcacio.font.fontmanager=sun.awt.X11FontManager")
+    argsList.add("-Dcacio.font.fontscaler=sun.font.FreetypeFontScaler")
+    argsList.add("-Dswing.defaultlaf=javax.swing.plaf.nimbus.NimbusLookAndFeel")
+    
+    if (isJava8) {
+        argsList.add("-Dawt.toolkit=net.java.openjdk.cacio.ctc.CTCToolkit")
+        argsList.add("-Djava.awt.graphicsenv=net.java.openjdk.cacio.ctc.CTCGraphicsEnvironment")
+    } else {
+        argsList.add("-Dawt.toolkit=com.github.caciocavallosilano.cacio.ctc.CTCToolkit")
+        argsList.add("-Djava.awt.graphicsenv=com.github.caciocavallosilano.cacio.ctc.CTCGraphicsEnvironment")
+        argsList.add("-javaagent:${LibPath.CACIO_17_AGENT.absolutePath}")
+
+        argsList.add("--add-exports=java.desktop/java.awt=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/java.awt.peer=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/sun.java2d=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/java.awt.dnd.peer=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/sun.awt=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/sun.awt.event=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/sun.awt.datatransfer=ALL-UNNAMED")
+        argsList.add("--add-exports=java.desktop/sun.font=ALL-UNNAMED")
+        argsList.add("--add-exports=java.base/sun.security.action=ALL-UNNAMED")
+        argsList.add("--add-opens=java.base/java.util=ALL-UNNAMED")
+        argsList.add("--add-opens=java.desktop/java.awt=ALL-UNNAMED")
+        argsList.add("--add-opens=java.desktop/sun.font=ALL-UNNAMED")
+        argsList.add("--add-opens=java.desktop/sun.java2d=ALL-UNNAMED")
+        argsList.add("--add-opens=java.base/java.lang.reflect=ALL-UNNAMED")
+
+        // Opens the java.net package to Arc DNS injector on Java 9+
+        argsList.add("--add-opens=java.base/java.net=ALL-UNNAMED")
+    }
+
+    val cacioClassPath = StringBuilder()
+    cacioClassPath.append("-Xbootclasspath/").append(if (isJava8) "p" else "a")
+    val cacioFiles = if (isJava8) LibPath.CACIO_8 else LibPath.CACIO_17
+    cacioFiles.listFiles()?.onEach {
+        if (it.name.endsWith(".jar")) cacioClassPath.append(":").append(it.absolutePath)
+    }
+
+    argsList.add(cacioClassPath.toString())
+
+    return argsList
 }
