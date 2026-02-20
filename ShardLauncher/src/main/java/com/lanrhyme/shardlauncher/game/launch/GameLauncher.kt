@@ -282,6 +282,15 @@ class GameLauncher(
     }
 
     override fun dlopenEngine() {
+        // 初始化渲染器桥接 - 必须在加载渲染器库之前调用
+        // 这会设置渲染器类型并初始化 EGL 显示
+        Logger.lInfo("==================== DLOPEN Renderer Bridge ====================")
+        safeJniCall("initRendererBridge") {
+            if (!SLBridge.initRendererBridge()) {
+                Logger.lError("Failed to initialize renderer bridge!")
+            }
+        }
+
         // Load libopenal.so first (audio library) - matching ZalithLauncher2 order
         safeJniCall("dlopen libopenal.so") {
             SLBridge.dlopen("${PathManager.DIR_NATIVE_LIB}/libopenal.so")
@@ -407,6 +416,13 @@ class GameLauncher(
             envMap["LIBGL_NOERROR"] = "1"
             envMap["LIBGL_NOINTOVLHACK"] = "1"
             envMap["LIBGL_NORMALIZE"] = "1"
+        }
+
+        // Skip hardware detection in GL4ES to avoid creating EGL context during dlopen
+        // This is necessary because GL4ES uses __attribute__((constructor)) to initialize
+        // and tries to create a temporary EGL context for hardware detection
+        if (rendererId.startsWith("opengles")) {
+            envMap["LIBGL_NOTEST"] = "1"
         }
 
         // Add renderer-specific environment variables

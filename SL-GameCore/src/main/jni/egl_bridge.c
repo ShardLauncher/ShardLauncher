@@ -126,13 +126,20 @@ int pojavInitOpenGL() {
         return -1;
     }
 
+    if (!pojav_environ) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL!");
+        return -1;
+    }
+
+    // 检查是否已经初始化过
+    if (pojav_environ->config_renderer != 0) {
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Renderer already initialized (renderer=%d), skipping", pojav_environ->config_renderer);
+        return 0;
+    }
+
     if (!strncmp("opengles", renderer, 8))
     {
         __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Setting renderer to GL4ES");
-        if (!pojav_environ) {
-            __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL!");
-            return -1;
-        }
         pojav_environ->config_renderer = RENDERER_GL4ES;
         set_gl_bridge_tbl();
     }
@@ -307,8 +314,9 @@ int pojavCreateContext() {
      || pojav_environ->config_renderer == RENDERER_GL4ES)
     {
         printf("EGLBridge: Creating context...\n");
-        if (br_init()) {
-            printf("EGLBridge: Context created successfully\n");
+        void* ctx = br_init_context(NULL);
+        if (ctx != NULL) {
+            printf("EGLBridge: Context created successfully, ptr=%p\n", ctx);
             result = 1;
         } else {
             printf("EGLBridge: Failed to create context\n");
@@ -395,6 +403,54 @@ EXTERNAL_API void pojavSwapInterval(int interval) {
         virglSwapInterval(interval);
     }
 
+}
+
+// 初始化渲染器桥接（在加载渲染器库之前调用）
+// 这个函数设置渲染器类型并初始化 EGL 显示，同时创建 OpenGL ES 上下文
+JNIEXPORT jboolean JNICALL
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initRendererBridge(JNIEnv* env, ABI_COMPAT jclass clazz) {
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "initRendererBridge() called");
+    
+    const char *renderer = getenv("POJAV_RENDERER");
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "POJAV_RENDERER=%s", renderer ? renderer : "(null)");
+    
+    if (!renderer) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: POJAV_RENDERER environment variable is not set!");
+        return JNI_FALSE;
+    }
+    
+    if (!pojav_environ) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL!");
+        return JNI_FALSE;
+    }
+    
+    // 调用 pojavInitOpenGL 来设置渲染器类型和桥接函数表
+    int result = pojavInitOpenGL();
+    if (result != 0) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "pojavInitOpenGL() failed with result %d", result);
+        return JNI_FALSE;
+    }
+    
+    // 创建 OpenGL ES 上下文（必须在加载 GL4ES 之前完成）
+    if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK) {
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Creating OpenGL ES context before loading renderer library");
+        
+        // 创建上下文
+        void* ctx = br_init_context(NULL);
+        if (ctx == NULL) {
+            __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "Failed to create OpenGL ES context!");
+            return JNI_FALSE;
+        }
+        
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "OpenGL ES context created successfully, ptr=%p", ctx);
+        
+        // 使上下文成为当前上下文（使用 PBuffer 作为临时 surface）
+        br_make_current((basic_render_window_t*)ctx);
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "OpenGL ES context made current");
+    }
+    
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "initRendererBridge() succeeded, renderer=%d", pojav_environ->config_renderer);
+    return JNI_TRUE;
 }
 
 // 新增：刷新桥接窗口设置，用于渲染器库加载后重新初始化窗口

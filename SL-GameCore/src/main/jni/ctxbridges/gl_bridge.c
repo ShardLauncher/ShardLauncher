@@ -18,8 +18,15 @@
 static const char* g_LogTag = "GLBridge";
 static __thread gl_render_window_t* currentBundle;
 static EGLDisplay g_EglDisplay;
+static bool g_EglInitialized = false;
 
 bool gl_init() {
+    // 防止重复初始化
+    if (g_EglInitialized && g_EglDisplay != EGL_NO_DISPLAY) {
+        __android_log_print(ANDROID_LOG_INFO, g_LogTag, "EGL already initialized, skipping");
+        return true;
+    }
+    
     dlsym_EGL();
     g_EglDisplay = eglGetDisplay_p(EGL_DEFAULT_DISPLAY);
 
@@ -35,6 +42,8 @@ bool gl_init() {
                             eglGetError_p());
         return false;
     }
+    g_EglInitialized = true;
+    __android_log_print(ANDROID_LOG_INFO, g_LogTag, "EGL initialized successfully");
     return true;
 }
 

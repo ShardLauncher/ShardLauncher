@@ -91,6 +91,10 @@ public final class SLBridge {
     @Keep
     public static native void refreshBridgeWindow();
 
+    // 初始化渲染器桥接（必须在加载渲染器库之前调用）
+    @Keep
+    public static native boolean initRendererBridge();
+
     // Input
     @Keep
     public static native void sendInputData(int type, int i1, int i2, int i3, int i4);
