@@ -62,6 +62,16 @@ fun formatFileSize(bytes: Long): String {
 fun java.io.InputStream.readString(): String {
     return this.bufferedReader(Charsets.UTF_8).use { it.readText() }
 }
+
+/**
+ * Create child file path from current file
+ */
+fun File.child(vararg paths: String): File {
+    return paths.fold(this) { acc, path ->
+        File(acc, path.trim().removeSurrounding("/").removeSurrounding("\\"))
+    }
+}
+
 /**
  * File utilities object with static methods
  */
