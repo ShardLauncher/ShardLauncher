@@ -80,13 +80,13 @@ interface RendererInterface {
  * 将 RendererPlugin 转换为 RendererInterface
  */
 fun RendererPlugin.toInterface() = object : RendererInterface {
-    override fun getRendererId(): String = uniqueIdentifier
+    override fun getRendererId(): String = id
     override fun getUniqueIdentifier(): String = uniqueIdentifier
-    override fun getRendererName(): String = name
-    override fun getRendererSummary(): String? = null
-    override fun getMinMCVersion(): String? = null
-    override fun getMaxMCVersion(): String? = null
-    override fun getRendererEnv(): Lazy<Map<String, String>> = lazy { emptyMap() }
+    override fun getRendererName(): String = displayName
+    override fun getRendererSummary(): String? = summary
+    override fun getMinMCVersion(): String? = minMCVer
+    override fun getMaxMCVersion(): String? = maxMCVer
+    override fun getRendererEnv(): Lazy<Map<String, String>> = lazy { env }
     override fun getDlopenLibrary(): Lazy<List<String>> = lazy { dlopen }
     override fun getRendererLibrary(): String = glName
     override fun getRendererEGL(): String = eglName

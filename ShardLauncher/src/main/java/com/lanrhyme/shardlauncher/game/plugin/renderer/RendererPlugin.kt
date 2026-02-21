@@ -5,14 +5,17 @@
 
 package com.lanrhyme.shardlauncher.game.plugin.renderer
 
-/**
- * Represents a renderer plugin
- */
 data class RendererPlugin(
+    val id: String,
+    val displayName: String,
+    val summary: String? = null,
+    val minMCVer: String? = null,
+    val maxMCVer: String? = null,
     val uniqueIdentifier: String,
-    val name: String,
-    val path: String,
     val glName: String,
     val eglName: String = "libEGL.so",
-    val dlopen: List<String> = emptyList()
+    val path: String,
+    val env: Map<String, String> = emptyMap(),
+    val dlopen: List<String> = emptyList(),
+    val packageName: String? = null
 )
