@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <android/log.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -11,7 +12,10 @@
 
 #include <EGL/egl.h>
 #include <GL/osmesa.h>
+#include "ctxbridges/egl_loader.h"
 #include "ctxbridges/osmesa_loader.h"
+#include "ctxbridges/renderer_config.h"
+#include "ctxbridges/virgl_bridge.h"
 #include "driver_helper/nsbypass.h"
 
 #ifdef GLES_TEST
@@ -24,6 +28,7 @@
 #include <string.h>
 #include <environ/environ.h>
 #include <android/dlext.h>
+#include <time.h>
 #include "utils.h"
 #include "ctxbridges/bridge_tbl.h"
 #include "ctxbridges/osm_bridge.h"
@@ -38,26 +43,11 @@
 // This means that you are forced to have this function/variable for ABI compatibility
 #define ABI_COMPAT __attribute__((unused))
 
-
-struct PotatoBridge {
-
-    /* EGLContext */ void* eglContext;
-    /* EGLDisplay */ void* eglDisplay;
-    /* EGLSurface */ void* eglSurface;
-/*
-    void* eglSurfaceRead;
-    void* eglSurfaceDraw;
-*/
-};
 EGLConfig config;
 struct PotatoBridge potatoBridge;
 
-#include "ctxbridges/egl_loader.h"
-#include "ctxbridges/osmesa_loader.h"
-
-#define RENDERER_GL4ES 1
-#define RENDERER_VK_ZINK 2
-#define RENDERER_VULKAN 4
+void* loadTurnipVulkan();
+void calculateFPS();
 
 EXTERNAL_API void pojavTerminate() {
     printf("EGLBridge: Terminating\n");
@@ -82,55 +72,22 @@ EXTERNAL_API void pojavTerminate() {
     }
 }
 
-JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_utils_JREUtils_setupBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz, jobject surface) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_setupBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz, jobject surface) {
     pojav_environ->pojavWindow = ANativeWindow_fromSurface(env, surface);
-    if(br_setup_window != NULL) br_setup_window();
+    if (br_setup_window) br_setup_window();
 }
 
-
 JNIEXPORT void JNICALL
-Java_net_kdt_pojavlaunch_utils_JREUtils_releaseBridgeWindow(ABI_COMPAT JNIEnv *env, ABI_COMPAT jclass clazz) {
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_releaseBridgeWindow(ABI_COMPAT JNIEnv *env, ABI_COMPAT jclass clazz) {
     ANativeWindow_release(pojav_environ->pojavWindow);
 }
 
 EXTERNAL_API void* pojavGetCurrentContext() {
+    if (pojav_environ->config_renderer == RENDERER_VIRGL)
+        return virglGetCurrentContext();
+
     return br_get_current();
 }
-
-//#define ADRENO_POSSIBLE
-#ifdef ADRENO_POSSIBLE
-void* load_turnip_vulkan() {
-    if(getenv("POJAV_LOAD_TURNIP") == NULL) return NULL;
-    const char* native_dir = getenv("POJAV_NATIVEDIR");
-    const char* cache_dir = getenv("TMPDIR");
-    if(!linker_ns_load(native_dir)) return NULL;
-    void* linkerhook = linker_ns_dlopen("liblinkerhook.so", RTLD_LOCAL | RTLD_NOW);
-    if(linkerhook == NULL) return NULL;
-    void* turnip_driver_handle = linker_ns_dlopen("libvulkan_freedreno.so", RTLD_LOCAL | RTLD_NOW);
-    if(turnip_driver_handle == NULL) {
-        printf("AdrenoSupp: Failed to load Turnip!\n%s\n", dlerror());
-        dlclose(linkerhook);
-        return NULL;
-    }
-    void* dl_android = linker_ns_dlopen("libdl_android.so", RTLD_LOCAL | RTLD_LAZY);
-    if(dl_android == NULL) {
-        dlclose(linkerhook);
-        dlclose(turnip_driver_handle);
-        return NULL;
-    }
-    void* android_get_exported_namespace = dlsym(dl_android, "android_get_exported_namespace");
-    void (*linkerhook_pass_handles)(void*, void*, void*) = dlsym(linkerhook, "app__pojav_linkerhook_pass_handles");
-    if(linkerhook_pass_handles == NULL || android_get_exported_namespace == NULL) {
-        dlclose(dl_android);
-        dlclose(linkerhook);
-        dlclose(turnip_driver_handle);
-        return NULL;
-    }
-    linkerhook_pass_handles(turnip_driver_handle, android_dlopen_ext, android_get_exported_namespace);
-    void* libvulkan = linker_ns_dlopen_unique(cache_dir, "libvulkan.so", RTLD_LOCAL | RTLD_NOW);
-    return libvulkan;
-}
-#endif
 
 static void set_vulkan_ptr(void* ptr) {
     char envval[64];
@@ -139,60 +96,167 @@ static void set_vulkan_ptr(void* ptr) {
 }
 
 void load_vulkan() {
-    if(android_get_device_api_level() >= 28) { // the loader does not support below that
+    const char* zinkPreferSystemDriver = getenv("POJAV_ZINK_PREFER_SYSTEM_DRIVER");
+    int deviceApiLevel = android_get_device_api_level();
+    if (zinkPreferSystemDriver == NULL && deviceApiLevel >= 28) {
 #ifdef ADRENO_POSSIBLE
-        void* result = load_turnip_vulkan();
-        if(result != NULL) {
+        void* result = loadTurnipVulkan();
+        if (result != NULL)
+        {
             printf("AdrenoSupp: Loaded Turnip, loader address: %p\n", result);
             set_vulkan_ptr(result);
             return;
         }
 #endif
     }
-    printf("OSMDroid: loading vulkan regularly...\n");
-    void* vulkan_ptr = dlopen("libvulkan.so", RTLD_LAZY | RTLD_LOCAL);
-    printf("OSMDroid: loaded vulkan, ptr=%p\n", vulkan_ptr);
-    set_vulkan_ptr(vulkan_ptr);
+
+    printf("OSMDroid: Loading Vulkan regularly...\n");
+    void* vulkanPtr = dlopen("libvulkan.so", RTLD_LAZY | RTLD_LOCAL);
+    printf("OSMDroid: Loaded Vulkan, ptr=%p\n", vulkanPtr);
+    set_vulkan_ptr(vulkanPtr);
 }
 
 int pojavInitOpenGL() {
-    // Only affects GL4ES as of now
-    const char *forceVsync = getenv("FORCE_VSYNC");
-    if (strcmp(forceVsync, "true") == 0)
-        pojav_environ->force_vsync = true;
-
-    // NOTE: Override for now.
     const char *renderer = getenv("POJAV_RENDERER");
-    if (strncmp("opengles", renderer, 8) == 0) {
-        pojav_environ->config_renderer = RENDERER_GL4ES;
-        set_gl_bridge_tbl();
-    } else if (strcmp(renderer, "vulkan_zink") == 0) {
-        pojav_environ->config_renderer = RENDERER_VK_ZINK;
-        load_vulkan();
-        setenv("GALLIUM_DRIVER","zink",1);
-        set_osm_bridge_tbl();
-    }
-    if(br_init()) {
-        br_setup_window();
-    }
-    return 0;
-}
 
-extern void updateMonitorSize(int width, int height);
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "pojavInitOpenGL() called, POJAV_RENDERER=%s", renderer ? renderer : "(null)");
 
-EXTERNAL_API int pojavInit() {
-    pojav_environ->glfwThreadVmEnv = get_attached_env(pojav_environ->runtimeJavaVMPtr);
-    if(pojav_environ->glfwThreadVmEnv == NULL) {
-        printf("Failed to attach Java-side JNIEnv to GLFW thread\n");
+    if (!renderer) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: POJAV_RENDERER environment variable is not set!");
+        return -1;
+    }
+
+    if (!pojav_environ) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL!");
+        return -1;
+    }
+
+    // 检查是否已经初始化过
+    if (pojav_environ->config_renderer != 0) {
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Renderer already initialized (renderer=%d), skipping", pojav_environ->config_renderer);
         return 0;
     }
-    ANativeWindow_acquire(pojav_environ->pojavWindow);
-    pojav_environ->savedWidth = ANativeWindow_getWidth(pojav_environ->pojavWindow);
-    pojav_environ->savedHeight = ANativeWindow_getHeight(pojav_environ->pojavWindow);
-    ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
-    updateMonitorSize(pojav_environ->savedWidth, pojav_environ->savedHeight);
-    pojavInitOpenGL();
-    return 1;
+
+    if (!strncmp("opengles", renderer, 8))
+    {
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Setting renderer to GL4ES");
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "custom_gallium"))
+    {
+        pojav_environ->config_renderer = RENDERER_VK_ZINK;
+        load_vulkan();
+        set_osm_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "vulkan_zink"))
+    {
+        pojav_environ->config_renderer = RENDERER_VK_ZINK;
+        load_vulkan();
+        setenv("GALLIUM_DRIVER", "zink", 1);
+        set_osm_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "gallium_freedreno"))
+    {
+        pojav_environ->config_renderer = RENDERER_VK_ZINK;
+        setenv("MESA_LOADER_DRIVER_OVERRIDE", "kgsl", 1);
+        setenv("GALLIUM_DRIVER", "freedreno", 1);
+        set_osm_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "gallium_panfrost"))
+    {
+        pojav_environ->config_renderer = RENDERER_VK_ZINK;
+        setenv("GALLIUM_DRIVER", "panfrost", 1);
+        setenv("MESA_DISK_CACHE_SINGLE_FILE", "1", 1);
+        set_osm_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "gallium_virgl"))
+    {
+        pojav_environ->config_renderer = RENDERER_VIRGL;
+        setenv("GALLIUM_DRIVER", "virpipe", 1);
+        setenv("OSMESA_NO_FLUSH_FRONTBUFFER", "1", false);
+        setenv("MESA_GL_VERSION_OVERRIDE", "4.3", 1);
+        setenv("MESA_GLSL_VERSION_OVERRIDE", "430", 1);
+        if (!strcmp(getenv("OSMESA_NO_FLUSH_FRONTBUFFER"), "1"))
+            printf("VirGL: OSMesa buffer flush is DISABLED!\n");
+        loadSymbolsVirGL();
+        virglInit();
+        return 0;
+    }
+
+    if (!strcmp(renderer, "opengles3_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        setenv("LIBGL_ALWAYS_16_BITS", "1", 1);
+        setenv("LIBGL_ALLOW_UNOFFICIAL_ES3", "1", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "opengles2_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "opengles1_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        set_gl_bridge_tbl();
+    }
+
+    if (!strcmp(renderer, "osmesa_ng_gl4es"))
+    {
+        pojav_environ->config_renderer = RENDERER_GL4ES;
+        setenv("LIBGL_FB", "2", 1);
+        setenv("LIBGL_NOMIPMAP", "1", 1);
+        setenv("LIBGL_WORKAROUND_NULLTEX", "1", 1);
+        setenv("LIBGL_NOERROR", "1", 1);
+        setenv("LIBGL_RECYCLEFBO", "1", 1);
+        setenv("LIBGL_VERTEX_CLAMP", "1", 1);
+        setenv("LIBGL_ALWAYS_16_BITS", "1", 1);
+        setenv("LIBGL_ALLOW_UNOFFICIAL_ES3", "1", 1);
+        setenv("MESA_GL_VERSION_OVERRIDE", "3.2", 1);
+        setenv("MESA_GLSL_VERSION_OVERRIDE", "150", 1);
+        set_gl_bridge_tbl();
+    }
+
+    // 在所有渲染器配置完成后，初始化 bridge（仅适用于 GL4ES 和 Zink） 
+    if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK)
+    {
+        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Calling br_init() to initialize EGL display");
+        if (br_init()) {
+            __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "br_init() succeeded");
+            br_setup_window();
+        } else {
+            __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "br_init() failed!");
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 EXTERNAL_API void pojavSetWindowHint(int hint, int value) {
@@ -214,21 +278,91 @@ EXTERNAL_API void pojavSetWindowHint(int hint, int value) {
 }
 
 EXTERNAL_API void pojavSwapBuffers() {
-    br_swap_buffers();
-}
+    calculateFPS();
 
+    if (pojav_environ->config_renderer == RENDERER_VK_ZINK
+     || pojav_environ->config_renderer == RENDERER_GL4ES)
+    {
+        br_swap_buffers();
+    }
+
+    if (pojav_environ->config_renderer == RENDERER_VIRGL)
+    {
+        virglSwapBuffers();
+    }
+
+}
 
 EXTERNAL_API void pojavMakeCurrent(void* window) {
-    br_make_current((basic_render_window_t*)window);
-}
-
-EXTERNAL_API void* pojavCreateContext(void* contextSrc) {
-    if (pojav_environ->config_renderer == RENDERER_VULKAN) {
-        return (void *) pojav_environ->pojavWindow;
+    if (pojav_environ->config_renderer == RENDERER_VK_ZINK
+     || pojav_environ->config_renderer == RENDERER_GL4ES)
+    {
+        br_make_current((basic_render_window_t*)window);
     }
-    return br_init_context((basic_render_window_t*)contextSrc);
+
+    if (pojav_environ->config_renderer == RENDERER_VIRGL)
+    {
+        virglMakeCurrent(window);
+    }
+
 }
 
+int pojavCreateContext() {
+    int result = 0;
+
+    if (pojav_environ->config_renderer == RENDERER_VK_ZINK
+     || pojav_environ->config_renderer == RENDERER_GL4ES)
+    {
+        printf("EGLBridge: Creating context...\n");
+        void* ctx = br_init_context(NULL);
+        if (ctx != NULL) {
+            printf("EGLBridge: Context created successfully, ptr=%p\n", ctx);
+            result = 1;
+        } else {
+            printf("EGLBridge: Failed to create context\n");
+        }
+    }
+
+    if (pojav_environ->config_renderer == RENDERER_VIRGL)
+    {
+        printf("VirGL: Creating context...\n");
+        void* ctx_result = virglCreateContext(NULL);
+        printf("VirGL: Context created, pointer: %p\n", ctx_result);
+        result = ctx_result != NULL; // Convert to boolean (int) result
+    }
+
+    return result;
+}
+
+void calculateFPS() {
+    static uint64_t lastTime = 0;
+    static int frameCount = 0;
+
+    struct timespec currentTime;
+    clock_gettime(CLOCK_MONOTONIC, &currentTime);
+    uint64_t currentTimeMs = currentTime.tv_sec * 1000 + currentTime.tv_nsec / 1000000;
+
+    if (lastTime == 0) {
+        lastTime = currentTimeMs;
+    }
+
+    frameCount++;
+
+    if (currentTimeMs - lastTime >= 1000) {
+        int fps = (int) (frameCount * 1000.0 / (currentTimeMs - lastTime));
+        
+        // Call FPS update method
+        JNIEnv *dalvikEnv;
+        (*pojav_environ->dalvikJavaVMPtr)->AttachCurrentThread(pojav_environ->dalvikJavaVMPtr,&dalvikEnv,NULL);
+        (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv,pojav_environ->class_ZLInvoker,pojav_environ->method_PutFpsValue,(jint) frameCount);
+        (*pojav_environ->dalvikJavaVMPtr)->DetachCurrentThread(pojav_environ->dalvikJavaVMPtr);
+
+        frameCount = 0;
+        lastTime = currentTimeMs;
+    }
+}
+
+// 添加 maybe_load_vulkan 函数定义
 void* maybe_load_vulkan() {
     // We use the env var because
     // 1. it's easier to do that
@@ -243,7 +377,98 @@ Java_org_lwjgl_vulkan_VK_getVulkanDriverHandle(ABI_COMPAT JNIEnv *env, ABI_COMPA
     return (jlong) maybe_load_vulkan();
 }
 
-EXTERNAL_API void pojavSwapInterval(int interval) {
-    br_swap_interval(interval);
+EXTERNAL_API int pojavInit() {
+    ANativeWindow_acquire(pojav_environ->pojavWindow);
+    pojav_environ->savedWidth = ANativeWindow_getWidth(pojav_environ->pojavWindow);
+    pojav_environ->savedHeight = ANativeWindow_getHeight(pojav_environ->pojavWindow);
+    ANativeWindow_setBuffersGeometry(pojav_environ->pojavWindow,pojav_environ->savedWidth,pojav_environ->savedHeight,AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM);
+    pojavInitOpenGL();
+    return 1;
 }
 
+// Expose pojavInitOpenGL for Java to call before loading renderer libraries
+EXTERNAL_API int pojavInitOpenGLExternal() {
+    return pojavInitOpenGL();
+}
+
+EXTERNAL_API void pojavSwapInterval(int interval) {
+    if (pojav_environ->config_renderer == RENDERER_VK_ZINK
+     || pojav_environ->config_renderer == RENDERER_GL4ES)
+    {
+        br_swap_interval(interval);
+    }
+
+    if (pojav_environ->config_renderer == RENDERER_VIRGL)
+    {
+        virglSwapInterval(interval);
+    }
+
+}
+
+// 初始化渲染器桥接（在加载渲染器库之前调用）
+// 这个函数设置渲染器类型并初始化 EGL 显示，同时创建 OpenGL ES 上下文
+JNIEXPORT jboolean JNICALL
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initRendererBridge(JNIEnv* env, ABI_COMPAT jclass clazz) {
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "initRendererBridge() called");
+    
+    const char *renderer = getenv("POJAV_RENDERER");
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "POJAV_RENDERER=%s", renderer ? renderer : "(null)");
+    
+    if (!renderer) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: POJAV_RENDERER environment variable is not set!");
+        return JNI_FALSE;
+    }
+    
+    if (!pojav_environ) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "ERROR: pojav_environ is NULL!");
+        return JNI_FALSE;
+    }
+    
+    // 调用 pojavInitOpenGL 来设置渲染器类型和桥接函数表
+    int result = pojavInitOpenGL();
+    if (result != 0) {
+        __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "pojavInitOpenGL() failed with result %d", result);
+        return JNI_FALSE;
+    }
+    
+    // 注意：GL4ES 需要在 dlopen 时有一个 OpenGL ES 上下文
+    // 但由于 LWJGL 会在 JVM 启动后调用 glfwInit() -> pojavInit() -> pojavInitOpenGL()
+    // 来创建上下文，所以这里只初始化 EGL 显示，不创建上下文
+    // GL4ES 的 LIBGL_NOTEST=1 环境变量会跳过硬件检测，避免在 dlopen 时创建上下文
+    __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "initRendererBridge() succeeded, renderer=%d", pojav_environ->config_renderer);
+    return JNI_TRUE;
+}
+
+// 新增：刷新桥接窗口设置，用于渲染器库加载后重新初始化窗口
+JNIEXPORT void JNICALL
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_refreshBridgeWindow(JNIEnv* env, ABI_COMPAT jclass clazz) {
+    printf("EGLBridge: refreshBridgeWindow called, br_setup_window=%p\n", (void*)br_setup_window);
+    
+    // 如果 br_setup_window 还没有被初始化，先初始化桥接表
+    // 这是必须的，因为 libopenal.so 可能在桥接表初始化之前加载
+    if (!br_setup_window) {
+        printf("EGLBridge: Bridge table not initialized, calling pojavInitOpenGL to set up bridge\n");
+        pojavInitOpenGL();
+        printf("EGLBridge: After pojavInitOpenGL, br_setup_window=%p\n", (void*)br_setup_window);
+    }
+    
+    if (br_setup_window) {
+        printf("EGLBridge: Refreshing bridge window settings\n");
+        br_setup_window();
+        
+        // 在刷新窗口后，如果需要重新初始化 OpenGL，则执行
+        // 确保在渲染器库加载后，OpenGL 环境被正确设置
+        if (pojav_environ && pojav_environ->config_renderer != 0) {
+            printf("EGLBridge: Renderer already configured (renderer=%d), attempting to init bridge\n", pojav_environ->config_renderer);
+            if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK) {
+                if (br_init()) {
+                    printf("EGLBridge: Bridge re-initialized successfully after renderer load\n");
+                } else {
+                    printf("EGLBridge: Failed to re-initialize bridge after renderer load\n");
+                }
+            }
+        }
+    } else {
+        printf("EGLBridge: Cannot refresh bridge window, br_setup_window is still not initialized\n");
+    }
+}

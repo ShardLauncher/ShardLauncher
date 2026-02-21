@@ -47,7 +47,7 @@ object AccountsManager {
 
     fun initialize(context: Context) {
         this.context = context.applicationContext
-        com.lanrhyme.shardlauncher.game.path.PathManager.refreshPaths(context) // Initialize paths
+        com.lanrhyme.shardlauncher.path.PathManager.refreshPaths(context) // Initialize paths
         database = AppDatabase.getInstance(context)
         accountDao = database.accountDao()
         authServerDao = database.authServerDao()

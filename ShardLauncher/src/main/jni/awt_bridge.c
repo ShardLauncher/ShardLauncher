@@ -14,7 +14,7 @@ jmethodID method_GetRGB;
 jclass class_CTCAndroidInput;
 jmethodID method_ReceiveInput;
 
-jclass class_MainActivity;
+jclass class_ZLInvoker;
 jmethodID method_OpenLink;
 jmethodID method_OpenPath;
 jmethodID method_QuerySystemClipboard;
@@ -38,11 +38,11 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
         dalvikJavaVMPtr = vm;
         JNIEnv *env = NULL;
         (*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_4);
-        class_MainActivity = (*env)->NewGlobalRef(env,(*env)->FindClass(env, "net/kdt/pojavlaunch/MainActivity"));
-        method_OpenLink= (*env)->GetStaticMethodID(env, class_MainActivity, "openLink", "(Ljava/lang/String;)V");
-        method_OpenPath= (*env)->GetStaticMethodID(env, class_MainActivity, "openLink", "(Ljava/lang/String;)V");
-        method_QuerySystemClipboard = (*env)->GetStaticMethodID(env, class_MainActivity, "querySystemClipboard", "()V");
-        method_PutClipboardData = (*env)->GetStaticMethodID(env, class_MainActivity, "putClipboardData", "(Ljava/lang/String;Ljava/lang/String;)V");
+        class_ZLInvoker = (*env)->NewGlobalRef(env,(*env)->FindClass(env, "com/lanrhyme/shardlauncher/bridge/SLNativeInvoker"));
+        method_OpenLink= (*env)->GetStaticMethodID(env, class_ZLInvoker, "openLink", "(Ljava/lang/String;)V");
+        method_OpenPath= (*env)->GetStaticMethodID(env, class_ZLInvoker, "openLink", "(Ljava/lang/String;)V");
+        method_QuerySystemClipboard = (*env)->GetStaticMethodID(env, class_ZLInvoker, "querySystemClipboard", "()V");
+        method_PutClipboardData = (*env)->GetStaticMethodID(env, class_ZLInvoker, "putClipboardData", "(Ljava/lang/String;Ljava/lang/String;)V");
     } else if (dalvikJavaVMPtr != vm) {
         runtimeJavaVMPtr = vm;
     }
@@ -50,7 +50,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     return JNI_VERSION_1_4;
 }
 
-JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_AWTInputBridge_nativeSendData(JNIEnv* env, jclass clazz, jint type, jint i1, jint i2, jint i3, jint i4) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_sendInputData(JNIEnv* env, jclass clazz, jint type, jint i1, jint i2, jint i3, jint i4) {
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return;
@@ -80,7 +80,7 @@ JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_AWTInputBridge_nativeSendData(JN
 // TODO: check for memory leaks
 // int printed = 0;
 int threadAttached = 0;
-JNIEXPORT jintArray JNICALL Java_net_kdt_pojavlaunch_utils_JREUtils_renderAWTScreenFrame(JNIEnv* env, jclass clazz /*, jobject canvas, jint width, jint height */) {
+JNIEXPORT jintArray JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_renderAWTScreenFrame(JNIEnv* env, jclass clazz /*, jobject canvas, jint width, jint height */) {
     if (runtimeJNIEnvPtr_GRAPHICS == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return NULL;
@@ -134,7 +134,7 @@ JNIEXPORT void JNICALL Java_net_java_openjdk_cacio_ctc_CTCClipboard_nQuerySystem
         class_CTCClipboard = (*env)->NewGlobalRef(env, clazz);
         method_SystemClipboardDataReceived = (*env)->GetStaticMethodID(env, clazz, "systemClipboardDataReceived", "(Ljava/lang/String;Ljava/lang/String;)V");
     }
-    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_MainActivity, method_QuerySystemClipboard);
+    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_ZLInvoker, method_QuerySystemClipboard);
     if(detachable) (*dalvikJavaVMPtr)->DetachCurrentThread(dalvikJavaVMPtr);
 }
 
@@ -147,7 +147,7 @@ JNIEXPORT void JNICALL Java_net_java_openjdk_cacio_ctc_CTCClipboard_nPutClipboar
 
     const char* dataChars = (*env)->GetStringUTFChars(env, clipboardData, NULL);
     const char* mimeChars = (*env)->GetStringUTFChars(env, clipboardDataMime, NULL);
-    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_MainActivity, method_PutClipboardData,
+    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_ZLInvoker, method_PutClipboardData,
                                        (*dalvikEnv)->NewStringUTF(dalvikEnv, dataChars),
                                        (*dalvikEnv)->NewStringUTF(dalvikEnv, mimeChars));
     (*env)->ReleaseStringUTFChars(env, clipboardData, dataChars);
@@ -170,7 +170,7 @@ JNIEXPORT void JNICALL Java_net_java_openjdk_cacio_ctc_CTCDesktopPeer_openFile(J
         detachable = 1;
     }
     const char* stringChars = (*env)->GetStringUTFChars(env, filePath, NULL);
-    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_MainActivity, method_OpenPath, (*dalvikEnv)->NewStringUTF(dalvikEnv, stringChars));
+    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_ZLInvoker, method_OpenPath, (*dalvikEnv)->NewStringUTF(dalvikEnv, stringChars));
     (*env)->ReleaseStringUTFChars(env, filePath, stringChars);
     if(detachable) (*dalvikJavaVMPtr)->DetachCurrentThread(dalvikJavaVMPtr);
 }
@@ -182,12 +182,12 @@ JNIEXPORT void JNICALL Java_net_java_openjdk_cacio_ctc_CTCDesktopPeer_openUri(JN
         detachable = 1;
     }
     const char* stringChars = (*env)->GetStringUTFChars(env, uri, NULL);
-    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_MainActivity, method_OpenLink, (*dalvikEnv)->NewStringUTF(dalvikEnv, stringChars));
+    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, class_ZLInvoker, method_OpenLink, (*dalvikEnv)->NewStringUTF(dalvikEnv, stringChars));
     (*env)->ReleaseStringUTFChars(env, uri, stringChars);
     if(detachable) (*dalvikJavaVMPtr)->DetachCurrentThread(dalvikJavaVMPtr);
 }
 
-JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_AWTInputBridge_nativeClipboardReceived(JNIEnv *env, jclass clazz, jstring clipboardData, jstring clipboardDataMime) {
+JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_clipboardReceived(JNIEnv *env, jclass clazz, jstring clipboardData, jstring clipboardDataMime) {
     if(method_SystemClipboardDataReceived == NULL || class_CTCClipboard == NULL) return;
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
@@ -206,7 +206,7 @@ JNIEXPORT void JNICALL Java_net_kdt_pojavlaunch_AWTInputBridge_nativeClipboardRe
 }
 
 JNIEXPORT void JNICALL
-Java_net_kdt_pojavlaunch_AWTInputBridge_nativeMoveWindow(JNIEnv *env, jclass clazz, jint xoff, jint yoff) {
+Java_com_lanrhyme_shardlauncher_bridge_SLBridge_moveWindow(JNIEnv *env, jclass clazz, jint xoff, jint yoff) {
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return;

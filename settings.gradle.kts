@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ShardLauncher"
-include(":ShardLauncher", ":SL-GameCore", ":LWJGL")
+include(":ShardLauncher", ":LWJGL")

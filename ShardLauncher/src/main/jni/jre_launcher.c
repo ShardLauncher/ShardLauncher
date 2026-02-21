@@ -33,7 +33,7 @@
 // Boardwalk: missing include
 #include <string.h>
 
-#include "log.h"
+#include "logger/logger.h"
 #include "utils.h"
 #include "environ/environ.h"
 
@@ -73,49 +73,48 @@ struct {
 _Noreturn extern void nominal_exit(int code, bool is_signal);
 
 _Noreturn static void* abort_waiter_thread(void* extraArg) {
-    // Don't allow this thread to receive signals this thread is tracking.
-    // We should only receive them externally.
     pthread_sigmask(SIG_BLOCK, &abort_waiter_data.tracked_sigset, NULL);
     int signal;
-    // Block for reading the signal ID until it arrives
     read(abort_waiter_data.pipe[0], &signal, sizeof(int));
-    // Die
     nominal_exit(signal, true);
 }
 
 _Noreturn static void abort_waiter_handler(int signal) {
-    // Write the final signal into the pipe and block forever.
     write(abort_waiter_data.pipe[1], &signal, sizeof(int));
     while(1) {}
 }
 
 static void abort_waiter_setup() {
-    // Only abort on SIGABRT as the JVM either emits SIGABRT or SIGKILL (which we can't catch)
-    // when a fatal crash occurs. Still, keep expandability if we would want to add more
-    // user-friendly fatal signals in the future.
     const static int tracked_signals[] = {SIGABRT};
     const static int ntracked = (sizeof(tracked_signals) / sizeof(tracked_signals[0]));
     struct sigaction sigactions[ntracked];
     sigemptyset(&abort_waiter_data.tracked_sigset);
-    for(size_t i = 0; i < ntracked; i++) {
+
+    for (size_t i = 0; i < ntracked; i++)
+    {
         sigaddset(&abort_waiter_data.tracked_sigset, tracked_signals[i]);
         sigactions[i].sa_handler = abort_waiter_handler;
     }
-    if(pipe(abort_waiter_data.pipe) != 0) {
+
+    if (pipe(abort_waiter_data.pipe) != 0)
+    {
         printf("Failed to set up aborter pipe: %s\n", strerror(errno));
         return;
     }
+
     pthread_t waiter_thread; int result;
-    if((result = pthread_create(&waiter_thread, NULL, abort_waiter_thread, NULL)) != 0) {
+
+    if ((result = pthread_create(&waiter_thread, NULL, abort_waiter_thread, NULL)) != 0)
+    {
         printf("Failed to start up waiter thread: %s", strerror(result));
         for(int i = 0; i < 2; i++) close(abort_waiter_data.pipe[i]);
         return;
     }
-    // Only set the sigactions *after* we have already set up the pipe and the thread.
-    for(size_t i = 0; i < ntracked; i++) {
-        if(sigaction(tracked_signals[i], &sigactions[i], NULL) != 0) {
-            // Not returning here because we may have set some handlers successfully.
-            // Some handling is better than no handling.
+
+    for (size_t i = 0; i < ntracked; i++)
+    {
+        if (sigaction(tracked_signals[i], &sigactions[i], NULL) != 0)
+        {
             printf("Failed to set signal hander for signal %i: %s", i, strerror(errno));
         }
     }
@@ -123,41 +122,39 @@ static void abort_waiter_setup() {
 
 static jint launchJVM(int margc, char** margv) {
    void* libjli = dlopen("libjli.so", RTLD_LAZY | RTLD_GLOBAL);
-
-   // Unset all signal handlers to create a good slate for JVM signal detection.
    struct sigaction clean_sa;
    memset(&clean_sa, 0, sizeof (struct sigaction));
-   for(int sigid = SIGHUP; sigid < NSIG; sigid++) {
-       // For some reason Android specifically checks if you set SIGSEGV to SIG_DFL.
-       // There's probably a good reason for that but the signal handler here is
-       // temporary and will be replaced by the Java VM's signal/crash handler.
-       // Work around the warning by using SIG_IGN for SIGSEGV
-       if(sigid == SIGSEGV) clean_sa.sa_handler = SIG_IGN;
+
+   for (int sigid = SIGHUP; sigid < NSIG; sigid++)
+   {
+       if (sigid == SIGSEGV)
+           clean_sa.sa_handler = SIG_IGN;
        else clean_sa.sa_handler = SIG_DFL;
+
        sigaction(sigid, &clean_sa, NULL);
    }
-   // Set up the thread that will abort the launcher with an user-facing dialog on a signal.
-   abort_waiter_setup();
 
+   abort_waiter_setup();
    // Boardwalk: silence
    // LOGD("JLI lib = %x", (int)libjli);
-   if (NULL == libjli) {
-       LOGE("JLI lib = NULL: %s", dlerror());
+   if (NULL == libjli)
+   {
+       LOG_TO_E("JLI lib = NULL: %s", dlerror());
        return -1;
    }
-   LOGD("Found JLI lib");
+   LOG_TO_D("Found JLI lib");
 
-   JLI_Launch_func *pJLI_Launch =
-          (JLI_Launch_func *)dlsym(libjli, "JLI_Launch");
+   JLI_Launch_func *pJLI_Launch = (JLI_Launch_func *)dlsym(libjli, "JLI_Launch");
     // Boardwalk: silence
     // LOGD("JLI_Launch = 0x%x", *(int*)&pJLI_Launch);
 
-   if (NULL == pJLI_Launch) {
-       LOGE("JLI_Launch = NULL");
+   if (NULL == pJLI_Launch)
+   {
+       LOG_TO_E("JLI_Launch = NULL");
        return -1;
    }
 
-   LOGD("Calling JLI_Launch");
+   LOG_TO_D("Calling JLI_Launch");
 
    return pJLI_Launch(margc, margv,
                    0, NULL, // sizeof(const_jargs) / sizeof(char *), const_jargs,
@@ -168,40 +165,30 @@ static jint launchJVM(int margc, char** margv) {
                    *margv, // (const_launcher != NULL) ? const_launcher : *margv,
                    (const_jargs != NULL) ? JNI_TRUE : JNI_FALSE,
                    const_cpwildcard, const_javaw, const_ergo_class);
-/*
-   return pJLI_Launch(argc, argv, 
-       0, NULL, 0, NULL, FULL_VERSION,
-       DOT_VERSION, *margv, *margv, // "java", "openjdk",
-       JNI_FALSE, JNI_TRUE, JNI_FALSE, 0);
-*/
+
 }
 
-/*
- * Class:     com_oracle_dalvik_VMLauncher
- * Method:    launchJVM
- * Signature: ([Ljava/lang/String;)I
- */
 JNIEXPORT jint JNICALL Java_com_oracle_dalvik_VMLauncher_launchJVM(JNIEnv *env, jclass clazz, jobjectArray argsArray) {
+    jint res = 0;
 
-   jint res = 0;
+    // Save dalvik JNIEnv pointer for JVM launch thread
+    pojav_environ->dalvikJNIEnvPtr_ANDROID = env;
 
-    if (argsArray == NULL) {
-        LOGE("Args array null, returning");
-        //handle error
+    if (argsArray == NULL)
+    {
+        LOG_TO_E("Args array null, returning");
         return 0;
     }
 
     int argc = (*env)->GetArrayLength(env, argsArray);
     char **argv = convert_to_char_array(env, argsArray);
-
-    LOGD("Done processing args");
+    LOG_TO_D("Done processing args");
 
     res = launchJVM(argc, argv);
 
-    LOGD("Going to free args");
+    LOG_TO_D("Going to free args");
     free_char_array(env, argsArray, argv);
 
-    LOGD("Free done");
-
+    LOG_TO_D("Free done");
     return res;
 }

@@ -11,6 +11,7 @@ jobjectArray convert_from_char_array(JNIEnv *env, char **charArray, int num_rows
 void free_char_array(JNIEnv *env, jobjectArray jstringArray, const char **charArray);
 jstring convertStringJVM(JNIEnv* srcEnv, JNIEnv* dstEnv, jstring srcStr);
 
-JNIEnv* get_attached_env(JavaVM* jvm);
+void hookExec();
+void installLwjglDlopenHook();
+void installEMUIIteratorMititgation();
 JNIEXPORT jstring JNICALL Java_org_lwjgl_glfw_CallbackBridge_nativeClipboard(JNIEnv* env, jclass clazz, jint action, jbyteArray copySrc);
-

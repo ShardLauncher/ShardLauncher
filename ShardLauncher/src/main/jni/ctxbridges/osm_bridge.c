@@ -4,20 +4,21 @@
 #include <malloc.h>
 #include <string.h>
 #include <environ/environ.h>
+#include <android/log.h>
 #include "osm_bridge.h"
-#define TAG __FILE_NAME__
-#include <log.h>
 
+static const char* g_LogTag = "GLBridge";
 static __thread osm_render_window_t* currentBundle;
 // a tiny buffer for rendering when there's nowhere t render
 static char no_render_buffer[4];
+static bool hasSetNoRendererBuffer = false;
 
 // Its not in a .h file because it is not supposed to be used outsife of this file.
 void setNativeWindowSwapInterval(struct ANativeWindow* nativeWindow, int swapInterval);
 
 bool osm_init() {
-    if(!dlsym_OSMesa()) return false;
-    return true;
+    dlsym_OSMesa();
+    return true; // no more specific initialization required
 }
 
 osm_render_window_t* osm_get_current() {
@@ -49,13 +50,13 @@ void osm_set_no_render_buffer(ANativeWindow_Buffer* buffer) {
 void osm_swap_surfaces(osm_render_window_t* bundle) {
     if(bundle->nativeSurface != NULL && bundle->newNativeSurface != bundle->nativeSurface) {
         if(!bundle->disable_rendering) {
-            LOGI("Unlocking for cleanup...");
+            __android_log_print(ANDROID_LOG_INFO, g_LogTag, "Unlocking for cleanup...");
             ANativeWindow_unlockAndPost(bundle->nativeSurface);
         }
         ANativeWindow_release(bundle->nativeSurface);
     }
     if(bundle->newNativeSurface != NULL) {
-        LOGI("Switching to new native surface");
+        __android_log_print(ANDROID_LOG_ERROR, g_LogTag, "Switching to new native surface");
         bundle->nativeSurface = bundle->newNativeSurface;
         bundle->newNativeSurface = NULL;
         ANativeWindow_acquire(bundle->nativeSurface);
@@ -63,7 +64,8 @@ void osm_swap_surfaces(osm_render_window_t* bundle) {
         bundle->disable_rendering = false;
         return;
     }else {
-        LOGI("No new native surface, switching to dummy framebuffer");
+        __android_log_print(ANDROID_LOG_ERROR, g_LogTag,
+                            "No new native surface, switching to dummy framebuffer");
         bundle->nativeSurface = NULL;
         osm_set_no_render_buffer(&bundle->buffer);
         bundle->disable_rendering = true;
@@ -95,7 +97,7 @@ void osm_make_current(osm_render_window_t* bundle) {
     currentBundle = bundle;
     if(pojav_environ->mainWindowBundle == NULL) {
         pojav_environ->mainWindowBundle = (basic_render_window_t*) bundle;
-        LOGI("Main window bundle is now %p", pojav_environ->mainWindowBundle);
+        __android_log_print(ANDROID_LOG_INFO, g_LogTag, "Main window bundle is now %p", pojav_environ->mainWindowBundle);
         pojav_environ->mainWindowBundle->newNativeSurface = pojav_environ->pojavWindow;
         hasSetMainWindow = true;
     }
@@ -104,7 +106,11 @@ void osm_make_current(osm_render_window_t* bundle) {
         osm_swap_surfaces(bundle);
         if(hasSetMainWindow) pojav_environ->mainWindowBundle->state = STATE_RENDERER_ALIVE;
     }
-    osm_set_no_render_buffer(&bundle->buffer);
+    if (!hasSetNoRendererBuffer)
+    {
+        osm_set_no_render_buffer(&bundle->buffer);
+        hasSetNoRendererBuffer = true;
+    }
     osm_apply_current_ll();
     OSMesaPixelStore_p(OSMESA_Y_UP,0);
 }
@@ -129,7 +135,7 @@ void osm_swap_buffers() {
 
 void osm_setup_window() {
     if(pojav_environ->mainWindowBundle != NULL) {
-        LOGI("Main window bundle is not NULL, changing state");
+        __android_log_print(ANDROID_LOG_INFO, g_LogTag, "Main window bundle is not NULL, changing state");
         pojav_environ->mainWindowBundle->state = STATE_RENDERER_NEW_WINDOW;
         pojav_environ->mainWindowBundle->newNativeSurface = pojav_environ->pojavWindow;
     }

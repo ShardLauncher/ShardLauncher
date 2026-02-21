@@ -56,7 +56,7 @@ android {
     defaultConfig {
         applicationId = "com.lanrhyme.shardlauncher"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1221
         val vName = "a0.25.1221 - NEBULA"
         versionName = vName
@@ -86,6 +86,14 @@ android {
         buildConfig = true
         compose = true
         prefab = true
+    }
+
+    ndkVersion = "25.2.9519653"
+
+    externalNativeBuild {
+        ndkBuild {
+            path = file("src/main/jni/Android.mk")
+        }
     }
 
     buildTypes {
@@ -167,7 +175,10 @@ dependencies {
     implementation(libs.foundation.layout)
 
     // Native libraries
-    // Bytehook is now provided by SL-GameCore
+    implementation("com.bytedance:bytehook:1.0.9")
+
+    // DocumentFile
+    implementation("androidx.documentfile:documentfile:1.0.1")
 
 
     testImplementation(libs.junit)
@@ -198,5 +209,4 @@ dependencies {
 
     // OkHttp (already used via retrofit, but making explicit)
     implementation(libs.okhttp)
-    implementation(project(":SL-GameCore"))
 }
