@@ -431,24 +431,10 @@ Java_com_lanrhyme_shardlauncher_bridge_SLBridge_initRendererBridge(JNIEnv* env, 
         return JNI_FALSE;
     }
     
-    // 创建 OpenGL ES 上下文（必须在加载 GL4ES 之前完成）
-    if (pojav_environ->config_renderer == RENDERER_GL4ES || pojav_environ->config_renderer == RENDERER_VK_ZINK) {
-        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "Creating OpenGL ES context before loading renderer library");
-        
-        // 创建上下文
-        void* ctx = br_init_context(NULL);
-        if (ctx == NULL) {
-            __android_log_print(ANDROID_LOG_ERROR, "EGLBridge", "Failed to create OpenGL ES context!");
-            return JNI_FALSE;
-        }
-        
-        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "OpenGL ES context created successfully, ptr=%p", ctx);
-        
-        // 使上下文成为当前上下文（使用 PBuffer 作为临时 surface）
-        br_make_current((basic_render_window_t*)ctx);
-        __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "OpenGL ES context made current");
-    }
-    
+    // 注意：GL4ES 需要在 dlopen 时有一个 OpenGL ES 上下文
+    // 但由于 LWJGL 会在 JVM 启动后调用 glfwInit() -> pojavInit() -> pojavInitOpenGL()
+    // 来创建上下文，所以这里只初始化 EGL 显示，不创建上下文
+    // GL4ES 的 LIBGL_NOTEST=1 环境变量会跳过硬件检测，避免在 dlopen 时创建上下文
     __android_log_print(ANDROID_LOG_INFO, "EGLBridge", "initRendererBridge() succeeded, renderer=%d", pojav_environ->config_renderer);
     return JNI_TRUE;
 }

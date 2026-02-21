@@ -509,6 +509,10 @@ abstract class Launcher(
         args.add("-Xms${ramAllocationString}M")
         args.add("-Xmx${ramAllocationString}M")
 
+        // Fix for Android 15: Disable compressed oops to avoid AArch64 assembler error
+        // "Field too big for insn" when heap address is too far from zero
+        args.add("-XX:-UseCompressedOops")
+
         // Force LWJGL to use our Freetype library
         args.add("-Dorg.lwjgl.freetype.libname=${PathManager.DIR_NATIVE_LIB}/libfreetype.so")
 
