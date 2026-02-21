@@ -47,9 +47,9 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_LOCAL
-import com.lanrhyme.shardlauncher.game.account.Account
-import com.lanrhyme.shardlauncher.game.account.getDisplayName
+import com.movtery.zalithlauncher.game.account.AccountType
+import com.movtery.zalithlauncher.game.account.Account
+import com.movtery.zalithlauncher.game.account.getAccountTypeName
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.components.basic.*
 import dev.chrisbanes.haze.hazeEffect
@@ -151,7 +151,7 @@ fun AccountCard(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                     Text(
-                                        text = account.getDisplayName(),
+                                        text = getAccountTypeName(account),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                         maxLines = 1,
@@ -176,7 +176,7 @@ fun AccountCard(
                                         showMenu = false
                                 }
                         )
-                        if (account.accountType == ACCOUNT_TYPE_LOCAL) {
+                        if (account.accountType == AccountType.LOCAL.tag) {
                                 DropdownMenuItem(
                                         text = { Text("修改用户名") },
                                         onClick = {

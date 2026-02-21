@@ -45,25 +45,21 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import com.lanrhyme.shardlauncher.bridge.SLBridge
-import com.lanrhyme.shardlauncher.bridge.SLNativeInvoker
-import com.lanrhyme.shardlauncher.game.input.AWTInputEvent
-import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
-import org.lwjgl.glfw.CallbackBridge
-import com.lanrhyme.shardlauncher.game.version.installed.Version
 import com.lanrhyme.shardlauncher.ui.theme.ShardLauncherTheme
 import com.lanrhyme.shardlauncher.utils.Logger
+import com.movtery.zalithlauncher.bridge.ZLBridge
+import com.movtery.zalithlauncher.bridge.ZLNativeInvoker
+import com.movtery.zalithlauncher.game.input.AWTInputEvent
+import com.movtery.zalithlauncher.game.version.installed.Version
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.lwjgl.glfw.CallbackBridge
 
 private const val INTENT_VERSION = "INTENT_VERSION"
 
-/**
- * 用于运行游戏的独立 Activity
- */
 class GameActivity : ComponentActivity() {
 
     private val gameViewModel: GameViewModel by viewModels()
@@ -80,11 +76,9 @@ class GameActivity : ComponentActivity() {
             return
         }
 
-        // 设置窗口属性
         window?.apply {
             setBackgroundDrawable(Color.BLACK.toDrawable())
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            // 隐藏状态栏和导航栏
             @Suppress("DEPRECATION")
             decorView.systemUiVisibility = (
                 android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -96,26 +90,9 @@ class GameActivity : ComponentActivity() {
             )
         }
 
-        // 首先初始化 SLBridge 以加载 native 库
-        // 这必须在任何 native 调用之前，因为其他 Bridge 依赖于 pojavexec 库
-        // 触发 SLBridge 的静态初始化块，加载 native 库并禁用 fdsan
-        // 注意: initializeGameExitHook 只能在 Launcher.kt 中调用一次
-        // 重复调用会导致 bytehook 返回 "already inited" 错误
-        SLBridge.disableFdsan()
+        ZLBridge.dlopen("libpojavexec.so")
         
-        // 初始化 SLNativeInvoker，为 native 提供 Context 支持
-        SLNativeInvoker.init(this)
-
-        // 注意: LoggerBridge.start() 会在 GameLauncher.initializeLogger() 中调用
-        // 不要在这里调用，否则会重复初始化导致问题
-
-        // 设置退出回调
-        SLBridge.setupExitMethod(this)
-
-        val getWindowSize = {
-            val displayMetrics = resources.displayMetrics
-            IntSize(displayMetrics.widthPixels, displayMetrics.heightPixels)
-        }
+        ZLNativeInvoker.init(this)
 
         setContent {
             ShardLauncherTheme {
@@ -131,7 +108,6 @@ class GameActivity : ComponentActivity() {
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                        // 返回主界面
                         finish()
                     }
                 )
@@ -139,9 +115,13 @@ class GameActivity : ComponentActivity() {
         }
     }
 
+    private val getWindowSize = {
+        val displayMetrics = resources.displayMetrics
+        IntSize(displayMetrics.widthPixels, displayMetrics.heightPixels)
+    }
+
     override fun onResume() {
         super.onResume()
-        // 刷新窗口大小
         refreshWindowSize()
     }
 
@@ -150,12 +130,10 @@ class GameActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // 处理物理键盘事件
         val isPressed = event.action == KeyEvent.ACTION_DOWN
 
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (isPressed) {
-                // 按 Back 键退出游戏
                 gameViewModel.exitGame()
                 return true
             }
@@ -167,7 +145,6 @@ class GameActivity : ComponentActivity() {
     private fun refreshWindowSize() {
         val displayMetrics = resources.displayMetrics
         
-        // 设置 CallbackBridge 的物理尺寸和窗口尺寸
         CallbackBridge.physicalWidth = displayMetrics.widthPixels
         CallbackBridge.physicalHeight = displayMetrics.heightPixels
         CallbackBridge.windowWidth = displayMetrics.widthPixels
@@ -199,12 +176,10 @@ class GameActivity : ComponentActivity() {
                             override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
                                 Logger.lInfo("Surface available: ${width}x${height}")
 
-                                // 设置窗口尺寸到 CallbackBridge
                                 refreshWindowSize()
 
-                                // 设置 Surface 到 Bridge
                                 Logger.lInfo("GameActivity: About to call setupBridgeWindow()")
-                                SLBridge.setupBridgeWindow(Surface(surface))
+                                ZLBridge.setupBridgeWindow(Surface(surface))
                                 Logger.lInfo("GameActivity: setupBridgeWindow() returned successfully")
 
                                 if (!isGameRunning) {
@@ -224,12 +199,11 @@ class GameActivity : ComponentActivity() {
 
                             override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
                                 Logger.lInfo("Surface destroyed")
-                                SLBridge.releaseBridgeWindow()
+                                ZLBridge.releaseBridgeWindow()
                                 return true
                             }
 
                             override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-                                // 每帧更新时调用
                             }
                         }
 
@@ -252,22 +226,19 @@ class GameActivity : ComponentActivity() {
 
         when (action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                SLBridge.sendMousePos(x, y)
-                SLBridge.sendMousePress(AWTInputEvent.BUTTON1_MASK, true)
+                ZLBridge.sendMousePos(x, y)
+                ZLBridge.sendMousePress(AWTInputEvent.BUTTON1_MASK, true)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
-                SLBridge.sendMousePress(AWTInputEvent.BUTTON1_MASK, false)
+                ZLBridge.sendMousePress(AWTInputEvent.BUTTON1_MASK, false)
             }
             MotionEvent.ACTION_MOVE -> {
-                SLBridge.sendMousePos(x, y)
+                ZLBridge.sendMousePos(x, y)
             }
         }
     }
 
     companion object {
-        /**
-         * 启动游戏
-         */
         fun startGame(context: Context, version: Version) {
             val intent = Intent(context, GameActivity::class.java).apply {
                 putExtra(INTENT_VERSION, version)
@@ -278,9 +249,6 @@ class GameActivity : ComponentActivity() {
     }
 }
 
-/**
- * 游戏运行的 ViewModel
- */
 class GameViewModel : ViewModel() {
     private var launchJob: Job? = null
 

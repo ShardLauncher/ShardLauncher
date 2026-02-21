@@ -54,20 +54,31 @@ JNIEXPORT void JNICALL Java_com_lanrhyme_shardlauncher_bridge_SLBridge_sendInput
     if (runtimeJNIEnvPtr_INPUT == NULL) {
         if (runtimeJavaVMPtr == NULL) {
             return;
-        } else {
-            (*runtimeJavaVMPtr)->AttachCurrentThread(runtimeJavaVMPtr, &runtimeJNIEnvPtr_INPUT, NULL);
+        }
+        jint result = (*runtimeJavaVMPtr)->AttachCurrentThread(runtimeJavaVMPtr, &runtimeJNIEnvPtr_INPUT, NULL);
+        if (result != JNI_OK || runtimeJNIEnvPtr_INPUT == NULL) {
+            return;
         }
     }
 
     if (method_ReceiveInput == NULL) {
-        class_CTCAndroidInput = (*runtimeJNIEnvPtr_INPUT)->FindClass(runtimeJNIEnvPtr_INPUT, "net/java/openjdk/cacio/ctc/CTCAndroidInput");
+        jclass tempClass = (*runtimeJNIEnvPtr_INPUT)->FindClass(runtimeJNIEnvPtr_INPUT, "net/java/openjdk/cacio/ctc/CTCAndroidInput");
         if ((*runtimeJNIEnvPtr_INPUT)->ExceptionCheck(runtimeJNIEnvPtr_INPUT) == JNI_TRUE) {
             (*runtimeJNIEnvPtr_INPUT)->ExceptionClear(runtimeJNIEnvPtr_INPUT);
-            class_CTCAndroidInput = (*runtimeJNIEnvPtr_INPUT)->FindClass(runtimeJNIEnvPtr_INPUT, "com/github/caciocavallosilano/cacio/ctc/CTCAndroidInput");
+            tempClass = (*runtimeJNIEnvPtr_INPUT)->FindClass(runtimeJNIEnvPtr_INPUT, "com/github/caciocavallosilano/cacio/ctc/CTCAndroidInput");
         }
-        assert(class_CTCAndroidInput != NULL);
+        if (tempClass == NULL) {
+            return;
+        }
+        class_CTCAndroidInput = (*runtimeJNIEnvPtr_INPUT)->NewGlobalRef(runtimeJNIEnvPtr_INPUT, tempClass);
+        (*runtimeJNIEnvPtr_INPUT)->DeleteLocalRef(runtimeJNIEnvPtr_INPUT, tempClass);
+        if (class_CTCAndroidInput == NULL) {
+            return;
+        }
         method_ReceiveInput = (*runtimeJNIEnvPtr_INPUT)->GetStaticMethodID(runtimeJNIEnvPtr_INPUT, class_CTCAndroidInput, "receiveData", "(IIIII)V");
-        assert(method_ReceiveInput != NULL);
+        if (method_ReceiveInput == NULL) {
+            return;
+        }
     }
     (*runtimeJNIEnvPtr_INPUT)->CallStaticVoidMethod(
         runtimeJNIEnvPtr_INPUT,

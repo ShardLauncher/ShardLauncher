@@ -3,6 +3,7 @@ package com.lanrhyme.shardlauncher
 import android.app.Application
 import android.content.Intent
 import com.lanrhyme.shardlauncher.ui.crash.CrashActivity
+import com.movtery.zalithlauncher.path.PathManager
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.system.exitProcess
@@ -10,7 +11,9 @@ import kotlin.system.exitProcess
 class ShardLauncherApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        com.lanrhyme.shardlauncher.path.PathManager.refreshPaths(this)
+        
+        PathManager.refreshPaths(this)
+        
         setCrashHandler()
     }
 
@@ -27,7 +30,6 @@ class ShardLauncherApp : Application() {
             }
             startActivity(intent)
 
-            // Exit the app
             defaultHandler?.uncaughtException(thread, throwable)
             exitProcess(1)
         }

@@ -45,11 +45,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.lanrhyme.shardlauncher.game.path.GamePathManager
-import com.lanrhyme.shardlauncher.game.version.installed.Version
-import com.lanrhyme.shardlauncher.game.version.installed.VersionComparator
-import com.lanrhyme.shardlauncher.game.version.installed.VersionType
-import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import com.movtery.zalithlauncher.game.path.GamePathManager
+import com.movtery.zalithlauncher.game.version.installed.Version
+import com.movtery.zalithlauncher.game.version.installed.VersionComparator
+import com.movtery.zalithlauncher.game.version.installed.VersionType
+import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.ui.version.dialog.VersionOperationState

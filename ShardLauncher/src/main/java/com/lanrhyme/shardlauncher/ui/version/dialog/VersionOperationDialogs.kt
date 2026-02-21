@@ -6,8 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.lanrhyme.shardlauncher.game.version.installed.Version
-import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import com.movtery.zalithlauncher.game.version.installed.Version
+import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardEditDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardInputField

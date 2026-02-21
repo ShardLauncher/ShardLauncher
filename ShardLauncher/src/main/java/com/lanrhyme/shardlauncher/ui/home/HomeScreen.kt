@@ -55,9 +55,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.lanrhyme.shardlauncher.api.ApiClient
 import com.lanrhyme.shardlauncher.data.SettingsRepository
-import com.lanrhyme.shardlauncher.game.account.Account
-import com.lanrhyme.shardlauncher.game.launch.GameLaunchManager
-import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import com.movtery.zalithlauncher.game.account.Account
+import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.model.LatestVersionsResponse
 import com.lanrhyme.shardlauncher.model.VersionInfo
 import com.lanrhyme.shardlauncher.ui.account.AccountViewModel

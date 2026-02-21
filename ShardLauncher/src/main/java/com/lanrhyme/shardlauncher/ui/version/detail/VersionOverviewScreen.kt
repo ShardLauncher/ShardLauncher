@@ -64,8 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.game.version.installed.Version
-import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import com.movtery.zalithlauncher.game.version.installed.Version
+import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardAlertDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardEditDialog
 import com.lanrhyme.shardlauncher.ui.components.basic.ShardTaskDialog

@@ -28,8 +28,8 @@ import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.game.account.Account
-import com.lanrhyme.shardlauncher.game.account.getDisplayName
+import com.movtery.zalithlauncher.game.account.Account
+import com.movtery.zalithlauncher.game.account.getAccountTypeName
 import com.lanrhyme.shardlauncher.ui.components.basic.*
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import dev.chrisbanes.haze.hazeEffect
@@ -89,7 +89,7 @@ fun HomeAccountCard(account: Account) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = account.getDisplayName(),
+                    text = getAccountTypeName(account),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     maxLines = 1,

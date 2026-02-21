@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ShardLauncher"
 include(":ShardLauncher", ":LWJGL")
+include(":ZalithLauncherCore")

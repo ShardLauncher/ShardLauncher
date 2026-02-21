@@ -4,10 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lanrhyme.shardlauncher.api.ApiClient
-import com.lanrhyme.shardlauncher.game.version.download.BaseMinecraftDownloader
-import com.lanrhyme.shardlauncher.game.version.download.DownloadMode
-import com.lanrhyme.shardlauncher.game.version.download.MinecraftDownloader
-import com.lanrhyme.shardlauncher.game.version.modloader.FabricAPIVersions
+import com.movtery.zalithlauncher.game.version.download.BaseMinecraftDownloader
+import com.movtery.zalithlauncher.game.version.download.DownloadMode
+import com.movtery.zalithlauncher.game.version.download.MinecraftDownloader
+import com.movtery.zalithlauncher.game.addons.modloader.fabriclike.fabric.FabricAPIVersions
 import com.lanrhyme.shardlauncher.model.FabricLoaderVersion
 import com.lanrhyme.shardlauncher.model.LoaderVersion
 import com.lanrhyme.shardlauncher.model.ModrinthVersion

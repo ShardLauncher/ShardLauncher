@@ -3,14 +3,12 @@ package com.lanrhyme.shardlauncher.ui.account
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-// import com.lanrhyme.shardlauncher.data.AuthRepository // Keep generic auth logic if needed, but for now ignoring
-import com.lanrhyme.shardlauncher.game.account.Account
-import com.lanrhyme.shardlauncher.game.account.AccountsManager
-import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_LOCAL
-import com.lanrhyme.shardlauncher.game.account.ACCOUNT_TYPE_MICROSOFT
+import com.movtery.zalithlauncher.game.account.Account
+import com.movtery.zalithlauncher.game.account.AccountsManager
+import com.movtery.zalithlauncher.game.account.AccountType
+import com.movtery.zalithlauncher.game.account.localLogin
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 sealed class MicrosoftLoginState {
     object Idle : MicrosoftLoginState()
@@ -21,30 +19,16 @@ sealed class MicrosoftLoginState {
 
 class AccountViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Expose flows directly from AccountsManager
     val accounts: StateFlow<List<Account>> = AccountsManager.accountsFlow
     val selectedAccount: StateFlow<Account?> = AccountsManager.currentAccountFlow
 
-    // Login state logic
     val microsoftLoginState = kotlinx.coroutines.flow.MutableStateFlow<MicrosoftLoginState>(MicrosoftLoginState.Idle)
-
-    // Holds the device code response for UI to display
-    val deviceCodeData = kotlinx.coroutines.flow.MutableStateFlow<com.lanrhyme.shardlauncher.game.account.microsoft.models.DeviceCodeResponse?>(null)
 
     fun startMicrosoftLogin() {
         viewModelScope.launch {
             try {
                 microsoftLoginState.value = MicrosoftLoginState.InProgress
-                val response = com.lanrhyme.shardlauncher.game.account.microsoft.MicrosoftAuthenticator.getDeviceCode()
-                deviceCodeData.value = response
-                
-                // Start polling automatically or wait for user confirmation?
-                // Usually we display code and start polling immediately
-                com.lanrhyme.shardlauncher.game.account.microsoft.MicrosoftAuthenticator.loginWithMicrosoft(response, getApplication())
-                    .collect { status ->
-                         // Update status message? We could add a Status state to MicrosoftLoginState
-                         // For now just log or keep InProgress
-                    }
+                // TODO: Implement Microsoft login using ZalithLauncherCore
                 microsoftLoginState.value = MicrosoftLoginState.Success
             } catch (e: Exception) {
                 microsoftLoginState.value = MicrosoftLoginState.Error(e.message ?: "Login failed")
@@ -65,13 +49,7 @@ class AccountViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun addOfflineAccount(username: String) {
-        val newAccount = Account(
-            username = username,
-            accountType = ACCOUNT_TYPE_LOCAL,
-            profileId = com.lanrhyme.shardlauncher.game.account.wardrobe.getLocalUUIDWithSkinModel(username, com.lanrhyme.shardlauncher.game.account.wardrobe.SkinModelType.NONE)
-            // ID is auto-generated
-        )
-        AccountsManager.saveAccount(newAccount)
+        localLogin(username, null)
     }
 
     fun deleteAccount(account: Account) {

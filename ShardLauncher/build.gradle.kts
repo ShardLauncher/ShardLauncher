@@ -140,6 +140,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":ZalithLauncherCore"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -149,24 +150,24 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("com.google.android.material:material:1.12.0") // Add this for M3 themes
+    implementation(libs.material)
     implementation("androidx.navigation:navigation-compose:2.9.4")
-    implementation("androidx.compose.material:material-icons-core:1.7.8")
-    implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.coil.compose)
     implementation("io.coil-kt:coil-video:2.6.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("androidx.media3:media3-exoplayer:1.3.1")
-    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
     implementation("androidx.media3:media3-common:1.3.1")
     implementation("androidx.media3:media3-session:1.3.1")
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("org.apache.maven:maven-artifact:3.8.6")
-    implementation("commons-io:commons-io:2.16.1")
-    implementation("commons-codec:commons-codec:1.16.1")
-    implementation("org.apache.commons:commons-compress:1.26.1")
-    implementation("org.tukaani:xz:1.9") // XZ compression support for tar.xz files
+    implementation(libs.gson)
+    implementation(libs.maven.artifact)
+    implementation(libs.commons.io)
+    implementation(libs.commons.codec)
+    implementation(libs.commons.compress)
+    implementation(libs.xz)
     implementation("org.ow2.asm:asm-all:5.0.4")
     implementation("com.github.oshi:oshi-core:6.3.0")
     implementation("androidx.browser:browser:1.8.0")
@@ -174,10 +175,8 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze-materials:1.7.1")
     implementation(libs.foundation.layout)
 
-    // Native libraries
-    implementation("com.bytedance:bytehook:1.0.9")
+    implementation(libs.bytehook)
 
-    // DocumentFile
     implementation("androidx.documentfile:documentfile:1.0.1")
 
 
@@ -193,20 +192,16 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Ktor Server (for local skin server)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Ktor Client
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
 
-    // Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // OkHttp (already used via retrofit, but making explicit)
     implementation(libs.okhttp)
 }

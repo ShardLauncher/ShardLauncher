@@ -25,10 +25,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lanrhyme.shardlauncher.R
-import com.lanrhyme.shardlauncher.game.path.GamePath
-import com.lanrhyme.shardlauncher.game.path.GamePathManager
-import com.lanrhyme.shardlauncher.game.version.installed.Version
-import com.lanrhyme.shardlauncher.game.version.installed.VersionsManager
+import com.movtery.zalithlauncher.game.path.GamePath
+import com.movtery.zalithlauncher.game.path.GamePathManager
+import com.movtery.zalithlauncher.game.version.installed.Version
+import com.movtery.zalithlauncher.game.version.installed.VersionsManager
 import com.lanrhyme.shardlauncher.ui.components.basic.*
 import com.lanrhyme.shardlauncher.ui.components.layout.LocalCardLayoutConfig
 import com.lanrhyme.shardlauncher.utils.logging.Logger.lError
